@@ -85,6 +85,7 @@ Optimizer Excel Report Library — Basic Design
 - **出力: LayoutPlan（論理レイアウト）**  
 - 責務:
   - 行列座標の割付  
+  - データバインディング（AST と C# オブジェクトの紐づけ）
   - repeat 展開  
   - セル結合（merge）判定  
   - スタイル適用の計画（論理レベル）  
