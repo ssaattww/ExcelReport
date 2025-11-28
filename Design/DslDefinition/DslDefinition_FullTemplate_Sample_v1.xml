@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="urn:excelreport:v1">
+
+  <styles>
+    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+  </styles>
+
+  <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v1.xml"/>
+
+  <!-- シート -->
+  <sheet name="Summary" rows="40" cols="4">
+
+    <!-- 1行目: タイトル -->
+    <use component="Title" name="HeaderTitle" r="1" c="1" with="@(root)"/>
+
+    <!-- 2行目: KPI -->
+    <use component="KPI" name="KPI" r="2" c="1" with="@(root.Summary)"/>
+
+    <!-- 3行目: 日付 -->
+    <cell r="3" c="1" value="=TODAY()">
+      <styleRef name="BaseCell"/>
+    </cell>
+    <cell r="3" c="2" value="=TEXT(NOW(), &quot;yyyy-mm-dd hh:mm&quot;)">
+      <styleRef name="BaseCell"/>
+    </cell>
+
+    <!-- 4行目: Totals -->
+    <use component="TotalsRow" name="TotalsRow" r="4" c="1" with="@(root)"/>
+
+    <!-- 5行目: 明細ヘッダ -->
+    <use component="DetailHeader" name="DetailHeader" r="5" c="1" with="@(root)"/>
+
+    <!-- 6行目以降: 明細＋グリッド線 -->
+    <repeat name="DetailRows"
+            r="6" c="1" direction="down"
+            from="@(root.Lines)" var="it">
+      <styleRef name="DetailRowsGrid"/>
+      <use component="DetailRow" with="@(it)"/>
+    </repeat>
+
+    <sheetOptions>
+      <freeze at="DetailHeader"/>
+      <groups>
+        <groupRows at="DetailRows" collapsed="false"/>
+      </groups>
+        <autoFilter at="DetailHeader"/>
+    </sheetOptions>
+
+  </sheet>
+
+</workbook>
