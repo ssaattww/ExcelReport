@@ -659,6 +659,3 @@ flowchart LR
 - WorksheetStateBuilder は LayoutPlan をそのまま取り込み、  
   Excel に投影可能な WorksheetState / WorkbookState を構築する。
 - Renderer は WorksheetState を OpenXML へ機械的に写像し、最終的な .xlsx を出力する。
-
-この図により、「スタイル優先順位の最終決定が LayoutEngine にのみ存在し、  
-WorksheetState / Renderer 側には判断ロジックが残っていない」ことが一目で分かる。
