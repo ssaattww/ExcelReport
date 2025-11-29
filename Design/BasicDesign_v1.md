@@ -220,17 +220,15 @@ Optimizer Excel Report Library — Basic Design
 
 ## 6.1 依存関係一覧（直接依存）
 
-| モジュール | 直接依存先 | 主な利用目的 |
-|-----------|------------|--------------|
-| ReportGenerator | DslParser, LayoutEngine, WorksheetState, Renderer, Logger | テンプレート読み込み〜DSL パース〜レイアウト計画〜ワークブック状態生成（WorkbookState）〜xlsx 出力までの全体オーケストレーションと進捗・監査ログ収集 |
-| DslDefinition | なし | XSD/仕様として他モジュールに参照されるのみ（コード上の依存先は持たない） |
-| DslParser | DslDefinition, Logger | XSD に基づく構文検証と AST 構築、DSL 検証 Issue の生成・ロギング |
-| ExpressionEngine | Logger | C# 式評価時のエラーを Issue/ログとして記録 |
-| Styles | DslParser, Logger | DslParser が構築した StylesAst からグローバルスタイル辞書を構成し、scope 違反などを Warning としてロギング |
-| LayoutEngine | DslParser, ExpressionEngine, Styles, Logger | AST とスタイル定義・C# 式評価結果を用いて LayoutPlan を生成し、レイアウト上の問題を Issue/ログに記録 |
-| WorksheetState | LayoutEngine, Styles, Logger | LayoutPlan から WorksheetState（WorkbookState）を構築し、セル重複・結合不整合などの Issue を生成・ロギング |
-| Renderer | WorksheetState, Logger | WorksheetState を元に ClosedXML 等で xlsx を出力しつつ、Book/Sheet/CellBatch 単位の進捗と I/O エラーをロギング |
-| Logger | 共通 Issue モデルのみ | 各モジュールからの進捗・ログ・Issue を集約し、監査シート用データを提供（他のドメインモジュールには依存しない） |
+| モジュール | 直接依存先 |
+|-----------|------------|
+| ReportGenerator | DslParser / LayoutEngine / WorksheetState / Renderer / Logger |
+| DslParser | Styles / Logger |
+| Styles | Logger |
+| ExpressionEngine | Logger |
+| LayoutEngine | Styles / ExpressionEngine / Logger |
+| WorksheetState | Logger |
+| Renderer | WorksheetState / Logger |
 
 ## 6.2 レイヤ構造と依存方向（Mermaid 図）
 
