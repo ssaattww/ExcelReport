@@ -183,4 +183,53 @@ Optimizer Excel Report Library — Basic Design
 
 ---
 
+# 6. モジュール間依存関係
+
+## 6.1 依存関係一覧（直接依存）
+
+矢印は「左のモジュールが右のモジュールに依存する」ことを表す。
+
+| モジュール | 直接依存先 | 主な利用目的 |
+|-----------|------------|--------------|
+| ReportGenerator | DslParser, ExpressionEngine, LayoutEngine, WorksheetState, Renderer, Styles, Logger | テンプレート読み込み〜式評価〜レイアウト〜シート状態生成〜xlsx 出力までの全体オーケストレーションと進捗・監査ログ収集 |
+| DslDefinition | (なし) | XSD/仕様として他モジュールに参照されるのみ（コード上の依存先は持たない） |
+| DslParser | DslDefinition, Logger | XSD に基づく構文検証と AST 構築、DSL 検証 Issue の生成・ロギング |
+| ExpressionEngine | Logger | C# 式評価時のエラーを Issue/ログとして記録 |
+| Styles | DslParser, Logger | DslParser が構築した StylesAst からグローバルスタイル辞書を構成し、scope 違反などを Warning としてロギング |
+| LayoutEngine | DslParser, ExpressionEngine, Styles, Logger | AST とスタイル定義・C# 式評価結果を用いて LayoutPlan を生成し、レイアウト上の問題を Issue/ログに記録 |
+| WorksheetState | LayoutEngine, Styles, Logger | LayoutPlan から WorksheetState を構築し、セル重複・結合不整合などの Issue を生成・ロギング |
+| Renderer | WorksheetState, Logger | WorksheetState を元に ClosedXML 等で xlsx を出力しつつ、Book/Sheet/CellBatch 単位の進捗と I/O エラーをロギング |
+| Logger | (共通 Issue モデル) | 各モジュールからの進捗・ログ・Issue を集約し、監査シート用データを提供（他のドメインモジュールには依存しない） |
+
+---
+
+## 6.2 レイヤ構造と依存方向（Mermaid 図）
+
+```mermaid
+flowchart TD
+    ReportGenerator --> DslParser
+    DslParser --> DslDefinition
+    DslParser --> Styles
+    DslParser --> ExpressionEngine
+
+    Styles --> LayoutEngine
+    ExpressionEngine --> LayoutEngine
+
+    LayoutEngine --> WorksheetState
+    WorksheetState --> Renderer
+
+    ReportGenerator --> Styles
+    ReportGenerator --> ExpressionEngine
+    ReportGenerator --> LayoutEngine
+    ReportGenerator --> WorksheetState
+    ReportGenerator --> Renderer
+    ReportGenerator --> Logger
+
+    DslParser --> Logger
+    ExpressionEngine --> Logger
+    Styles --> Logger
+    LayoutEngine --> Logger
+    WorksheetState --> Logger
+    Renderer --> Logger
+```
 (以上)
