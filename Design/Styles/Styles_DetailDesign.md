@@ -85,7 +85,7 @@ BaseCell → HeaderCell → Inline
 
 ### 6.1 IStyleResolver
 
-```
+```csharp
 public interface IStyleResolver
 {
     StylePlan ResolveStyles(
@@ -110,7 +110,7 @@ WorksheetState は StylePlan を受け取り最終 StyleSnapshot を構築する
 
 DslParser によって構築された StylesAst を元に辞書化：
 
-```
+```csharp
 Dictionary<string, StyleAst> GlobalStyles
 ```
 
@@ -146,7 +146,7 @@ Styles モジュールは Fatal を生成しない。
 
 ## 11. 最小実装例（C#）
 
-```
+```csharp
 public sealed class StyleResolver : IStyleResolver
 {
     private readonly IReadOnlyDictionary<string, StyleAst> _globals;
