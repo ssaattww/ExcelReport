@@ -396,8 +396,6 @@ ReportGenerator はレポート生成パイプラインの統括者として、
 | モジュール | 依存理由（ReportGenerator から見た役割） |
 |-----------|--------------------------------------------|
 | IDslParser | テンプレート XML を AST (WorkbookAst) に変換 |
-| IExpressionEvaluator / ExpressionEngine | root データの設定と式評価準備 |
-| IStyleResolver / Styles | テンプレート内 style 要素の辞書化と scope 警告検知 |
 | ILayoutEngine | AST + root を元に LayoutPlan を生成 |
 | IWorksheetStateBuilder | LayoutPlan から WorkbookState を構築 |
 | IRenderer | WorkbookState から xlsx を物理出力 |
