@@ -92,49 +92,78 @@ Optimizer Excel Report Library — Basic Design
   - 名前付き範囲（Area）や formulaRef 計画の作成  
 - LayoutEngine は Excel オブジェクトを触らない（ClosedXML 不使用）。  
 - キャンセルポイントは基本不要（CPU 計算中心）。
-
+- LayoutEngine は Styles モジュールから得たスタイル情報（StylePlan）をもとに、  
+  スコープ・優先順位・競合解決を含む **スタイル適用結果を最終決定する**。  
+- WorksheetState / Renderer は、LayoutEngine が決定した結果  
+  （LayoutPlan + スタイル適用結果）を前提として動作し、  
+  **スタイル優先順位の再解決は行わない**。
 ---
 
 ## 2.6 WorksheetState（シート状態管理）
-**MUST**
-- **入力: LayoutPlan**  
-- 責務:
-  - セル占有管理（重複の禁止）  
-  - 結合セルの矩形性保証  
-  - スタイル結果の保持（あくまで論理 → 物理前の状態）  
-  - Issues.Error の生成（衝突や不整合）  
-- WorksheetState 自体は Excel 操作を行わない。
 
-**NICE**
-- 座標割付の疑似コード骨子（5〜10行）。
+**MUST**
+- **入力: LayoutPlan（論理レイアウト + 最終スタイル適用結果）**  
+- **出力: WorksheetState / WorkbookState（最終シート状態）**  
+- 責務:
+  - 行・列・セルの物理座標への展開  
+  - CellState（値 / 数式 / エラー）の構築  
+  - MergedRanges / NamedAreas / FormulaSeries の展開  
+  - **StyleSnapshot（Excel に投影可能な最終スタイル辞書）の構築・保持**  
+  - **SheetOptions（印刷設定・ビュー設定など）の確定・保持**  
+- WorksheetState は「Renderer に引き渡す最終状態」とし、  
+  **スタイル優先順位や衝突解決のロジックは持たない**（いずれも LayoutEngine 側で完了している前提）。  
+- WorksheetState オブジェクトは不変（read-only）として扱い、  
+  Renderer はこれを変更しない。
+
+**OUT**
+- セル内部の一時計算用キャッシュ戦略など、実装寄りの最適化。
+- Excel 具象ライブラリ（ClosedXML 等）の型への直接依存。
 
 ---
 
-## 2.7 Renderer（Excel 出力）
+## 2.7 Renderer（xlsx 出力）
+
 **MUST**
-- **入力: WorksheetState**  
-- **出力: xlsx（ClosedXML による物理生成）**  
+- **入力: WorkbookState / WorksheetState（最終状態）**  
+- **出力: xlsx ファイルまたはストリーム**  
 - 責務:
-  - セル値、Excel 数式、スタイル、塗り、罫線、結合の物理適用  
-  - AutoFilter / Freeze / Group の実装  
-  - Issues（Fatal以外）の注記シート生成  
-  - ファイル保存・ストリーム出力  
-  - 進捗レポートとキャンセル応答（I/O を含む唯一の層）
+  - WorksheetState の CellState / MergedRanges / NamedAreas / FormulaSeries を  
+    Excel(OpenXML) 上のセル・範囲・名前にマッピングすること。  
+  - WorksheetState が保持する **StyleSnapshot** を、  
+    Excel のスタイル（セルスタイル / 書式 / 塗り / 罫線 等）として機械的に適用すること。  
+  - WorksheetState が保持する **SheetOptions**（印刷設定・ビュー設定 等）を  
+    該当シートに反映すること。  
+  - Book / Sheet / CellBatch の進捗通知、および I/O エラーの Logger への記録。  
+- Renderer は **WorksheetState の内容を一切変更しない**。  
+- Renderer は **スタイルの優先順位や衝突解決の判断を行わない**。  
+  （StyleSnapshot は WorksheetState 構築時点で完全に確定している前提。）
+
+**OUT**
+- Excel 内部 XML 要素名の列挙や、ClosedXML の API 詳細。  
+- パフォーマンスチューニング（バッファサイズ・ストリーム戦略など）の実装詳細。
 
 ---
 
 ## 2.8 Styles（スタイル管理）
-**MUST**
-- スタイルは以下の 2 系統から読み込める:
-  1. **workbook 内 `<styles>`**  
-  2. **外部 XML ファイル** からの読込  
-     - ※具体的な DSL 構文（例: `href` など）は **詳細設計で定義する**。  
-       BasicDesign では「外部化あり」の要求だけを記述する。
-- スタイル適用順（sheet → component → grid → cell）の一方向性。  
-- scope（cell/grid/both）と警告の扱い（詳細設計に従う）。
 
-**NICE**
-- 代表スタイル例（Header / Body）。
+**MUST**
+- **入力: DSL テンプレート内 `<styles>` 要素、および外部スタイル定義ファイル**  
+- **出力: LayoutEngine が消費可能な中間スタイル定義（StyleDefinition / StylePlan 等）**  
+- 責務:
+  - DSL / 外部 XML からのスタイル定義の読込。  
+  - スコープ（cell / grid / both）や対象要素の検証。  
+  - 型・必須属性・参照整合性の検証。  
+  - font / fill / border / numberFormat など、論理スタイル要素への正規化。  
+  - LayoutEngine が「スタイル適用優先順位の最終決定」を行えるよう、  
+    **スタイル定義と適用条件を情報落ちなく StylePlan として提供すること。**  
+- Styles 自体は、  
+  **スタイル優先順位の最終決定・複数スタイルの合成・StyleSnapshot の構築は行わない。**  
+  これらは LayoutEngine（論理合成）および WorksheetStateBuilder（物理展開）の責務とする。
+
+**OUT**
+- Excel 実体のスタイル ID 採番や、Workbook 内のスタイル辞書構築。  
+  （これは WorksheetState / Renderer 側の詳細設計で扱う。）  
+- 個々のスタイルプロパティの全列挙（詳細は DSL 定義／XSD に委譲）。
 
 ---
 
