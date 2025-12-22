@@ -92,7 +92,7 @@ XSD 上の型: `WorkbookType`。
 - 構造:
 
 ```xml
-<sheet name="Summary" rows="40" cols="4">
+<sheet name="Summary">
   <use .../>
   <cell .../>
   <grid>...</grid>
@@ -103,7 +103,6 @@ XSD 上の型: `WorkbookType`。
 
 - 属性:
   - `name` : シート名。
-  - `rows`, `cols` : 想定最大行数・列数。
 - 子要素:
   - 任意個の `styleRef` / `style`（シート全体スタイル）。
   - 任意個の `cell` / `use` / `grid` / `repeat`。
