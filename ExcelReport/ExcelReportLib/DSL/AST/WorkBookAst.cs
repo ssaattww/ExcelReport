@@ -8,21 +8,24 @@ namespace ExcelReportLib.DSL.AST
     public sealed class WorkbookAst
     {
         public StylesAst? Styles { get; init; }         // <styles>（任意）
+        
         public IReadOnlyList<ComponentAst>? Components { get; init; } // <component>*
+        public IReadOnlyList<ComponentImportAst>? ComponentInports { get; init; } // <componentImport>*
         public IReadOnlyList<SheetAst> Sheets { get; init; } =default!; // <sheet>+
 
-        public IReadOnlyList<ComponentImportAst>? ComponentInports { get; init; } // <componentImport>*
 
         public SourceSpan? Span { get; init; }
 
         public string FilePath { get; init; } = string.Empty; // この AST が生成されたファイルのパス
 
 
-        public WorkbookAst(XElement workbookElem, List<Issue> issues, string filePath = "")
+        public WorkbookAst(XElement workbookElem, List<Issue> issues, string? filePath = null)
         {
             // ルート <workbook> 要素から各子要素を AST に変換する。
+            var dslDir = filePath is null ? "" : Path.GetDirectoryName(filePath) ?? "";
+            
             var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + StylesAst.TagName);
-            StylesAst? stylesAst = stylesElem != null ? new StylesAst(stylesElem, issues) : null;
+            StylesAst? stylesAst = stylesElem != null ? new StylesAst(stylesElem, issues, dslDir) : null;
 
             var componentElems = workbookElem.Elements(workbookElem.Name.Namespace + ComponentAst.TagName);
             var components = componentElems.Select(e => new ComponentAst(e, issues)).ToList();
@@ -31,7 +34,7 @@ namespace ExcelReportLib.DSL.AST
             var sheets = sheetElems.Select(e => new SheetAst(e, issues)).ToList();
 
             var componentImportsElems = workbookElem.Elements(workbookElem.Name.Namespace + ComponentImportAst.TagName);
-            var componentImports = componentImportsElems.Select(e => new ComponentImportAst(e, issues)).ToList();
+            var componentImports = componentImportsElems.Select(e => new ComponentImportAst(e, issues, dslDir)).ToList();
 
             Styles = stylesAst;
             Components = components;
