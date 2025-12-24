@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST.LayoutNode
 {
-    public class LayoutNodeAst : IAst<LayoutNodeAst>
+    public abstract class LayoutNodeAst : IAst<LayoutNodeAst>
     {
         /// <summary>
         /// attributes

@@ -10,19 +10,24 @@ namespace ExcelReportLib.DSL.AST
         public StylesAst? Styles { get; init; }         // <styles>（任意）
         public IReadOnlyList<ComponentAst> Components { get; init; } = Array.Empty<ComponentAst>(); // <component>*
         public IReadOnlyList<SheetAst> Sheets { get; init; } = Array.Empty<SheetAst>(); // <sheet>+
+
+        public IReadOnlyList<ComponentImportAst> ComponentInports { get; init; } = Array.Empty<ComponentImportAst>(); // <componentImport>*
+
         public SourceSpan? Span { get; init; }
 
+        public string FilePath { get; init; } = string.Empty; // この AST が生成されたファイルのパス
 
-        public WorkbookAst(XElement workbookElem, List<Issue> issues)
+
+        public WorkbookAst(XElement workbookElem, List<Issue> issues, string filePath = "")
         {
             // ルート <workbook> 要素から各子要素を AST に変換する。
-            var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + "styles");
+            var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + StylesAst.TagName);
             StylesAst? stylesAst = stylesElem != null ? new StylesAst(stylesElem, issues) : null;
 
-            var componentElems = workbookElem.Elements(workbookElem.Name.Namespace + "component");
+            var componentElems = workbookElem.Elements(workbookElem.Name.Namespace + ComponentAst.TagName);
             var components = componentElems.Select(e => new ComponentAst(e, issues)).ToList();
 
-            var sheetElems = workbookElem.Elements(workbookElem.Name.Namespace + "sheet");
+            var sheetElems = workbookElem.Elements(workbookElem.Name.Namespace + SheetAst.TagName);
             var sheets = sheetElems.Select(e => new SheetAst(e, issues)).ToList();
 
             Styles = stylesAst;

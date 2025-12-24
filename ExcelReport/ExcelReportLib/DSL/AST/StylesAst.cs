@@ -11,6 +11,8 @@ namespace ExcelReportLib.DSL.AST
 
         public IReadOnlyList<StyleRefAst>? StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
         public IReadOnlyList<StyleAst>? Styles { get; init; }
+        public IReadOnlyList<StyleImportAst>? styleImportAsts  { get; init; } 
+
 
         public SourceSpan? Span { get; init; }
 
