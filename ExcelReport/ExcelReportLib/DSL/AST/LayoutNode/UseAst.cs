@@ -8,13 +8,13 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// <summary>
     /// 別定義のコンポーネントを使用することを表すASTノード
     /// </summary>
-    public sealed class UseAst : LayoutNodeAst, IAst<UseAst>
+    public sealed class UseAst : LayoutNodeAst
     {
         public static string TagName => "use";
         public string ComponentName { get; init; } = string.Empty;
         public string? InstanceName { get; init; }
         public string? WithExprRaw { get; init; }
-        public UseAst(XElement elem, List<Issue> issues) :base(elem, issues)
+        public UseAst(XElement elem, List<Issue> issues)
         {
             var nameAttr = elem.Attribute("component");
             if (nameAttr == null)

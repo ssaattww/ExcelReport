@@ -52,12 +52,12 @@ namespace ExcelReportLib.DSL.AST
             int rowSpan = 1;
             int colSpan = 1;
             string? whenExprRaw = null;
-            var rowAttr = elem.Attribute("row");
+            var rowAttr = elem.Attribute("r");
             if (rowAttr != null && int.TryParse(rowAttr.Value, out var r))
             {
                 row = r;
             }
-            var colAttr = elem.Attribute("col");
+            var colAttr = elem.Attribute("c");
             if (colAttr != null && int.TryParse(colAttr.Value, out var c))
             {
                 col = c;

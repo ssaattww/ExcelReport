@@ -8,10 +8,10 @@ namespace ExcelReportLib.DSL.AST
     public sealed class WorkbookAst
     {
         public StylesAst? Styles { get; init; }         // <styles>（任意）
-        public IReadOnlyList<ComponentAst> Components { get; init; } = Array.Empty<ComponentAst>(); // <component>*
-        public IReadOnlyList<SheetAst> Sheets { get; init; } = Array.Empty<SheetAst>(); // <sheet>+
+        public IReadOnlyList<ComponentAst>? Components { get; init; } // <component>*
+        public IReadOnlyList<SheetAst> Sheets { get; init; } =default!; // <sheet>+
 
-        public IReadOnlyList<ComponentImportAst> ComponentInports { get; init; } = Array.Empty<ComponentImportAst>(); // <componentImport>*
+        public IReadOnlyList<ComponentImportAst>? ComponentInports { get; init; } // <componentImport>*
 
         public SourceSpan? Span { get; init; }
 
@@ -30,8 +30,12 @@ namespace ExcelReportLib.DSL.AST
             var sheetElems = workbookElem.Elements(workbookElem.Name.Namespace + SheetAst.TagName);
             var sheets = sheetElems.Select(e => new SheetAst(e, issues)).ToList();
 
+            var componentImportsElems = workbookElem.Elements(workbookElem.Name.Namespace + ComponentImportAst.TagName);
+            var componentImports = componentImportsElems.Select(e => new ComponentImportAst(e, issues)).ToList();
+
             Styles = stylesAst;
             Components = components;
+            ComponentInports = (componentImports.Count == 0) ? null : componentImports;
             Sheets = sheets;
             Span = SourceSpan.CreateSpanAttributes(workbookElem);
         }

@@ -7,5 +7,7 @@ namespace ExcelReportLib.DSL.AST
     internal interface ICellAst : IAst<ICellAst>
     {
         public IReadOnlyList<StyleRefAst> StyleRefs { get; }
+
+        public Placement Placement { get; }
     }
 }

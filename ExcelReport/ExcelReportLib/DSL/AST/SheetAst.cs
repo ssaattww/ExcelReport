@@ -33,7 +33,7 @@ namespace ExcelReportLib.DSL.AST
 
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
-            var children = layoutElems.Select(e => new LayoutNodeAst(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
+            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
 
             Name = name;
             StyleRefs = styles;

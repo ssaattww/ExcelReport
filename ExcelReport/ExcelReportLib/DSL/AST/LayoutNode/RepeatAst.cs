@@ -8,7 +8,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// <summary>
     /// レイアウトノードを繰り返すことを表すASTノード
     /// </summary>
-    public sealed class RepeatAst : LayoutNodeAst, IAst<RepeatAst>
+    public sealed class RepeatAst : LayoutNodeAst
     {
         public static string TagName => "repeat";
         /// <summary>
@@ -47,7 +47,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// <param name="repeatElem">repeat要素</param>
         /// <param name="issues">エラー集約</param>
         /// <returns>RepeatAST</returns>
-        public RepeatAst(XElement repeatElem, List<Issue> issues): base(repeatElem, issues)
+        public RepeatAst(XElement repeatElem, List<Issue> issues)
         {
             var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
 
@@ -95,7 +95,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
                     Span = SourceSpan.CreateSpanAttributes(repeatElem)
                 });
             }
-            LayoutNodeAst? body = layoutElems?.Select(e => new LayoutNodeAst(e, issues)).FirstOrDefault() ?? null;
+            LayoutNodeAst? body = layoutElems?.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).FirstOrDefault() ?? null;
             
             Name = nameStr;
             VarName = varNameStr;

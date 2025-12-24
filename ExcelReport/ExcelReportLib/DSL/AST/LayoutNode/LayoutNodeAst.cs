@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST.LayoutNode
 {
-    public abstract class LayoutNodeAst : IAst<LayoutNodeAst>
+    public abstract class LayoutNodeAst : ICellAst
     {
         /// <summary>
         /// attributes
@@ -28,22 +28,23 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             [CellAst.TagName] = (elem, issues) => new CellAst(elem, issues),
         };
         public static readonly ISet<string> AllowedLayoutNodeNames = new HashSet<string>(LayoutNodeFactories.Keys, StringComparer.Ordinal);
-        public LayoutNodeAst(XElement elem, List<Issue> issues)
+        public static LayoutNodeAst LayoutNodeAstFactory(XElement elem, List<Issue> issues)
         {
             if (!LayoutNodeFactories.TryGetValue(elem.Name.LocalName, out var factory))
             {
-                ThrowUnknownLayoutNode(elem, issues);
-                return;
+                return ThrowUnknownLayoutNode(elem, issues);
             }
 
             var layoutNodeAst = factory(elem, issues);
 
             var styleElems = elem.Elements(elem.Name.Namespace + "styleRef");
             var styles = styleElems.Select(e => new StyleRefAst(e, issues)).ToList();
+            
+            layoutNodeAst.StyleRefs = styles;
+            layoutNodeAst.Span = SourceSpan.CreateSpanAttributes(elem);
+            layoutNodeAst.Placement = Placement.ParsePlacementAttributes(elem, issues);
+            return layoutNodeAst;
 
-            Placement = Placement.ParsePlacementAttributes(elem, issues);
-            Span = SourceSpan.CreateSpanAttributes(elem);
-            StyleRefs = styles;
         }
 
         private static LayoutNodeAst ThrowUnknownLayoutNode(

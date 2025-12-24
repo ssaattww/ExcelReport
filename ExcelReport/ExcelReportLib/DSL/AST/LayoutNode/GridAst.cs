@@ -11,10 +11,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
 
         public IReadOnlyDictionary<Placement, LayoutNodeAst> Children { get; init; } = default!;
 
-        public GridAst(XElement elem, List<Issue> issues) : base(elem, issues)
+        public GridAst(XElement elem, List<Issue> issues)
         {
             var layoutElems = elem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
-            var children = layoutElems.Select(e => new LayoutNodeAst(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
+            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
 
             Children = children.ToDictionary(e => e.Place, e => e.Child);
         }
