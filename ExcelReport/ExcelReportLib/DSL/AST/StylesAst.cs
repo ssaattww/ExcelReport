@@ -23,7 +23,7 @@ namespace ExcelReportLib.DSL.AST
             var styleElems = stylesElem.Elements(stylesElem.Name.Namespace + StyleAst.TagName);
             var styles = styleElems.Select(e => new StyleAst(e, issues)).ToList();
 
-            var styleImportsElems = styleElems.Elements(stylesElem.Name.Namespace + StyleImportAst.TagName);
+            var styleImportsElems = stylesElem.Elements(stylesElem.Name.Namespace + StyleImportAst.TagName);
             var styleImports = styleImportsElems.Select(e => new StyleImportAst(e, issues, dslDir)).ToList();
 
             Styles = styles;

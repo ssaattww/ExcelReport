@@ -22,7 +22,8 @@ namespace ExcelReportLib.DSL.AST
         public WorkbookAst(XElement workbookElem, List<Issue> issues, string? filePath = null)
         {
             // ルート <workbook> 要素から各子要素を AST に変換する。
-            var dslDir = filePath is null ? "" : Path.GetDirectoryName(filePath) ?? "";
+            // ルートのファイルパスが与えられた場合、それを基準に相対パスを解決する。失敗したら空文字列
+            var dslDir = (filePath is null) ? "" : Path.GetDirectoryName(filePath) ?? "";
             
             var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + StylesAst.TagName);
             StylesAst? stylesAst = stylesElem != null ? new StylesAst(stylesElem, issues, dslDir) : null;

@@ -7,8 +7,14 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL
 {
-    static class DslParser
+    public static class DslParser
     {
+        public static DslParseResult ParseFromFile(string filePath, DslParserOptions? parseOptions=null)
+        {
+            parseOptions ??= new DslParserOptions { RootFilePath = filePath};
+            using var stream = System.IO.File.OpenRead(filePath);
+            return ParseFromStream(stream, parseOptions);
+        }
         public static DslParseResult ParseFromText(string xmlText, DslParserOptions? parseOptions=null)
         {
             parseOptions ??= new DslParserOptions();
@@ -45,8 +51,15 @@ namespace ExcelReportLib.DSL
             //        return new DslParseResult { Root = null, Issues = issues };
             //    }
             //}
-
-            var root = new WorkbookAst(doc.Root!, issues);
+            WorkbookAst root;
+            if (options.RootFilePath is not null)
+            {
+                root = new WorkbookAst(doc.Root!, issues, options.RootFilePath);
+            }
+            else
+            {
+                root = new WorkbookAst(doc.Root!, issues);
+            }
 
             ValidateDsl(root, issues, options);
 
@@ -97,6 +110,8 @@ namespace ExcelReportLib.DSL
 
         /// <summary>C# 式の構文エラーを Fatal として扱うか。</summary>
         public bool TreatExpressionSyntaxErrorAsFatal { get; init; } = true;
+
+        public string? RootFilePath { get; init; }
     }
 
     public enum IssueSeverity
@@ -118,7 +133,10 @@ namespace ExcelReportLib.DSL
         UndefinedRequiredElement,  // component 要素内に body がないなど必須要素の未定義
         UndefinedComponent,
         UndefinedStyle,
-        
+
+        // ファイル以外から読み込んだ
+        LoadFile,
+
         InvalidAttributeValue, // 属性値が不正。パースに失敗した場合など
         
         DuplicateComponentName,
