@@ -28,7 +28,7 @@ namespace ExcelReportLib.DSL.AST
             var styles = styleElems.Select(e => new StyleRefAst(e, issues)).ToList();
 
             // オプションの解析
-            var optionsElem = sheetElem.Element(sheetElem.Name.Namespace + "options");
+            var optionsElem = sheetElem.Element(sheetElem.Name.Namespace + SheetOptionsAst.TagName);
             SheetOptionsAst? options = optionsElem != null ? new SheetOptionsAst(optionsElem, issues) : null;
 
             // レイアウトノードの解析

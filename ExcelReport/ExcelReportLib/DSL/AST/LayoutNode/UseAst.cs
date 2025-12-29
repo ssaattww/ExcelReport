@@ -14,6 +14,13 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public string ComponentName { get; init; } = string.Empty;
         public string? InstanceName { get; init; }
         public string? WithExprRaw { get; init; }
+
+        /// <summary>
+        /// コンポーネント参照先（解析フェーズで設定される）s
+        /// </summary>
+        public LayoutNodeAst ComponentRef { get; set; } = default!; 
+
+
         public UseAst(XElement elem, List<Issue> issues)
         {
             var nameAttr = elem.Attribute("component");

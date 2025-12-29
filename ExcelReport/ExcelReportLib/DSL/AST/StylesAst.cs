@@ -9,8 +9,6 @@ namespace ExcelReportLib.DSL.AST
     public sealed class StylesAst : IAst<StylesAst>
     {
         public static string TagName => "styles";
-
-        public IReadOnlyList<StyleRefAst>? StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
         public IReadOnlyList<StyleAst>? Styles { get; init; }
         public IReadOnlyList<StyleImportAst>? StyleImportAsts  { get; init; } 
 

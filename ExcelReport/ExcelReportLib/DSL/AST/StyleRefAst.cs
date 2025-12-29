@@ -13,7 +13,17 @@ namespace ExcelReportLib.DSL.AST
         public static string TagName => "styleRef";
         public string Name { get; init; } = string.Empty;
         public SourceSpan? Span { get; init; }
-        public IReadOnlyList<StyleRefAst> StyleRefs => Array.Empty<StyleRefAst>();
+
+        /// <summary>
+        /// 入れ子になっているスタイル参照
+        /// </summary>
+        public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
+
+        /// <summary>
+        /// スタイル参照 解析フェーズで設定される
+        /// </summary>
+        public StylesAst StylesRef { get; set; }
+
         public StyleRefAst(XElement styleRefElem, List<Issue> issues)
         {
             // <styleRef> 要素から StyleRefAst を構築する。
@@ -31,8 +41,12 @@ namespace ExcelReportLib.DSL.AST
                 return;
             }
 
+            var styleRefsElems = styleRefElem.Elements(styleRefElem.Name.Namespace + TagName);
+            var styleRefs = styleRefsElems.Select(e => new StyleRefAst(e, issues)).ToList();
+
             Name = name;
             Span = SourceSpan.CreateSpanAttributes(styleRefElem);
+            StyleRefs = styleRefs;
         }
     }
 }
