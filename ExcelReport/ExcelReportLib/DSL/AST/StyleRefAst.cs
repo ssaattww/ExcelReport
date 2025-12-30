@@ -22,7 +22,7 @@ namespace ExcelReportLib.DSL.AST
         /// <summary>
         /// スタイル参照 解析フェーズで設定される
         /// </summary>
-        public StylesAst StylesRef { get; set; }
+        public StyleAst StyleRef { get; set; }
 
         public StyleRefAst(XElement styleRefElem, List<Issue> issues)
         {

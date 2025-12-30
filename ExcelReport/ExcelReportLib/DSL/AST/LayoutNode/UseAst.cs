@@ -36,9 +36,6 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             }
             var instanceAttr = elem.Attribute("instance");
             var withAttr = elem.Attribute("with");
-            // スタイル参照の解析
-            var styleElems = elem.Elements(elem.Name.Namespace + "styleRef");
-            var styles = styleElems.Select(e => new StyleRefAst(e, issues)).ToList();
 
             ComponentName = nameAttr.Value;
             InstanceName = instanceAttr?.Value;

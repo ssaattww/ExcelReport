@@ -17,7 +17,9 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// </summary>
         public SourceSpan? Span { get; private set; }
 
-        public IReadOnlyList<StyleRefAst> StyleRefs { get; private set; } = new List<StyleRefAst>();
+        public IReadOnlyList<StyleRefAst> StyleRefs { get; private set; }
+
+        public IReadOnlyList<StyleAst> Style { get; private set; }
 
         private static readonly IReadOnlyDictionary<string, Func<XElement, List<Issue>, LayoutNodeAst>>LayoutNodeFactories =
         new Dictionary<string, Func<XElement, List<Issue>, LayoutNodeAst>>(StringComparer.Ordinal)
@@ -28,6 +30,8 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             [CellAst.TagName] = (elem, issues) => new CellAst(elem, issues),
         };
         public static readonly ISet<string> AllowedLayoutNodeNames = new HashSet<string>(LayoutNodeFactories.Keys, StringComparer.Ordinal);
+
+
         public static LayoutNodeAst LayoutNodeAstFactory(XElement elem, List<Issue> issues)
         {
             if (!LayoutNodeFactories.TryGetValue(elem.Name.LocalName, out var factory))
@@ -37,10 +41,14 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
 
             var layoutNodeAst = factory(elem, issues);
 
-            var styleElems = elem.Elements(elem.Name.Namespace + "styleRef");
-            var styles = styleElems.Select(e => new StyleRefAst(e, issues)).ToList();
+            var styleRefElems = elem.Elements(elem.Name.Namespace + StyleRefAst.TagName);
+            var stylerefs = styleRefElems.Select(e => new StyleRefAst(e, issues)).ToList();
             
-            layoutNodeAst.StyleRefs = styles;
+            var styleElems = elem.Elements(elem.Name.Namespace + StyleAst.TagName);
+            var styles = styleElems.Select(e => new StyleAst(e, issues)).ToList();
+
+            layoutNodeAst.StyleRefs = stylerefs;
+            layoutNodeAst.Style = styles;
             layoutNodeAst.Span = SourceSpan.CreateSpanAttributes(elem);
             layoutNodeAst.Placement = Placement.ParsePlacementAttributes(elem, issues);
             return layoutNodeAst;

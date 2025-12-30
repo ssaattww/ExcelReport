@@ -12,7 +12,8 @@ namespace ExcelReportLib.DSL.AST
         public SourceSpan? Span { get; init; }
         public string Name { get; init; } = string.Empty;  // @name
         public LayoutNodeAst Body { get; init; } = default!; // <grid>|<repeat>を想定<cell>や<use>が来た場合componentの定義として意味ないけれど破綻はしないので許容する
-        public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = default!;
+        public IReadOnlyList<StyleRefAst> StyleRefs { get; init; }
+        public IReadOnlyList<StyleAst> Style { get; init; }
 
         public Placement Placement { get; init; } = default!;
 
@@ -46,7 +47,13 @@ namespace ExcelReportLib.DSL.AST
 
             var ns = componentElem.Name.Namespace;
             var stylesElem = componentElem.Elements(ns + StyleAst.TagName);
+            var styles = stylesElem.Select(e => new StyleAst(e, issues)).ToList();
 
+            var styleRefsElem = componentElem.Elements(ns + StyleRefAst.TagName);
+            var styleRefs = styleRefsElem.Select(e => new StyleRefAst(e, issues)).ToList();
+
+            StyleRefs = styleRefs;
+            Style = styles;
             Name = nameAttr.Value;
             Body = bodyAst;
             Span = SourceSpan.CreateSpanAttributes(componentElem);
