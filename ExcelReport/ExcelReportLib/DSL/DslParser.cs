@@ -1,4 +1,5 @@
 ﻿using ExcelReportLib.DSL.AST;
+using ExcelReportLib.DSL.AST.LayoutNode;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -62,6 +63,8 @@ namespace ExcelReportLib.DSL
             }
 
             ValidateDsl(root, issues, options);
+            ResolveStyleRefs(root, issues);
+            ResolveComponentRefs(root, issues);
 
             return new DslParseResult
             {
@@ -70,6 +73,212 @@ namespace ExcelReportLib.DSL
             };
         }
 
+        /// <summary>
+        /// use 要素の componentRef を解決する。
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="issues"></param>
+        private static void ResolveComponentRefs(WorkbookAst root, List<Issue> issues)
+        {
+            var componentMap = new Dictionary<string, LayoutNodeAst>(StringComparer.Ordinal);
+
+            void AddComponent(ComponentAst comp, SourceSpan? span)
+            {
+                if (componentMap.ContainsKey(comp.Name))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.DuplicateComponentName,
+                        Message = $"Component 名が重複しています: {comp.Name}",
+                        Span = span
+                    });
+                    return;
+                }
+                componentMap[comp.Name] = comp.Body;
+            }
+
+            if (root.Components != null)
+                foreach (var c in root.Components)
+                    AddComponent(c, c.Span);
+
+            if (root.ComponentInports != null)
+                foreach (var imp in root.ComponentInports)
+                    foreach (var c in imp.Components.ComponentList)
+                        AddComponent(c, c.Span);
+
+            foreach (var use in EnumerateLayoutNodes(root).OfType<UseAst>())
+            {
+                if (componentMap.TryGetValue(use.ComponentName, out var body))
+                    use.ComponentRef = body;
+                else
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.UndefinedComponent,
+                        Message = $"未定義の component 参照: {use.ComponentName}",
+                        Span = use.Span
+                    });
+            }
+        }
+
+        /// <summary>
+        /// StyleRef を解決する。
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="issues"></param>
+        private static void ResolveStyleRefs(WorkbookAst root, List<Issue> issues)
+        {
+            var styleIndex = new Dictionary<string, StyleAst>(StringComparer.Ordinal);
+
+            /// <summary>
+            /// スタイル定義をインデックス化する。
+            /// </summary>  
+            void IndexStyles(StylesAst? styles)
+            {
+                if (styles?.Styles == null) return;
+                foreach (var s in styles.Styles)
+                {
+                    if (styleIndex.ContainsKey(s.Name))
+                    {
+                        issues.Add(new Issue
+                        {
+                            Severity = IssueSeverity.Error,
+                            Kind = IssueKind.DuplicateStyleName,
+                            Message = $"Style 名が重複しています: {s.Name}",
+                            Span = s.Span
+                        });
+                        continue;
+                    }
+                    styleIndex[s.Name] = s;
+                }
+
+                if (styles.StyleImportAsts != null)
+                {
+                    foreach (var imp in styles.StyleImportAsts)
+                    {
+                        if (imp?.StylesAst != null)
+                            IndexStyles(imp.StylesAst);
+                    }
+                }
+            }
+
+            // ルート styles
+            IndexStyles(root.Styles);
+
+            // componentImport 側の styles を使いたい場合は
+            // ComponentImportAst に Styles を積む or ここで取り込む
+            if (root.ComponentInports != null)
+            {
+                foreach (var imp in root.ComponentInports)
+                {
+                    if (imp.Styles != null)
+                        IndexStyles(imp.Styles);
+                }
+            }
+
+            /// <summary>
+            /// 入れ子になっている styleRef をすべて列挙する。
+            /// yeild returnで列挙後、もう一度呼び出したときにstackに子要素を追加していくことで遅延実行している。
+            /// </summary>
+            IEnumerable<StyleRefAst> EnumerateStyleRefs(IEnumerable<StyleRefAst> roots)
+            {
+                var stack = new Stack<StyleRefAst>(roots);
+                while (stack.Count > 0)
+                {
+                    var cur = stack.Pop();
+                    yield return cur;
+                    foreach (var child in cur.StyleRefs)
+                        stack.Push(child);
+                }
+            }
+
+            var allStyleRefs = new List<StyleRefAst>();
+
+            // sheet 直下
+            foreach (var sheet in root.Sheets)
+                allStyleRefs.AddRange(sheet.StyleRefs);
+
+            // layout nodes 直下
+            foreach (var node in EnumerateLayoutNodes(root))
+                allStyleRefs.AddRange(node.StyleRefs);
+
+            foreach (var styleRef in EnumerateStyleRefs(allStyleRefs))
+            {
+                if (styleIndex.TryGetValue(styleRef.Name, out var stylesAst))
+                    styleRef.StyleRef = stylesAst;
+                else
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.UndefinedStyle,
+                        Message = $"未定義の style 参照: {styleRef.Name}",
+                        Span = styleRef.Span
+                    });
+            }
+        }
+
+        /// <summary>
+        /// 全ての LayoutNodeAst を列挙する。
+        /// </summary>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private static IEnumerable<LayoutNodeAst> EnumerateLayoutNodes(WorkbookAst root)
+        {
+            foreach (var sheet in root.Sheets)
+            {
+                foreach (var node in sheet.Children.Values)
+                {
+                    foreach (var n in EnumerateLayoutNodes(node))
+                        yield return n;
+                }
+            }
+
+            if (root.Components != null)
+            {
+                foreach (var comp in root.Components)
+                {
+                    foreach (var n in EnumerateLayoutNodes(comp.Body))
+                        yield return n;
+                }
+            }
+
+            if (root.ComponentInports != null)
+            {
+                foreach (var import in root.ComponentInports)
+                {
+                    foreach (var comp in import.Components.ComponentList)
+                    {
+                        foreach (var n in EnumerateLayoutNodes(comp.Body))
+                            yield return n;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<LayoutNodeAst> EnumerateLayoutNodes(LayoutNodeAst node)
+        {
+            yield return node;
+
+            switch (node)
+            {
+                case GridAst grid:
+                    foreach (var child in grid.Children.Values)
+                        foreach (var n in EnumerateLayoutNodes(child))
+                            yield return n;
+                    break;
+
+                case RepeatAst repeat:
+                    if (repeat.Body != null)
+                    {
+                        foreach (var n in EnumerateLayoutNodes(repeat.Body))
+                            yield return n;
+                    }
+                    break;
+
+                // UseAst / CellAst は子を持たない
+            }
+        }
         //private static void ValidateWithSchema(XDocument doc, List<Issue> issues)
         //{
         //    // XmlReaderSettings に _schemaSet を設定し、検証イベントで Issue を追加する。
