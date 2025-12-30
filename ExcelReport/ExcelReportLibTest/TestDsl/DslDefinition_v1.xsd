@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="urn:excelreport:v1"
+  xmlns="urn:excelreport:v1"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified">
+
+  <!-- 式文字列（C#式を文字列として格納） -->
+  <xs:simpleType name="ExprString">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+
+  <!-- bool式（C#式を文字列として格納） -->
+  <xs:simpleType name="BoolExpr">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+
+  <!-- 正の整数（>=1） -->
+  <xs:simpleType name="PositiveInt1">
+    <xs:restriction base="xs:positiveInteger">
+      <xs:minInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- 罫線種別 -->
+  <xs:simpleType name="BorderStyleEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="thin"/>
+      <xs:enumeration value="medium"/>
+      <xs:enumeration value="thick"/>
+      <xs:enumeration value="dashed"/>
+      <xs:enumeration value="dotted"/>
+      <xs:enumeration value="double"/>
+      <xs:enumeration value="hairline"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- 罫線モード: grid外枠 / grid全体 -->
+  <xs:simpleType name="BorderModeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="outer"/>
+      <xs:enumeration value="all"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ルート -->
+  <xs:element name="workbook" type="WorkbookType"/>
+
+  <xs:complexType name="WorkbookType">
+    <xs:sequence>
+      <xs:element name="styles" type="StylesType" minOccurs="0" maxOccurs="1"/>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="component"       type="ComponentType"/>
+        <xs:element name="componentImport" type="ComponentImportType"/>
+      </xs:choice>
+      <xs:element name="sheet" type="SheetType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- コンポーネント定義ブロック（外部ファイル用） -->
+  <xs:complexType name="ComponentsType">
+    <xs:sequence>
+      <!-- 外部コンポーネントファイル内でローカルまたはインポートされたスタイルを保持する -->
+      <xs:element name="styles" type="StylesType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="component" type="ComponentType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- コンポーネントインポート -->
+  <xs:complexType name="ComponentImportType">
+    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+
+  <!-- components 単独ルート用（外部コンポーネントファイル用） -->
+  <xs:element name="components" type="ComponentsType"/>
+
+  <!-- スタイル定義ブロック -->
+  <xs:complexType name="StylesType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="style"  type="StyleType"/>
+        <xs:element name="import" type="StylesImportType"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- 外部スタイルインポート -->
+  <xs:complexType name="StylesImportType">
+    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+
+  <!-- styles 単独ルート用（外部スタイルファイル用） -->
+  <xs:element name="styles" type="StylesType"/>
+
+  <!-- フォント -->
+  <xs:complexType name="FontType">
+    <xs:attribute name="name"      type="xs:string"/>
+    <xs:attribute name="size"      type="xs:decimal"/>
+    <xs:attribute name="bold"      type="xs:boolean"/>
+    <xs:attribute name="italic"    type="xs:boolean"/>
+    <xs:attribute name="underline" type="xs:boolean"/>
+  </xs:complexType>
+
+  <!-- 塗り -->
+  <xs:complexType name="FillType">
+    <xs:attribute name="color" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- 罫線 -->
+  <xs:complexType name="BorderType">
+    <xs:attribute name="mode"   type="BorderModeEnum"/>
+    <xs:attribute name="top"    type="BorderStyleEnum"/>
+    <xs:attribute name="bottom" type="BorderStyleEnum"/>
+    <xs:attribute name="left"   type="BorderStyleEnum"/>
+    <xs:attribute name="right"  type="BorderStyleEnum"/>
+    <xs:attribute name="color"  type="xs:string"/>
+  </xs:complexType>
+
+  <!-- 表示形式 -->
+  <xs:complexType name="NumberFormatType">
+    <xs:attribute name="code" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- グローバル style 定義 -->
+  <xs:complexType name="StyleType">
+    <xs:sequence>
+      <xs:element name="font"         type="FontType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="fill"         type="FillType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="border"       type="BorderType"       minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="numberFormat" type="NumberFormatType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name"  type="xs:string"      use="required"/>
+  </xs:complexType>
+
+<!-- インライン style 用 -->
+  <xs:complexType name="LocalStyleType">
+    <xs:sequence>
+      <xs:element name="font"         type="FontType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="fill"         type="FillType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="border"       type="BorderType"       minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="numberFormat" type="NumberFormatType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- style 参照 -->
+  <xs:complexType name="StyleRefType">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- sheet（特殊な grid） -->
+  <xs:complexType name="SheetType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="styleRef"    type="StyleRefType"/>
+        <xs:element name="style"       type="LocalStyleType"/>
+        <xs:element name="cell"        type="CellType"/>
+        <xs:element name="use"         type="UseType"/>
+        <xs:element name="grid"        type="GridType"/>
+        <xs:element name="repeat"      type="RepeatType"/>
+      </xs:choice>
+      <xs:element name="sheetOptions" type="SheetOptionsType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string"    use="required"/>
+    <xs:attribute name="rows" type="PositiveInt1" use="required"/>
+    <xs:attribute name="cols" type="PositiveInt1" use="required"/>
+  </xs:complexType>
+
+  <!-- component -->
+  <xs:complexType name="ComponentType">
+    <xs:sequence>
+      <xs:choice minOccurs="1" maxOccurs="1">
+        <xs:element name="grid"   type="GridType"/>
+        <xs:element name="use"    type="UseType"/>
+        <xs:element name="repeat" type="RepeatType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- grid -->
+  <xs:complexType name="GridType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="styleRef" type="StyleRefType"/>
+        <xs:element name="style"    type="LocalStyleType"/>
+        <xs:element name="cell"     type="CellType"/>
+        <xs:element name="use"      type="UseType"/>
+        <xs:element name="grid"     type="GridType"/>
+        <xs:element name="repeat"   type="RepeatType"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- 共通配置属性 -->
+  <xs:attributeGroup name="PlacementAttrs">
+    <xs:attribute name="r"       type="PositiveInt1"/>
+    <xs:attribute name="c"       type="PositiveInt1"/>
+    <xs:attribute name="rowspan" type="PositiveInt1" default="1"/>
+    <xs:attribute name="colspan" type="PositiveInt1" default="1"/>
+    <xs:attribute name="when"    type="BoolExpr"/>
+  </xs:attributeGroup>
+
+  <!-- cell -->
+  <xs:complexType name="CellType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="styleRef" type="StyleRefType"/>
+        <xs:element name="style"    type="LocalStyleType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="PlacementAttrs"/>
+    <xs:attribute name="value"      type="ExprString"/>
+    <!-- 単一参照用ショートカット -->
+    <xs:attribute name="styleRef"   type="xs:string"/>
+    <xs:attribute name="formulaRef" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- use -->
+  <xs:complexType name="UseType">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="styleRef" type="StyleRefType"/>
+        <xs:element name="style"    type="LocalStyleType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="PlacementAttrs"/>
+    <xs:attribute name="component" type="xs:string"  use="required"/>
+    <xs:attribute name="name"      type="xs:string"/>
+    <xs:attribute name="with"      type="ExprString"/>
+  </xs:complexType>
+
+  <!-- repeat 方向 -->
+  <xs:simpleType name="RepeatDirection">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="down"/>
+      <xs:enumeration value="right"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- repeat -->
+  <xs:complexType name="RepeatType">
+    <xs:annotation>
+      <xs:documentation>
+        repeat@from の式は C# の IEnumerable を返す必要があります。
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <!-- スタイル -->
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="styleRef" type="StyleRefType"/>
+        <xs:element name="style"    type="LocalStyleType"/>
+      </xs:choice>
+      <!-- レイアウト要素は1つだけ -->
+      <xs:choice minOccurs="1" maxOccurs="1">
+        <xs:element name="cell"   type="CellType"/>
+        <xs:element name="use"    type="UseType"/>
+        <xs:element name="grid"   type="GridType"/>
+        <xs:element name="repeat" type="RepeatType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="PlacementAttrs"/>
+    <xs:attribute name="from"      type="ExprString"      use="required"/>
+    <xs:attribute name="var"       type="xs:string"       use="optional" default="item"/>
+    <xs:attribute name="direction" type="RepeatDirection" use="required"/>
+    <xs:attribute name="name"      type="xs:string"/>
+  </xs:complexType>
+
+  <!-- sheetOptions -->
+  <xs:complexType name="SheetOptionsType">
+    <xs:sequence>
+      <xs:element name="freeze"     type="FreezeType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="groups"     type="GroupsType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="autoFilter" type="AutoFilterType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- freeze -->
+  <xs:complexType name="FreezeType">
+    <xs:attribute name="at" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- groups -->
+  <xs:complexType name="GroupsType">
+    <xs:sequence>
+      <xs:element name="groupRows" type="GroupRowsType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="groupCols" type="GroupColsType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="GroupRowsType">
+    <xs:attribute name="at"        type="xs:string" use="required"/>
+    <xs:attribute name="collapsed" type="xs:boolean" default="false"/>
+  </xs:complexType>
+
+  <xs:complexType name="GroupColsType">
+    <xs:attribute name="at"        type="xs:string" use="required"/>
+    <xs:attribute name="collapsed" type="xs:boolean" default="false"/>
+  </xs:complexType>
+
+  <!-- autoFilter -->
+  <xs:complexType name="AutoFilterType">
+    <xs:attribute name="at" type="xs:string" use="required"/>
+  </xs:complexType>
+
+</xs:schema>

@@ -702,7 +702,8 @@ public sealed class AutoFilterAst
 - `BuildComponentAst`:
   - `@name` を読み取り
   - 子要素の `grid/use/repeat` を `BuildGridAst` / `BuildUseAst` / `BuildRepeatAst` に委譲
-
+- `styleRef`と`use`の参照先を解決
+  - 全定義をパースして`styleRef`→`style`、`use`→`Component`に紐づける
 ---
 
 ### 5.3 StyleAst 構築の最小実装例
