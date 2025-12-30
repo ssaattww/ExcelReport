@@ -2,7 +2,7 @@
 <workbook xmlns="urn:excelreport:v1">
 
   <styles>
-    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
   </styles>
 
   <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v1.xml"/>
@@ -22,9 +22,6 @@
     </cell>
     <cell r="3" c="2" value="=TEXT(NOW(), &quot;yyyy-mm-dd hh:mm&quot;)">
       <styleRef name="BaseCell"/>
-      <style>
-        <border mode="cell" bottom="thin" color="#000000"/>
-      </style>
     </cell>
 
     <!-- 4行目: Totals -->

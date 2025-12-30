@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<styles xmlns="urn:excelreport:v1">
+  <style name="TitleCell" scope="cell">
+    <font name="Meiryo" size="16" bold="true"/>
+  </style>
+
+  <style name="BaseCell" scope="cell">
+    <font name="Meiryo" size="11"/>
+    <fill color="#FFFFFF"/>
+  </style>
+
+  <style name="HeaderCell" scope="cell">
+    <font bold="true"/>
+    <fill color="#F2F2F2"/>
+    <border mode="cell" bottom="thin" color="#000000"/>
+  </style>
+
+  <style name="Percent" scope="cell">
+    <numberFormat code="0.0%"/>
+  </style>
+
+  <!-- 明細ヘッダ行全体の外枠 -->
+  <style name="DetailHeaderGrid" scope="grid">
+    <border mode="outer"
+            top="thin" bottom="thin" left="thin" right="thin"
+            color="#000000"/>
+  </style>
+
+  <!-- 明細行群のグリッド線 -->
+  <style name="DetailRowsGrid" scope="grid">
+    <border mode="all"
+            top="thin" bottom="thin" left="thin" right="thin"
+            color="#CCCCCC"/>
+  </style>
+</styles>

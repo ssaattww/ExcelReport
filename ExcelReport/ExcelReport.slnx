@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="./ExcelReportExe/ExcelReportExe.csproj" />
+  <Project Path="./ExcelReportLib/ExcelReportLib.csproj" Id="9ca3de8c-fd69-41b0-b103-8e5f737959cf" />
+</Solution>

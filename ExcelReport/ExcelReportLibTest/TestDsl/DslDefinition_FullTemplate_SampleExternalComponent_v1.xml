@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<components xmlns="urn:excelreport:v1">
+
+  <!-- このコンポーネント集で使用するスタイル定義を外部ファイルから読み込む -->
+  <styles>
+    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+  </styles>
+
+  <!-- タイトル -->
+  <component name="Title">
+    <grid>
+      <cell r="1" c="1" colspan="3"
+            value="@(data.JobName)"
+            styleRef="TitleCell"/>
+    </grid>
+  </component>
+
+  <!-- KPI -->
+  <component name="KPI">
+    <grid>
+      <cell r="1" c="1" value="Owner"         styleRef="HeaderCell"/>
+      <cell r="1" c="2" value="@(data.Owner)" styleRef="BaseCell"/>
+
+      <cell r="2" c="1" value="Success Rate"    styleRef="HeaderCell"/>
+      <cell r="2" c="2" value="@(data.SuccessRate)" styleRef="BaseCell">
+        <style>
+          <numberFormat code="0.0%"/>
+        </style>
+      </cell>
+    </grid>
+  </component>
+
+  <!-- 明細ヘッダ -->
+  <component name="DetailHeader">
+    <grid>
+      <cell r="1" c="1" value="Name"  styleRef="HeaderCell"/>
+      <cell r="1" c="2" value="Value" styleRef="HeaderCell"/>
+      <cell r="1" c="3" value="Code"  styleRef="HeaderCell"/>
+      <!-- ヘッダ行を外枠で囲む -->
+      <styleRef name="DetailHeaderGrid"/>
+    </grid>
+  </component>
+
+  <!-- 明細行 -->
+  <component name="DetailRow">
+    <grid>
+      <cell r="1" c="1" value="@(data.Name)">
+        <styleRef name="BaseCell"/>
+      </cell>
+      <cell r="1" c="2" value="@(data.Value)" formulaRef="Detail.Value">
+        <styleRef name="BaseCell"/>
+      </cell>
+      <cell r="1" c="3" value="@(data.Code)"  formulaRef="Detail.Code">
+        <styleRef name="BaseCell"/>
+      </cell>
+    </grid>
+  </component>
+
+  <!-- Totals 行 -->
+  <component name="TotalsRow">
+    <grid>
+      <cell r="1" c="1" value="Totals" styleRef="HeaderCell"/>
+      <cell r="1" c="2" value="=SUM(#{Detail.Value:Detail.ValueEnd})">
+        <styleRef name="BaseCell"/>
+      </cell>
+      <cell r="1" c="3" value="=AVERAGE(#{Detail.Value:Detail.ValueEnd})">
+        <styleRef name="BaseCell"/>
+      </cell>
+      <cell r="1" c="4" value="=COUNT(#{Detail.Value:Detail.ValueEnd})">
+        <styleRef name="BaseCell"/>
+      </cell>
+    </grid>
+  </component>
+
+</components>
