@@ -51,6 +51,19 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         {
             var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
 
+            var fromAttr = repeatElem.Attribute("from");
+            if(fromAttr is null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredAttribute,
+                    Message = "<repeat> 要素に from 属性がありません。",
+                    Span = SourceSpan.CreateSpanAttributes(repeatElem)
+                });
+            }
+            var fromExprRaw = fromAttr?.Value ?? string.Empty;
+
             var varName = repeatElem.Attribute("var");
             if(varName is null)
             {
@@ -98,6 +111,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             LayoutNodeAst? body = layoutElems?.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).FirstOrDefault() ?? null;
             
             Name = nameStr;
+            FromExprRaw = fromExprRaw;
             VarName = varNameStr;
             Direction = repeatDirection;
             Body = body;
