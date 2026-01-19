@@ -52,17 +52,8 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
 
             var varName = repeatElem.Attribute("var");
-            if(varName is null)
-            {
-                issues.Add(new Issue
-                {
-                    Severity = IssueSeverity.Error,
-                    Kind = IssueKind.UndefinedRequiredAttribute,
-                    Message = "<repeat> 要素に var 属性がありません。",
-                    Span = SourceSpan.CreateSpanAttributes(repeatElem)
-                });
-            }
-            var varNameStr = varName?.Value ?? string.Empty;
+            // var は省略可能。未指定時は既定値 "item"
+            var varNameStr = string.IsNullOrWhiteSpace(varName?.Value) ? "item" : varName!.Value;
 
             var direction = repeatElem.Attribute("direction");
             var directionStr = direction?.Value ?? string.Empty;
