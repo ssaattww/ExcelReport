@@ -11,4 +11,4 @@
 /ExcelReport/ExcelReportLibTest/bin/Debug/net10.0
 /ExcelReport/ExcelReportLibTest/obj
 /.agents
-/.claude
+# /.claude
