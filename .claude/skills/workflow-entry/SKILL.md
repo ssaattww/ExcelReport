@@ -112,6 +112,9 @@ Rollback requirements:
 - Task management is owned by the project manager, not codex.
 - The project manager must perform task operations directly (`TaskCreate`, `TaskUpdate`) and keep task state synchronized.
 - Do not ask codex to update task trackers or task management systems.
+- Create a feature branch before starting work.
+- Direct commits to `main` are prohibited.
+- For branch rules and lifecycle, see `references/project-manager-guide.md` (`Git Branch Strategy`).
 - Maintain a dedicated status file at `tasks/*-status.md` and update it continuously as work progresses.
 - Use `reports/*` only for implementation findings, investigation notes, and analysis outputs.
 - Keep task state and report content separated:

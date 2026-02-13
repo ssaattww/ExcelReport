@@ -25,3 +25,11 @@
 3. Project manager executes `TaskUpdate` in the task system.
 4. Project manager updates `tasks/*-status.md` to reflect final state.
 5. If additional analysis is needed, store it in `reports/*` without mixing status tracking.
+
+## Git Branch Strategy
+
+- Direct commits to `main` are prohibited.
+- Create a feature branch before starting work (for example: `feature/phase1-integration`, `feature/task-3.1`).
+- Branch naming convention: `feature/[work-item]`, `fix/[fix-item]`.
+- After work is complete, create a pull request and request review.
+- Delete the feature branch after merge.
