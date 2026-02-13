@@ -14,7 +14,11 @@
 ## Task Status File Management
 
 - Keep one status file per workstream: `tasks/*-status.md`.
+- Manage project-wide phase status in `tasks/phases-status.md`.
+- Manage detailed task status in `tasks/tasks-status.md`.
 - Update the status file whenever task state, owner, dependency, or completion ratio changes.
+- Update `tasks/phases-status.md` whenever phase transitions occur.
+- Update `tasks/tasks-status.md` whenever any task state changes.
 - Keep status content operational only (state and tracking data), and keep technical analysis in `reports/*`.
 - Use `references/task-status-template.md` as the default format.
 
