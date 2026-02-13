@@ -1,4 +1,9 @@
 # ReportGenerator 詳細設計書 v1  
+
+## Status
+- As-Is (Planned): 実装クラス/IF は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:36`）。
+- To-Be (Planned): Parser→Expression→Styles→Layout→WorksheetState→Renderer を統合する（証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+
 ---
 ## 1. 概要・位置づけ
 

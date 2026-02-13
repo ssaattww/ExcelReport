@@ -1,9 +1,17 @@
 # ExcelReport DSL 詳細設計書 v1（スタイル・罫線モデル更新版）
 
+## Status
+
+- As-Is (Implemented): DSL パース対象の主要属性/タグは `instance` / `<styleImport>` / `rowSpan,colSpan` を採用（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/UseAst.cs:37`, `ExcelReport/ExcelReportLib/DSL/AST/StyleImportAst.cs:11`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:65`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:70`）。
+- As-Is (Partial): `cell@styleRef` ショートカット読込は未実装（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
+- To-Be (Planned): 重複定義ルールを「後勝ち + Warning」へ変更、XSD 検証有効化、DSL 固有検証拡張を実施（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:87`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:142`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
+
 ## 1. 概要
 
 - ExcelReport DSL は、C# オブジェクトから Excel (OOXML) を生成するためのテンプレート定義言語である。
 - スキーマファイル: `DslDefinition_v1.xsd`（targetNamespace = `urn:excelreport:v1`）。
+- As-Is 契約（現行実装整合）は `Design/DslDefinition/DslDefinition_v1.xsd` および `Design/DslDefinition/DslDefinition_FullTemplate_Sample_v1.xml` を正とする。
+- To-Be は As-Is 契約との差分として明示し、実装変更が必要な項目を分離管理する。
 
 ---
 
@@ -112,7 +120,7 @@ XSD 上の型: `WorkbookType`。
 
 ---
 
-## 4. レイアウト要素
+## 4. レイアウト要素（As-Is）
 
 ### 4.1. 共通配置属性 `PlacementAttrs`
 
@@ -424,17 +432,17 @@ root.Lines.Select((value, index) => new { value, index });
 
 ---
 
-## 10. バリデーション要件（抜粋）
+## 10. バリデーション要件（As-Is / To-Be）
 
-- 未定義 component/styleRef の参照 → Fatal。
-- repeat.from が IEnumerable でない / null → Fatal。
-- repeat 子レイアウトが 1 要素でない → Fatal。
-- sheetOptions.freeze/groups/autoFilter@at に対応するインスタンスが存在しない → Fatal。
-- autoFilter ヘッダ行に空セルがある → Fatal。
-- formulaRef 系列が 1 次元連続でない → Fatal。
-- Excel 行数・列数上限を超える座標 → Fatal。
-- scope 違反（scope="grid" を cell で使用等）:
-  - 警告を発し、その style に含まれる border を無視（font/fill/numberFormat は適用してよい）。
+- As-Is: 未定義 component/styleRef の参照は Error として Issue 追加（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:115`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:211`）。
+- As-Is: 重複 style / component は「先勝ち + Issue(Error)」。後続定義は採用しない（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:87`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:142`）。
+- To-Be: 重複 style / component は「後勝ち + Warning」に変更する（実装変更タスクあり）。
+- As-Is: `EnableSchemaValidation` は存在するが XSD 検証は無効（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:318`）。
+- To-Be: XSD 検証をデフォルト有効化し、スキーマ違反は Fatal とする（実装変更タスクあり）。
+- As-Is: DSL 固有検証 `ValidateDsl` は未実装スタブ（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
+- To-Be: DSL 検証は段階実装（L1: 参照整合、L2: repeat/sheetOptions 制約、L3: 静的レイアウト制約）。
+- To-Be: `cell@styleRef` ショートカット読込を実装する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
+- To-Be: `componentImport` 内 `<styles>` 取り込みを接続する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:19`, `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:76`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:169`）。
 
 
 ---
@@ -503,7 +511,8 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 - DSL 本体と外部スタイル定義ファイルは **同一 namespace (`urn:excelreport:v1`)**。
 - `href` には DSL ファイルから見た相対パスを指定する（上記では「同一ディレクトリ」なのでファイル名のみ）。
-- 同名 style が複数定義された場合は「後勝ち」で解決される。
+- As-Is: 同名 style が複数定義された場合は「先勝ち + Issue(Error)」。
+- To-Be: 同名 style が複数定義された場合は「後勝ち + Warning」。
 
 ### 11.2 同一ディレクトリ内の外部コンポーネント定義ファイルを読む例
 
@@ -624,4 +633,5 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 - コンポーネント定義も DSL 本体と同一 namespace (`urn:excelreport:v1`)。
 - `componentImport@href` も DSL ファイルから見た相対パス。
-- 同名 component が複数存在する場合も「後勝ち」で解決される（本体側でコンポーネントを上書きしたい場合に利用する）。
+- As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
+- To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。

@@ -1,4 +1,9 @@
 # Renderer 詳細設計書 v1
+
+## Status
+- As-Is (Planned): 実装クラス/IF は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:34`）。
+- To-Be (Planned): WorksheetState を機械的に xlsx へ投影する実装を追加する（証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+
 ---
 ## 1. 概要・位置づけ
 
@@ -1206,4 +1211,3 @@ private static void OutputWorkbook(
     }
 }
 ```
-

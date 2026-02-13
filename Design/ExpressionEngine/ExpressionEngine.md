@@ -1,5 +1,9 @@
 # ExpressionEngine 詳細設計
 
+## Status
+- As-Is (Planned): 実装クラス/IF は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:30`）。
+- To-Be (Planned): 本文仕様を実装し、`DslParser` 後段で式評価を担当する（依存順序の証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+
 ## 1. 概要
 ExpressionEngine は、DSL 内に記述された C# 式（`@(...)`）を評価し、結果を返すモジュールである。
 Roslyn (Microsoft.CodeAnalysis.CSharp.Scripting) を利用して動的にコードをコンパイル・実行する。

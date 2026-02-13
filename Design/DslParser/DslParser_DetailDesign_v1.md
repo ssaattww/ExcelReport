@@ -5,6 +5,15 @@ XSD スキーマ（`DslDefinition_v1.xsd`）と AST クラス群の対応を明�
 
 ---
 
+## Status
+
+- As-Is (Implemented): API は `public static class DslParser`（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:11`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:13`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:26`）。
+- As-Is (Partial): XSD 検証は無効、DSL 固有検証はスタブ（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:282`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
+- As-Is (Implemented): 重複定義は「先勝ち + Issue(Error)」（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:87`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:142`）。
+- To-Be (Planned): 重複定義を「後勝ち + Warning」、XSD 検証有効化、DSL 検証段階実装へ移行（実装変更が必要）。
+
+---
+
 ## 1. 概要・責務
 
 ### 1.1 モジュール名
@@ -17,14 +26,15 @@ XSD スキーマ（`DslDefinition_v1.xsd`）と AST クラス群の対応を明�
 DslParser は、ExcelReport DSL の XML 定義を入力として受け取り、以下を行う。
 
 1. XML パース（`XDocument`）
-2. XSD スキーマ（`DslDefinition_v1.xsd`）による構文検証（将来実装。現行は無効）
+2. As-Is: XSD スキーマ検証は無効（オプション定義のみ）
 3. AST（抽象構文木）ノード群の構築
-4. DSL 固有ルールに基づく検証
+4. As-Is: 参照解決（style/component）を実施
+5. To-Be: DSL 固有ルールに基づく検証
    - 定義・参照の整合性
    - repeat ノード制約
    - sheetOptions の参照妥当性
    - 静的レイアウトの制約（行列上限、formulaRef 系列の形状など）
-5. 検証結果を `Issue` として収集
+6. 検証結果を `Issue` として収集
 
 出力は、後続モジュール（LayoutEngine）で利用される `WorkbookAst` と、検証結果 `Issue` 一覧である。
 
@@ -37,9 +47,10 @@ DslParser は、ExcelReport DSL の XML 定義を入力として受け取り、�
   - DSL XML ストリーム (`Stream`)
 - 処理:
   - XMLパース（構文エラー検知）
-  - XSD スキーマ検証（型・必須属性・構造）※現行は無効
+  - As-Is: XSD スキーマ検証は無効（`EnableSchemaValidation` は未接続）
   - AST 構築
-  - DSL 仕様に基づく検証ロジック
+  - As-Is: style/component 参照解決
+  - To-Be: DSL 仕様に基づく検証ロジック
 - 出力:
   - `WorkbookAst`（AST ルート）
   - `Issue` 一覧
@@ -133,7 +144,7 @@ public sealed class DslParseResult
 }
 ```
 
-### 2.2 DslParser 公開 API（現行実装）
+### 2.2 As-Is API（実装準拠）
 
 ```csharp
 public static class DslParser
@@ -144,11 +155,11 @@ public static class DslParser
 }
 ```
 
-### 2.3 実装状況メモ
+### 2.3 To-Be API（計画）
 
-- `IDslParser` インターフェース実装ではなく `static` クラスとして提供される。
-- `ParseFromFile` は `DslParserOptions.RootFilePath` を補完し、`styleImport` / `componentImport` の相対パス解決に利用する。
-- `EnableSchemaValidation` はオプションとして存在するが、現行実装では XSD 検証処理は無効化されている。
+- `IDslParser` を導入する場合は static API と互換レイヤを提供する。
+- `EnableSchemaValidation=true` で XSD 検証が動作する状態にする。
+- `ValidateDsl` を段階的に実装し、Issue の Severity を仕様固定する。
 
 ---
 
@@ -409,7 +420,7 @@ public sealed class GridAst : LayoutNodeAst
 | `@colSpan`             | `Placement.ColSpan`                 |
 | `@when`                | `Placement.WhenExprRaw`             |
 | `@value`               | `CellAst.ValueRaw`                  |
-| `@styleRef`            | （現行実装では未反映。今後 CellAst.StyleRefShortcut へ格納予定） |
+| `@styleRef`            | `CellAst.StyleRefShortcut`          |
 | `@formulaRef`          | `CellAst.FormulaRef`                |
 | `<styleRef>`           | `CellAst.Styles`                    |
 
@@ -552,10 +563,12 @@ public sealed class AutoFilterAst
 
 1. `ParseFromFile` / `ParseFromText` / `ParseFromStream` で XML 入力を受け取る。
 2. `XDocument.Load` で XML パース（`XmlException` を捕捉し Fatal Issue）。
-3. 現行実装では XSD 検証は無効（未実装）。EnableSchemaValidation は将来実装用オプション。
-4. ルート要素 `<workbook>` から `BuildWorkbookAst` を呼び出し、AST 全体を構築する。
-5. 構築された AST に対して `ValidateDsl` を実行し、DSL 固有ルールを検証する。
-6. Fatal Issue が存在する場合は、`Root` を null にして返却する。
+3. As-Is: `EnableSchemaValidation` は存在するが XSD 検証は無効（コードはコメントアウト）。
+4. To-Be: `EnableSchemaValidation` が true の場合、XSD 検証を行い、スキーマ違反を Fatal Issue にする。
+5. ルート要素 `<workbook>` から `BuildWorkbookAst` を呼び出し、AST 全体を構築する。
+6. As-Is: `ValidateDsl` は未実装スタブ。
+7. To-Be: 構築された AST に対して `ValidateDsl` を実行し、DSL 固有ルールを検証する。
+8. Fatal Issue が存在する場合は、`Root` を null にして返却する。
 
 ### 5.2 AST 構築処理の概要
 
@@ -671,17 +684,15 @@ private bool? TryParseBool(string? raw)
 
 - `Fatal`
   - XML 構文エラー（`XmlMalformed`）
-  - XSD スキーマ違反（`SchemaViolation`）
-  - 未定義 component/style の参照（`UndefinedComponent`, `UndefinedStyle`）
-  - repeat 子要素数の不正（`RepeatChildCountInvalid`）
-  - sheetOptions の参照先不明（`SheetOptionsTargetNotFound`）
-  - formulaRef 系列が 1 次元連続でない（`FormulaRefSeriesNot1DContinuous`）
-  - Excel 行・列の上限超過（`CoordinateOutOfRange`）
+  - To-Be: XSD スキーマ違反（`SchemaViolation`）
 - `Warning`
-  - スタイル scope 違反（`StyleScopeViolation`）
-    - 例: scope=grid のスタイルを cell に適用した場合
+  - To-Be: スタイル scope 違反（`StyleScopeViolation`）
+  - To-Be: 重複 style/component（後勝ち運用時）
 - `Error`
-  - C# 式構文エラー（`ExpressionSyntaxError`）で、`TreatExpressionSyntaxErrorAsFatal = false` の場合
+  - As-Is: 未定義 component/style の参照（`UndefinedComponent`, `UndefinedStyle`）
+  - As-Is: 重複 style/component（`DuplicateStyleName`, `DuplicateComponentName`）
+  - As-Is: repeat 子要素数の不正（`RepeatChildCountInvalid`）
+  - To-Be: C# 式構文エラー（`ExpressionSyntaxError`）で、`TreatExpressionSyntaxErrorAsFatal = false` の場合
 - `Info`
   - 実装上必要であれば解析用情報に利用可能（必須ではない）
 

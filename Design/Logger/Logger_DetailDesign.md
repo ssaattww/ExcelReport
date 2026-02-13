@@ -1,5 +1,9 @@
 # Logger 詳細設計書 v1
 
+## Status
+- As-Is (Planned): 実装クラス/IF は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:35`）。
+- To-Be (Planned): 各モジュール横断の進捗/監査記録を実装する（証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+
 本書は、Optimizer Excel Report Library における Logger モジュール の詳細設計を示す。
 BasicDesign の「進捗・ログ・監査 (Logger)」章で要求されている以下の点を満たす。
 

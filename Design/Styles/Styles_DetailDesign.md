@@ -1,5 +1,9 @@
 # Styles モジュール 詳細設計書 v1
 
+## Status
+- As-Is (Partial): AST は存在するが Resolver/Plan 実装は未着手（証跡: `reports/implementation-inventory-2026-02-13.md:32`）。
+- To-Be (Planned): StylePlan 提供を実装し LayoutEngine に連携する（証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+
 ---
 
 ## 1. 概要

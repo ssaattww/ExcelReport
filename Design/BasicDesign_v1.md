@@ -10,6 +10,31 @@ Optimizer Excel Report Library — Basic Design
 
 ---
 
+## Status
+- As-Is (Implemented): `DslParser + AST` のみ実装済み（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:11`, `ExcelReport/ExcelReportLib/DSL/AST/WorkBookAst.cs:8`）。
+- As-Is (Partial): XSD 検証オプションは定義済みだが実行無効（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:318`）。
+- To-Be (Planned): ExpressionEngine / LayoutEngine / WorksheetState / Renderer / Logger / ReportGenerator は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:30`, `reports/implementation-inventory-2026-02-13.md:37`）。
+
+---
+
+## 0.2 文書規約（設計-実装整合）
+
+## 0.2.1 As-Is / To-Be ラベル規約
+- 主要設計書は先頭に `Status` セクションを持つこと。
+- 仕様本文で実装事実を書くときは `As-Is:` を付けること。
+- 将来計画を書くときは `To-Be:` を付けること。
+- 未実装項目は `To-Be` とし、実装タスク必要性を明記すること。
+
+## 0.2.2 命名・表記統一（実装準拠）
+- `use` のインスタンス属性名は `instance` を正とする（`name` は非推奨）。
+- 外部スタイル取込タグは `<styleImport>` を正とする（`<import>` は非推奨）。
+- span 属性は `rowSpan` / `colSpan` を正とする（`rowspan` / `colspan` は非推奨）。
+- DslParser API は `public static class DslParser` を As-Is 正とする。
+
+## 0.2.3 証跡記載規約
+- 実装言及箇所には必ず `ファイルパス:行番号` を付ける。
+- 実装未着手モジュールの言及は、実装インベントリ等の証跡文書行番号を付ける。
+
 # 1. 詳細設計の粒度ガイドライン (共通)
 
 ## 1.1 記述レベル (Do’s)
