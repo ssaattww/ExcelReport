@@ -120,8 +120,8 @@ XSD 上の型: `WorkbookType`。
 
 - `r` : 行番号 (1-origin)。
 - `c` : 列番号 (1-origin)。
-- `rowspan` : 行方向の結合数（既定 1）。
-- `colspan` : 列方向の結合数（既定 1）。
+- `rowSpan` : 行方向の結合数（既定 1）。
+- `colSpan` : 列方向の結合数（既定 1）。
 - `when` : 表示条件。C# の bool 式。false の場合、その要素はレイアウトから除外される。
 
 ### 4.2. cell
@@ -136,7 +136,7 @@ XSD 上の型: `WorkbookType`。
 ```
 
 - 属性:
-  - `r`, `c`, `rowspan`, `colspan`, `when` : 共通配置属性。
+  - `r`, `c`, `rowSpan`, `colSpan`, `when` : 共通配置属性。
   - `value` : 出力値。
     - `@( ... )` 形式: C# 式として評価した結果を文字列化してセット。
     - `=` で始まる文字列: Excel 数式として扱う。
@@ -166,15 +166,15 @@ XSD 上の型: `WorkbookType`。
 ### 4.4. use
 
 ```xml
-<use component="DetailRow" name="DetailHeader" r="5" c="1" with="@(root)">
+<use component="DetailRow" instance="DetailHeader" r="5" c="1" with="@(root)">
   <styleRef name="GridOuter"/>
 </use>
 ```
 
 - 属性:
-  - 共通配置属性（r,c,rowspan,colspan,when）。
+  - 共通配置属性（r,c,rowSpan,colSpan,when）。
   - `component` : 参照するコンポーネント名。
-  - `name` : インスタンス名（sheetOptions から参照するために使用）。
+  - `instance` : インスタンス名（sheetOptions から参照するために使用）。
   - `with` : C# 式。コンポーネント内で `data` として参照されるオブジェクトを指定。
 - 子要素:
   - 任意の `styleRef` / `style`。
@@ -358,7 +358,7 @@ repeat 内 grid の例:
 
 ### 7.1. at="..." の解釈
 
-- sheet 内で `name="..."` を持つ `use` / `repeat` / `cell` / `grid` を探索し、レイアウト完了後のセル範囲（外接矩形）を `Area(name)` として定義する:
+- sheet 内で `use@instance` または `repeat@name` を持つ要素を探索し、レイアウト完了後のセル範囲（外接矩形）を `Area(name)` として定義する:
 
 ```text
 Area(name) = { topRow, bottomRow, leftCol, rightCol }
@@ -452,7 +452,7 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
   <styles>
     <!-- 同一ディレクトリ内の外部スタイル定義をインポート -->
-    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
   </styles>
 
   <!-- （component 定義／componentImport／sheet 定義は後述） -->
@@ -514,18 +514,18 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 <workbook xmlns="urn:excelreport:v1">
 
   <styles>
-    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
   </styles>
 
   <!-- 同一ディレクトリ内の外部コンポーネント定義をインポート -->
   <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v1.xml"/>
 
-  <sheet name="Summary" rows="40" cols="4">
+  <sheet name="Summary">
     <!-- 以降は従来どおり use/repeat で component を参照 -->
-    <use component="Title"       name="HeaderTitle" r="1" c="1" with="@(root)"/>
-    <use component="KPI"         name="KPI"         r="2" c="1" with="@(root.Summary)"/>
-    <use component="TotalsRow"   name="TotalsRow"   r="4" c="1" with="@(root)"/>
-    <use component="DetailHeader" name="DetailHeader" r="5" c="1" with="@(root)"/>
+    <use component="Title"       instance="HeaderTitle" r="1" c="1" with="@(root)"/>
+    <use component="KPI"         instance="KPI"         r="2" c="1" with="@(root.Summary)"/>
+    <use component="TotalsRow"   instance="TotalsRow"   r="4" c="1" with="@(root)"/>
+    <use component="DetailHeader" instance="DetailHeader" r="5" c="1" with="@(root)"/>
 
     <repeat name="DetailRows"
             r="6" c="1" direction="down"
@@ -547,13 +547,13 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
   <!-- このコンポーネント集で使用するスタイル定義を外部ファイルから読み込む -->
   <styles>
-    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
   </styles>
 
   <!-- タイトル -->
   <component name="Title">
     <grid>
-      <cell r="1" c="1" colspan="3"
+      <cell r="1" c="1" colSpan="3"
             value="@(data.JobName)"
             styleRef="TitleCell"/>
     </grid>

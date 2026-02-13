@@ -47,7 +47,7 @@ Optimizer Excel Report Library — Basic Design
 **MUST**
 - DSL 要素の種類（詳細設計が提供する最新仕様に従う）。  
   現時点での要素集合（参考・詳細設計を正とする）:  
-  `workbook / styles / style / sheet / component / grid / cell / use / repeat / sheetOptions`
+  `workbook / styles / style / styleRef / styleImport / component / components / componentImport / sheet / grid / cell / use / repeat / sheetOptions / freeze / groupRows / groupCols / autoFilter`
 - 主要属性の意味と排他関係（value/Excel数式/C#式、formulaRef、when）。  
 - C# 式 `@( … )` の評価主体が ExpressionEngine であること。  
 - XSD を提供すること（全文は詳細設計で管理）。  

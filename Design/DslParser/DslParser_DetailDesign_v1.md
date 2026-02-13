@@ -10,14 +10,14 @@ XSD スキーマ（`DslDefinition_v1.xsd`）と AST クラス群の対応を明�
 ### 1.1 モジュール名
 
 - モジュール名: `DslParser`
-- 所属アセンブリ想定: `ExcelReport.Core`（仮）
+- 所属アセンブリ想定: `ExcelReportLib`（仮）
 
 ### 1.2 役割
 
 DslParser は、ExcelReport DSL の XML 定義を入力として受け取り、以下を行う。
 
 1. XML パース（`XDocument`）
-2. XSD スキーマ（`DslDefinition_v1.xsd`）による構文検証
+2. XSD スキーマ（`DslDefinition_v1.xsd`）による構文検証（将来実装。現行は無効）
 3. AST（抽象構文木）ノード群の構築
 4. DSL 固有ルールに基づく検証
    - 定義・参照の整合性
@@ -37,7 +37,7 @@ DslParser は、ExcelReport DSL の XML 定義を入力として受け取り、�
   - DSL XML ストリーム (`Stream`)
 - 処理:
   - XMLパース（構文エラー検知）
-  - XSD スキーマ検証（型・必須属性・構造）
+  - XSD スキーマ検証（型・必須属性・構造）※現行は無効
   - AST 構築
   - DSL 仕様に基づく検証ロジック
 - 出力:
@@ -133,146 +133,22 @@ public sealed class DslParseResult
 }
 ```
 
-### 2.2 DslParser インターフェース
+### 2.2 DslParser 公開 API（現行実装）
 
 ```csharp
-public interface IDslParser
+public static class DslParser
 {
-    DslParseResult ParseFromText(string xmlText, DslParserOptions? options = null);
-
-    DslParseResult ParseFromStream(Stream xmlStream, DslParserOptions? options = null);
+    public static DslParseResult ParseFromFile(string filePath, DslParserOptions? options = null);
+    public static DslParseResult ParseFromText(string xmlText, DslParserOptions? options = null);
+    public static DslParseResult ParseFromStream(Stream xmlStream, DslParserOptions? options = null);
 }
 ```
 
-### 2.3 最小実装例（骨格）
+### 2.3 実装状況メモ
 
-```csharp
-public sealed class XmlDslParser : IDslParser
-{
-    private readonly XmlSchemaSet _schemaSet;
-
-    public XmlDslParser(XmlSchemaSet schemaSet)
-    {
-        _schemaSet = schemaSet;
-    }
-
-    public DslParseResult ParseFromText(string xmlText, DslParserOptions? options = null)
-    {
-        options ??= new DslParserOptions();
-        using var reader = new StringReader(xmlText);
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xmlText));
-        return ParseFromStream(stream, options);
-    }
-
-    public DslParseResult ParseFromStream(Stream xmlStream, DslParserOptions? options = null)
-    {
-        options ??= new DslParserOptions();
-        var issues = new List<Issue>();
-
-        XDocument? doc;
-        try
-        {
-            doc = XDocument.Load(xmlStream, LoadOptions.SetLineInfo);
-        }
-        catch (XmlException ex)
-        {
-            issues.Add(new Issue
-            {
-                Severity = IssueSeverity.Fatal,
-                Kind = IssueKind.XmlMalformed,
-                Message = ex.Message,
-            });
-            return new DslParseResult { Root = null, Issues = issues };
-        }
-
-        if (options.EnableSchemaValidation)
-        {
-            ValidateWithSchema(doc, issues);
-            if (issues.Any(i => i.Severity == IssueSeverity.Fatal))
-            {
-                return new DslParseResult { Root = null, Issues = issues };
-            }
-        }
-
-        var root = BuildWorkbookAst(doc.Root!, issues);
-
-        ValidateDsl(root, issues, options);
-
-        return new DslParseResult
-        {
-            Root = issues.Any(i => i.Severity == IssueSeverity.Fatal) ? null : root,
-            Issues = issues,
-        };
-    }
-
-    private void ValidateWithSchema(XDocument doc, List<Issue> issues)
-    {
-        // XmlReaderSettings に _schemaSet を設定し、検証イベントで Issue を追加する。
-        var settings = new XmlReaderSettings
-        {
-            ValidationType = ValidationType.Schema,
-            Schemas = _schemaSet
-        };
-        settings.ValidationEventHandler += (sender, e) =>
-        {
-            issues.Add(new Issue
-            {
-                Severity = IssueSeverity.Fatal,
-                Kind = IssueKind.SchemaViolation,
-                Message = e.Message,
-            });
-        };
-
-        using var reader = doc.CreateReader();
-        using var validatingReader = XmlReader.Create(reader, settings);
-        while (validatingReader.Read())
-        {
-            // すべてのノードを読み進めることで検証を完了させる
-        }
-    }
-
-    private WorkbookAst BuildWorkbookAst(XElement workbookElem, List<Issue> issues)
-    {
-        // ルート <workbook> 要素から各子要素を AST に変換する。
-        var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + "styles");
-        StylesAst? stylesAst = stylesElem != null ? BuildStylesAst(stylesElem, issues) : null;
-
-        var componentElems = workbookElem.Elements(workbookElem.Name.Namespace + "component");
-        var components = componentElems.Select(e => BuildComponentAst(e, issues)).ToList();
-
-        var sheetElems = workbookElem.Elements(workbookElem.Name.Namespace + "sheet");
-        var sheets = sheetElems.Select(e => BuildSheetAst(e, issues)).ToList();
-
-        return new WorkbookAst
-        {
-            Styles = stylesAst,
-            Components = components,
-            Sheets = sheets,
-            Span = CreateSpan(workbookElem),
-        };
-    }
-
-    private void ValidateDsl(WorkbookAst root, List<Issue> issues, DslParserOptions options)
-    {
-        // ここで DSL 固有の検証（未定義参照、repeat 制約、sheetOptions 検証、静的レイアウト検証など）を行う。
-        // 具体的な検証内容は 6. エラーモデル と 7. テスト観点を参照して実装する。
-    }
-
-    private SourceSpan? CreateSpan(XElement elem)
-    {
-        if (elem is IXmlLineInfo li && li.HasLineInfo())
-        {
-            return new SourceSpan
-            {
-                FileName = null,
-                Line = li.LineNumber,
-                Column = li.LinePosition,
-            };
-        }
-        return null;
-    }
-}
-```
+- `IDslParser` インターフェース実装ではなく `static` クラスとして提供される。
+- `ParseFromFile` は `DslParserOptions.RootFilePath` を補完し、`styleImport` / `componentImport` の相対パス解決に利用する。
+- `EnableSchemaValidation` はオプションとして存在するが、現行実装では XSD 検証処理は無効化されている。
 
 ---
 
@@ -291,10 +167,10 @@ public sealed class XmlDslParser : IDslParser
 | `<numberFormat code="">`               | `StyleAst._props["numberFormat.code"]`                    |
 | `<component name="">`                  | `ComponentAst.Name`, `ComponentAst.Body`                  |
 | `<grid>`                               | `GridAst`                                                 |
-| `<cell r c rowspan colspan ...>`       | `CellAst` + `Placement`                                   |
-| `<use component="" name="" with="">`   | `UseAst` + `Placement`                                    |
+| `<cell r c rowSpan colSpan ...>`       | `CellAst` + `Placement`                                   |
+| `<use component="" instance="" with="">`   | `UseAst` + `Placement`                                    |
 | `<repeat from="" var="" direction="">` | `RepeatAst` + `Placement`                                 |
-| `<sheet name="" rows="" cols="">`      | `SheetAst.Name`, `SheetAst.Rows`, `SheetAst.Cols`         |
+| `<sheet name="">`      | `SheetAst.Name`         |
 | `<sheetOptions>`                       | `SheetOptionsAst`                                         |
 | `<freeze at="">`                       | `FreezeAst.At`                                            |
 | `<groupRows at="" collapsed="">`       | `GroupRowsAst.At`, `GroupRowsAst.Collapsed`              |
@@ -470,17 +346,15 @@ public sealed class ComponentAst
 
 ---
 
-### 4.6 SheetAst（XSD: `<sheet name="" rows="" cols="">`）
+### 4.6 SheetAst（XSD: `<sheet name="">`）
 
 #### 対応表
 
 | XSD 要素/属性            | AST フィールド                         |
 |-------------------------|----------------------------------------|
 | `@name`                 | `SheetAst.Name`                        |
-| `@rows`                 | `SheetAst.Rows`                        |
-| `@cols`                 | `SheetAst.Cols`                        |
-| `<styleRef>`            | `SheetAst.Styles`（StyleRefAst の一覧）|
-| `<grid>/<cell>/...`     | `SheetAst.Children`                    |
+| `<styleRef>`            | `SheetAst.StyleRefs`（StyleRefAst の一覧）|
+| `<grid>/<cell>/...`     | `SheetAst.Children`（Placement をキーとする辞書） |
 | `<sheetOptions>`        | `SheetAst.Options`                     |
 
 #### AST
@@ -489,11 +363,8 @@ public sealed class ComponentAst
 public sealed class SheetAst
 {
     public string Name { get; init; } = string.Empty;
-    public int Rows { get; init; }
-    public int Cols { get; init; }
-
-    public IReadOnlyList<StyleRefAst> Styles { get; init; } = Array.Empty<StyleRefAst>();
-    public IReadOnlyList<LayoutNodeAst> Children { get; init; } = Array.Empty<LayoutNodeAst>();
+    public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
+    public IReadOnlyDictionary<Placement, LayoutNodeAst> Children { get; init; }
     public SheetOptionsAst? Options { get; init; }
 
     public SourceSpan? Span { get; init; }
@@ -534,11 +405,11 @@ public sealed class GridAst : LayoutNodeAst
 |------------------------|--------------------------------------|
 | `@r`                   | `Placement.Row`                     |
 | `@c`                   | `Placement.Col`                     |
-| `@rowspan`             | `Placement.RowSpan`                 |
-| `@colspan`             | `Placement.ColSpan`                 |
+| `@rowSpan`             | `Placement.RowSpan`                 |
+| `@colSpan`             | `Placement.ColSpan`                 |
 | `@when`                | `Placement.WhenExprRaw`             |
 | `@value`               | `CellAst.ValueRaw`                  |
-| `@styleRef`            | `CellAst.StyleRefShortcut`          |
+| `@styleRef`            | （現行実装では未反映。今後 CellAst.StyleRefShortcut へ格納予定） |
 | `@formulaRef`          | `CellAst.FormulaRef`                |
 | `<styleRef>`           | `CellAst.Styles`                    |
 
@@ -564,7 +435,7 @@ public sealed class CellAst : LayoutNodeAst
 | XSD 属性           | AST フィールド            |
 |--------------------|---------------------------|
 | `@component`       | `ComponentName`          |
-| `@name`            | `InstanceName`           |
+| `@instance`        | `InstanceName`           |
 | `@with`            | `WithExprRaw`            |
 | Placement 属性群   | `Placement`              |
 | `<styleRef>`       | `Styles`                 |
@@ -679,9 +550,9 @@ public sealed class AutoFilterAst
 
 ### 5.1 全体フロー
 
-1. `ParseFromText` / `ParseFromStream` で XML 入力を受け取る。
+1. `ParseFromFile` / `ParseFromText` / `ParseFromStream` で XML 入力を受け取る。
 2. `XDocument.Load` で XML パース（`XmlException` を捕捉し Fatal Issue）。
-3. `EnableSchemaValidation` が true の場合、XSD 検証を行い、スキーマ違反を Fatal Issue にする。
+3. 現行実装では XSD 検証は無効（未実装）。EnableSchemaValidation は将来実装用オプション。
 4. ルート要素 `<workbook>` から `BuildWorkbookAst` を呼び出し、AST 全体を構築する。
 5. 構築された AST に対して `ValidateDsl` を実行し、DSL 固有ルールを検証する。
 6. Fatal Issue が存在する場合は、`Root` を null にして返却する。
@@ -695,14 +566,14 @@ public sealed class AutoFilterAst
 - `BuildStylesAst`:
   - `<style>` ごとに `BuildStyleAst`
 - `BuildSheetAst`:
-  - sheet の属性（name, rows, cols）を読む
+  - sheet の属性（name）を読む
   - `<styleRef>` を `StyleRefAst` に変換
   - `<grid>/<cell>/<use>/<repeat>` を順に読み、対応する AST を生成
   - `<sheetOptions>` → `BuildSheetOptionsAst`
 - `BuildComponentAst`:
   - `@name` を読み取り
   - 子要素の `grid/use/repeat` を `BuildGridAst` / `BuildUseAst` / `BuildRepeatAst` に委譲
-- `styleRef`と`use`の参照先を解決
+- `styleRef` と `use` の参照先を解決
   - 全定義をパースして`styleRef`→`style`、`use`→`Component`に紐づける
 ---
 
@@ -913,4 +784,3 @@ DslParser はこれらを評価せず、**文字列として AST に保持**す�
 - 大量の style / component / repeat を含む DSL でのメモリ使用量と速度を評価
 
 ---
-
