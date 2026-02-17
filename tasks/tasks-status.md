@@ -5,17 +5,17 @@ Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 1 / 24
+- Completed: 2 / 24
 - In Progress: 0 / 24
-- Not Started: 23 / 24
-- Completion Rate: 0%
+- Not Started: 22 / 24
+- Completion Rate: 8%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
 | 2.1 | Create Phase 2 coverage matrix for 14 skills | Done | Codex | None |
-| 2.2 | Define contract section template for non-entry skills | Not Started | Codex | 2.1 |
+| 2.2 | Define contract section template for non-entry skills | Done | Codex | 2.1 |
 | 2.3 | Define stop/approval section template | Not Started | Codex | 2.1 |
 | 2.4 | Define standard quality gate evidence template | Not Started | Codex | 2.1 |
 | 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Not Started | Codex | 2.2, 2.3, 2.4 |

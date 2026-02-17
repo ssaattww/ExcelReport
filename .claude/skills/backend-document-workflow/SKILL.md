@@ -10,6 +10,96 @@ description: Document workflow for backend design/plan/reverse-engineer/update-d
 - Execute document-centered backend commands directly in Claude.
 - Cover `/design`, `/plan`, `/update-doc`, and `/reverse-engineer` equivalent flows.
 
+## Execution Contract
+
+### Binding
+
+- This skill is a non-entry execution module and must comply with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
+- Baseline contract fields are mandatory for every invocation.
+- Required `contract_extensions` keys for this skill: `mode`, `target_docs`.
+
+### Input
+
+- Required baseline input fields: `objective`, `scope`, `constraints`, `acceptance_criteria`, `allowed_commands`, `sandbox_mode`.
+- Required extension container: `contract_extensions`.
+- Required input extensions: `contract_extensions.mode`, `contract_extensions.target_docs`.
+- Optional baseline input fields: `context_files`, `known_risks`, `stop_conditions`.
+
+### Output
+
+- Required baseline output fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
+- Required output extension echo: `contract_extensions.mode`, `contract_extensions.target_docs`.
+- `quality_gate` must include `result` and `evidence`.
+
+### Status Semantics
+
+- `completed`: selected document mode completed with required review/consistency checks passing.
+- `needs_input`: flow paused pending approval or missing requirement decisions.
+- `blocked`: execution cannot proceed because external prerequisites are unresolved.
+- `failed`: execution attempted but did not complete within safe boundaries.
+
+### Violation Handling
+
+- Missing required input field: stop execution and return `status: blocked` with missing fields in `blockers`.
+- Missing required output field: treat output as invalid and regenerate before handoff.
+- Invalid status value: treat as contract violation and stop handoff.
+- Missing required extensions: treat as contract violation and do not report completion.
+
+### Example
+
+```yaml
+input:
+  objective: "Generate design documents for selected backend modules"
+  scope:
+    in_scope:
+      - "Design mode output"
+    out_of_scope:
+      - "Implementation changes"
+  constraints:
+    - "Follow approved design standards"
+  acceptance_criteria:
+    - "Generated docs pass review"
+  allowed_commands:
+    - "rg"
+    - "apply_patch"
+  sandbox_mode: "workspace-write"
+  contract_extensions:
+    mode: "design"
+    target_docs:
+      - "docs/design/backend-module-a.md"
+      - "docs/design/backend-module-b.md"
+output:
+  status: "completed"
+  summary: "Backend document workflow completed for design mode"
+  changed_files:
+    - path: "docs/design/backend-module-a.md"
+      change_type: "modified"
+  tests:
+    - name: "backend-document-consistency-check"
+      result: "passed"
+  quality_gate:
+    result: "pass"
+    evidence:
+      - "Target docs reviewed and consistent"
+  blockers: []
+  next_actions:
+    - "Request approval before implementation"
+  contract_extensions:
+    mode: "design"
+    target_docs:
+      - "docs/design/backend-module-a.md"
+      - "docs/design/backend-module-b.md"
+```
+
+### References
+
+- `.claude/skills/workflow-entry/references/codex-execution-contract.md`
+- `.claude/skills/workflow-entry/references/contract-checklist.md`
+- `.claude/skills/workflow-entry/references/mandatory-stops.md`
+- `.claude/skills/workflow-entry/references/stop-approval-protocol.md`
+- `.claude/skills/workflow-entry/references/sandbox-matrix.md`
+- `.claude/skills/workflow-entry/references/non-entry-execution-contract-template.md`
+
 ## Modes
 
 - `design`: Requirement -> Design Doc/ADR -> review -> consistency -> approval.

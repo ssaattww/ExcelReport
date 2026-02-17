@@ -10,6 +10,92 @@ description: Single-agent execution loop for implementation tasks. Replaces task
 - Execute implementation tasks safely in a single agent.
 - Preserve the proven 4-step quality cycle without subagents.
 
+## Execution Contract
+
+### Binding
+
+- This skill is a non-entry execution module and must comply with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
+- Baseline contract fields are mandatory for every invocation.
+- Required `contract_extensions` keys for this skill: `task_unit_id`, `cycle_index`.
+
+### Input
+
+- Required baseline input fields: `objective`, `scope`, `constraints`, `acceptance_criteria`, `allowed_commands`, `sandbox_mode`.
+- Required extension container: `contract_extensions`.
+- Required input extensions: `contract_extensions.task_unit_id`, `contract_extensions.cycle_index`.
+- Optional baseline input fields: `context_files`, `known_risks`, `stop_conditions`.
+
+### Output
+
+- Required baseline output fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
+- Required output extension echo: `contract_extensions.task_unit_id`, `contract_extensions.cycle_index`.
+- `quality_gate` must include `result` and `evidence`.
+
+### Status Semantics
+
+- `completed`: current task unit cycle is complete and all required quality checks pass.
+- `needs_input`: cycle is paused because task scope or requirements need clarification.
+- `blocked`: cycle cannot continue due to external blockers (permissions, environment, missing dependency).
+- `failed`: cycle execution attempted but ended unrecoverably within allowed scope.
+
+### Violation Handling
+
+- Missing required input field: stop execution and return `status: blocked` with missing fields in `blockers`.
+- Missing required output field: treat output as invalid and regenerate before handoff.
+- Invalid status value: treat as contract violation and stop handoff.
+- Missing required extensions: treat as contract violation and do not report completion.
+
+### Example
+
+```yaml
+input:
+  objective: "Implement one task unit and run quality gate"
+  scope:
+    in_scope:
+      - "Task unit implementation"
+    out_of_scope:
+      - "Unrelated refactor"
+  constraints:
+    - "One task unit per cycle"
+  acceptance_criteria:
+    - "Quality gate passes"
+  allowed_commands:
+    - "rg"
+    - "apply_patch"
+  sandbox_mode: "workspace-write"
+  contract_extensions:
+    task_unit_id: "task-12.3"
+    cycle_index: 2
+output:
+  status: "completed"
+  summary: "Task unit task-12.3 finished with passing gates"
+  changed_files:
+    - path: "src/example.cs"
+      change_type: "modified"
+  tests:
+    - name: "task-cycle-quality-gate"
+      result: "passed"
+  quality_gate:
+    result: "pass"
+    evidence:
+      - "Build and tests pass for cycle 2"
+  blockers: []
+  next_actions:
+    - "Proceed to next task unit"
+  contract_extensions:
+    task_unit_id: "task-12.3"
+    cycle_index: 2
+```
+
+### References
+
+- `.claude/skills/workflow-entry/references/codex-execution-contract.md`
+- `.claude/skills/workflow-entry/references/contract-checklist.md`
+- `.claude/skills/workflow-entry/references/mandatory-stops.md`
+- `.claude/skills/workflow-entry/references/stop-approval-protocol.md`
+- `.claude/skills/workflow-entry/references/sandbox-matrix.md`
+- `.claude/skills/workflow-entry/references/non-entry-execution-contract-template.md`
+
 ## 4-Step Cycle (Mandatory Per Task)
 
 1. Implement one task unit.
