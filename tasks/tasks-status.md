@@ -1,41 +1,43 @@
 # Tasks Status
 
 Last Updated: 2026-02-13
-Scope: Phase 1 (P0基盤統合)
+Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 22 / 22
-- In Progress: 0 / 22
-- Not Started: 0 / 22
-- Completion Rate: 100%
+- Completed: 0 / 24
+- In Progress: 0 / 24
+- Not Started: 24 / 24
+- Completion Rate: 0%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
-| 1.1 | Create new unified entry skill | Done | Codex | None |
-| 1.2 | Convert existing entries to compatibility adapters | Done | Codex | 1.1 |
-| 1.3 | Create routing consistency table | Done | Codex | 1.1 |
-| 1.4 | Verification: Representative scenario testing | Done | Claude Code (manual testing) | 1.1, 1.2, 1.3 |
-| 2.1 | Define stop tag format and approval response format | Done | Codex | None |
-| 2.2 | Define mandatory stop points per workflow | Done | Codex | 2.1 |
-| 2.3 | Update lifecycle and document flow skills | Done | Codex | 2.1, 2.2 |
-| 2.4 | Document exception conditions | Done | Codex | 2.1 |
-| 2.5 | Verification: Stop -> Approval -> Resume flow | Done | Claude Code (manual testing) | 2.1, 2.2, 2.3, 2.4 |
-| 3.1 | Create execution contract specification | Done | Codex | None |
-| 3.2 | Define input schema | Done | Codex (part of 3.1) | 3.1 |
-| 3.3 | Define output schema | Done | Codex (part of 3.1) | 3.1 |
-| 3.4 | Update codex/SKILL.md to reference contract | Done | Codex | 3.1 |
-| 3.5 | Update compatibility adapters to reference contract | Done | Codex | 3.1, 3.4 |
-| 3.6 | Create contract compliance checklist | Done | Codex | 3.1 |
-| 3.7 | Verification: Contract compliance testing | Done | Claude Code (manual testing) | 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 |
-| 4.1 | Reclassify current matrix as read-only vs. write-enabled | Done | Codex | 1.1 |
-| 4.2 | Fix document generation workflows to workspace-write | Done | Codex | 1.1, 4.1 |
-| 4.3 | Implement two-stage escalation for review/diagnose | Done | Codex | 4.1 |
-| 4.4 | Define escalation conditions | Done | Codex | 4.3 |
-| 4.5 | Synchronize matrix across skills | Done | Codex | 4.2, 4.3, 3.4 |
-| 4.6 | Verification: Sandbox selection testing | Done | Claude Code (manual testing) | 4.1, 4.2, 4.3, 4.4, 4.5 |
+| 2.1 | Create Phase 2 coverage matrix for 14 skills | Not Started | Codex | None |
+| 2.2 | Define contract section template for non-entry skills | Not Started | Codex | 2.1 |
+| 2.3 | Define stop/approval section template | Not Started | Codex | 2.1 |
+| 2.4 | Define standard quality gate evidence template | Not Started | Codex | 2.1 |
+| 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.6 | Update backend-workflow-entry for stop propagation | Not Started | Codex | 2.3, 2.5 |
+| 2.7 | Update codex-workflow-entry for stop propagation | Not Started | Codex | 2.3, 2.5 |
+| 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.9 | Update tmux-sender with contract-aware completion handoff guidance | Not Started | Codex | 2.2, 2.4 |
+| 2.10 | Integrate contract and stop protocol into codex-lifecycle-orchestration | Not Started | Codex | 2.2, 2.3, 2.4, 2.5 |
+| 2.11 | Integrate contract and stop protocol into backend-lifecycle-execution | Not Started | Codex | 2.2, 2.3, 2.4, 2.5 |
+| 2.12 | Integrate contract output and stop triggers into codex-task-execution-loop | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.13 | Integrate contract output and stop triggers into backend-task-quality-loop | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.14 | Integrate contract and stop gating into codex-diagnose-and-review | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.15 | Integrate contract and stop gating into backend-diagnose-workflow | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.16 | Integrate contract, stop tags, and gate result section into codex-document-flow | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.17 | Integrate contract, stop tags, and gate result section into backend-document-workflow | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.18 | Integrate contract and stop/approval section into backend-integration-tests-workflow | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.19 | Synchronize references across all Phase 2 skills | Not Started | Codex | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18 |
+| 2.20 | Run sandbox policy consistency audit across execution skills | Not Started | Codex | 2.5, 2.8, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.19 |
+| 2.21 | Verification: contract compliance check for all 14 skills | Not Started | Claude Code (manual testing) | 2.19 |
+| 2.22 | Verification: Stop -> Approve -> Resume scenarios | Not Started | Claude Code (manual testing) | 2.19, 2.20 |
+| 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Not Started | Claude Code (manual testing) | 2.19 |
+| 2.24 | Create standard quality gate report and Phase 2 readiness summary | Not Started | Codex | 2.21, 2.22, 2.23 |
 
 ## Status Definitions
 
