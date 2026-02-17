@@ -78,9 +78,17 @@ Use `ai-development-guide` for anti-pattern checks and fail-fast error handling 
 
 ## Stop/Approval Protocol
 
-Escalation/failure handling in this loop must use explicit tag pairs:
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep status payloads normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Respect batch boundary: do not continue autonomous write loops until `[Stop: pre-implementation-approval]` is approved for current scope.
+Enforce `max_revision_cycles: 2`; overflow requires human intervention.
+Agent-local task/review outcomes never replace user approvals.
 
-- Requirement drift or unclear scope: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
-- Quality gate failed and safe auto-fix is not available: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
-- High-risk or architecture-expanding fix: `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
-- New implementation scope introduced mid-loop: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
+Stop points for this skill:
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).

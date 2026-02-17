@@ -125,26 +125,21 @@ next_actions:
 
 ## Stop/Approval Protocol
 
-Use explicit tag pairs for permission checks before any risky or state-changing Codex run.
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep payload fields normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only with explicit user `approved: true`; `escalation_gate` resumes only after reroute or user direction.
+Respect the batch boundary: do not enter autonomous implementation/test runs until `[Stop: pre-implementation-approval]` is approved.
+Enforce `max_revision_cycles: 2`; if exceeded, emit escalation and wait for user intervention.
+Agent-local success from Codex output never replaces user approvals.
 
-### Required Tag Pairs
+Stop points for this skill:
+- `[Stop: sandbox-escalation-required]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
 
-- Review/diagnose read-only to write escalation: `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
-- Starting implementation/test modification runs: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
-- High-impact flags (`--full-auto`, `--sandbox danger-full-access`): `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
-- Unrecoverable quality gate failure from Codex output: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
-- Scope/requirement drift while resuming: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
-
-### Resume Handling
-
-- Resume only after a matching approval tag is confirmed.
-- If `scope_changes` are provided, rerun routing and sandbox selection before `codex exec resume --last`.
-- Merge approval constraints into the resumed prompt.
-
-### Direct execution (only when explicitly requested)
-- After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
-- Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
 
 ## Critical Evaluation of Codex Output
 

@@ -71,10 +71,18 @@ output:
 
 ## Stop/Approval Protocol
 
-Use explicit phase-boundary and escalation tag pairs:
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep status payloads normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Respect batch boundary: document mode stays human-gated, and transitions into implementation require `[Stop: pre-implementation-approval]`.
+Enforce `max_revision_cycles: 2`; overflow requires human intervention.
+Agent-local document review approvals never replace user approvals.
 
-- Document/design handoff: `[Stop: pre-design-approval]` + `[Approve: design-approval]`
-- Any transition into implementation/test changes: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
-- Requirement contradiction or scope drift: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
-- Quality/consistency gate cannot pass safely: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
-- High-risk structural rewrite or destructive action: `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+Stop points for this skill:
+- `[Stop: pre-design-approval]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).

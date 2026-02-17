@@ -54,3 +54,21 @@ output:
 - Do not skip test review between implementation and final quality.
 - Do not merge incomplete skeleton coverage.
 - Do not claim completion without explicit pass evidence.
+
+## Stop/Approval Protocol
+
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep status payloads normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Respect batch boundary: no autonomous test-implementation loop before `[Stop: pre-implementation-approval]`.
+Enforce `max_revision_cycles: 2`; overflow requires human intervention.
+Agent-local test review approvals never replace user approvals.
+
+Stop points for this skill:
+- `[Stop: pre-design-approval]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).

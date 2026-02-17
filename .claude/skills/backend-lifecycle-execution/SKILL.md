@@ -89,10 +89,18 @@ ADR is required when architecture, technology, or data flow changes.
 
 ## Stop/Approval Protocol
 
-Use explicit tag pairs for lifecycle boundaries and escalations:
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep status payloads normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Batch boundary is mandatory: no autonomous implementation loop before `[Stop: pre-implementation-approval]` approval.
+Enforce `max_revision_cycles: 2`; overflow requires human intervention.
+Agent-local approvals from document or quality checks never replace user approval gates.
 
-- Document approval boundary: `[Stop: pre-design-approval]` + `[Approve: design-approval]`
-- Implementation start boundary: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
-- Requirement drift during execution: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
-- Quality gate failure with no safe auto-fix: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
-- High-risk/destructive operations: `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+Stop points for this skill:
+- `[Stop: pre-design-approval]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).

@@ -63,3 +63,20 @@ After two loops, escalate decision to user.
 - Do not stop at symptom-level conclusions.
 - Do not skip alternative-hypothesis evaluation.
 - Do not propose fixes without impact and regression analysis.
+
+## Stop/Approval Protocol
+
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate` and keep status payloads normalized (`status`, `gate`, `approved`, `revision_cycle`).
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Respect batch boundary: investigation loops may continue, but any write fix requires `[Stop: pre-implementation-approval]`.
+Enforce `max_revision_cycles: 2`; overflow requires human intervention.
+Agent-local confidence improvement never replaces user approvals.
+
+Stop points for this skill:
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).

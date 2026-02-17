@@ -44,19 +44,18 @@ This adapter does not perform contract validation - all validation is delegated 
 
 ## Stop/Approval Protocol
 
-This adapter is pass-through only. Stop/approval decisions are delegated to `workflow-entry`.
+This adapter is pass-through only and never opens or resolves gates locally.
+Use canonical markers: `[Stop: <Gate Name>]`, with upstream `gate_type` and status payload forwarded unchanged.
+`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
+Respect batch boundary state from `workflow-entry`; do not start autonomous execution from this adapter.
+Enforce `max_revision_cycles: 2` from upstream payloads and escalate overflow without adapter-local retries.
+Agent-local judgments in this adapter never count as approval.
 
-- Forward upstream tag pairs unchanged.
-- Do not emit adapter-local stop reasons.
-- Do not resolve approvals locally.
+Stop points forwarded by this skill:
+- `[Stop: intent-unresolved]` (`approval_gate`)
+- `[Stop: ambiguous-intent]` (`approval_gate`)
+- `[Stop: pre-design-approval]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
 
-### Pass-through Tag Pairs
-
-- `[Stop: intent-unresolved]` + `[Approve: route-selection]`
-- `[Stop: ambiguous-intent]` + `[Approve: route-selection]`
-- `[Stop: pre-design-approval]` + `[Approve: design-approval]`
-- `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
-- `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
-- `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
-- `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
-- `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
