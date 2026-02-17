@@ -29,6 +29,14 @@ Run normalization before intent detection:
 2. Detect intent candidates from normalized request.
 3. If no candidate is found, emit `[Stop: intent-unresolved]` and request one canonical intent.
 
+## Lexical Guidance
+
+Use these terms consistently during normalization:
+
+- `investigate`: research, analysis, and report generation before design decisions; route as `design`.
+- `diagnose`: bug root-cause analysis and failure investigation; route as `diagnose`.
+- `debug` and `root cause`: explicit debugging workflows; route as `diagnose`.
+
 ## Deterministic Routing Priority
 
 Apply this exact logic to every request:

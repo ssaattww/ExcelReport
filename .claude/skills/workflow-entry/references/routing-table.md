@@ -10,8 +10,8 @@ This table maps canonical workflow intents to deterministic route targets.
 | build | `build`, `compile`, `make pass` | `route.execute-task` | `codex-lifecycle-orchestration`, `codex-task-execution-loop` | `backend-task-quality-loop` |
 | task | `task`, `do this change`, `execute task` | `route.execute-task` | `codex-lifecycle-orchestration`, `codex-task-execution-loop` | `backend-task-quality-loop` |
 | review | `review`, `audit`, `check quality` | `route.diagnose-review` | `codex-diagnose-and-review` | `backend-task-quality-loop` |
-| diagnose | `diagnose`, `debug`, `investigate`, `root cause` | `route.diagnose-review` | `codex-diagnose-and-review` | `backend-diagnose-workflow` |
-| design | `design`, `spec`, `architecture` | `route.document-flow` | `codex-document-flow` | `backend-document-workflow` |
+| diagnose | `diagnose`, `debug`, `root cause` | `route.diagnose-review` | `codex-diagnose-and-review` | `backend-diagnose-workflow` |
+| design | `design`, `spec`, `architecture`, `investigate` | `route.document-flow` | `codex-document-flow` | `backend-document-workflow` |
 | plan | `plan`, `work plan`, `roadmap` | `route.document-flow` | `codex-document-flow` | `backend-document-workflow` |
 | update-doc | `update doc`, `document update`, `revise docs` | `route.document-flow` | `codex-document-flow` | `backend-document-workflow` |
 | reverse-engineer | `reverse engineer`, `analyze existing code` | `route.document-flow` | `codex-document-flow` | `backend-document-workflow`, `backend-diagnose-workflow` |
