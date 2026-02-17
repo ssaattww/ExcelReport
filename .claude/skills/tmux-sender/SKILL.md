@@ -158,6 +158,14 @@ tmux send-keys -t codex-session:0.1 Enter
 # - Ready to review results
 ```
 
+## Completion Notification Contract
+
+- When monitoring detects completion, notify the caller and pass raw Codex stdout unchanged.
+- `tmux-sender` owns completion detection, notification, and output pass-through only.
+- Do not parse, validate, or gate on `quality_gate` in this skill.
+- The caller (`workflow-entry` or Codex skill) is responsible for all `quality_gate` validation.
+- Keep context aligned with [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) and [`quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).
+
 ## Best Practices
 
 ### 1. Session Management
