@@ -5,10 +5,10 @@ Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 5 / 24
+- Completed: 7 / 24
 - In Progress: 0 / 24
-- Not Started: 19 / 24
-- Completion Rate: 21%
+- Not Started: 17 / 24
+- Completion Rate: 29%
 
 ## Task List
 
@@ -19,8 +19,8 @@ Scope: Phase 2 (全フロー展開)
 | 2.3 | Define stop/approval section template | Done | Codex | 2.1 |
 | 2.4 | Define standard quality gate evidence template | Done | Codex | 2.1 |
 | 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.6 | Update backend-workflow-entry for stop propagation | Not Started | Codex | 2.3, 2.5 |
-| 2.7 | Update codex-workflow-entry for stop propagation | Not Started | Codex | 2.3, 2.5 |
+| 2.6 | Update backend-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
+| 2.7 | Update codex-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
 | 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Not Started | Codex | 2.2, 2.3, 2.4 |
 | 2.9 | Update tmux-sender with contract-aware completion handoff guidance | Not Started | Codex | 2.2, 2.4 |
 | 2.10 | Integrate contract and stop protocol into codex-lifecycle-orchestration | Not Started | Codex | 2.2, 2.3, 2.4, 2.5 |

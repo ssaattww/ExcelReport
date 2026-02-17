@@ -25,6 +25,7 @@ Emit this notice on every invocation:
    - `legacy-fallback` (when explicitly set)
 3. Delegate to `workflow-entry` and receive `route_intent`, `route_target`, and `sandbox_mode`.
 4. Invoke downstream execution only from `workflow-entry` decision output.
+If `workflow-entry` is unavailable or fails to return a routing decision, emit `[Stop: routing-unavailable]` immediately.
 
 ## Contract Compliance
 
@@ -47,18 +48,16 @@ This adapter does not perform contract validation - all validation is delegated 
 
 ## Stop/Approval Protocol
 
-This adapter is pass-through only and never opens or resolves gates locally.
-Use canonical markers: `[Stop: <Gate Name>]`, with upstream `gate_type` and status payload forwarded unchanged.
-`approval_gate` resumes only after explicit user `approved: true`; `escalation_gate` resumes only after reroute/user direction.
-Respect batch boundary state from `workflow-entry`; do not start autonomous execution from this adapter.
-Enforce `max_revision_cycles: 2` from upstream payloads and escalate overflow without adapter-local retries.
-Agent-local judgments in this adapter never count as approval.
+Propagate all `[Stop: ...]` and `[Approve: ...]` markers and gate payloads from `workflow-entry` unchanged.
+Do not open, classify, or resolve stop gates in this adapter.
+Do not create adapter-local approval or escalation gates.
+Resume behavior is delegated to upstream gate state and approval outcomes from `workflow-entry`.
+Reference: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
 
-Stop points forwarded by this skill:
-- `[Stop: intent-unresolved]` (`approval_gate`)
-- `[Stop: ambiguous-intent]` (`approval_gate`)
-- `[Stop: pre-design-approval]` (`approval_gate`)
-- `[Stop: pre-implementation-approval]` (`approval_gate`)
-- `[Stop: sandbox-escalation-required]` (`approval_gate`)
+## Quality Gate Handoff
 
-Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
+Pass `quality_gate` objects through this adapter unchanged.
+Do not evaluate, normalize, or modify `quality_gate.result`, `evidence`, `blockers`, or `branching`.
+Do not add adapter-local gate IDs, criteria, or decision logic.
+`workflow-entry` performs boundary validation (`quality_gate` exists, `quality_gate.result` normalized); downstream executors perform interpretation and branching decisions.
+Reference: [`../workflow-entry/references/quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).
