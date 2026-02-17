@@ -5,10 +5,10 @@ Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 7 / 24
+- Completed: 8 / 24
 - In Progress: 0 / 24
-- Not Started: 17 / 24
-- Completion Rate: 29%
+- Not Started: 16 / 24
+- Completion Rate: 33%
 
 ## Task List
 
@@ -21,7 +21,7 @@ Scope: Phase 2 (全フロー展開)
 | 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Done | Codex | 2.2, 2.3, 2.4 |
 | 2.6 | Update backend-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
 | 2.7 | Update codex-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
-| 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Not Started | Codex | 2.2, 2.3, 2.4 |
+| 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Done | Codex | 2.2, 2.3, 2.4 |
 | 2.9 | Update tmux-sender with contract-aware completion handoff guidance | Not Started | Codex | 2.2, 2.4 |
 | 2.10 | Integrate contract and stop protocol into codex-lifecycle-orchestration | Not Started | Codex | 2.2, 2.3, 2.4, 2.5 |
 | 2.11 | Integrate contract and stop protocol into backend-lifecycle-execution | Not Started | Codex | 2.2, 2.3, 2.4, 2.5 |

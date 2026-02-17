@@ -77,13 +77,23 @@ If the user explicitly asks for direct execution (not via tmux):
 - Prompts sent to Codex should explicitly require contract-compliant structured output.
 - Treat any missing required output field as a contract violation and do not accept the result as complete.
 
+## Quality Gate Evidence
+
+Emit `quality_gate` using `.claude/skills/workflow-entry/references/quality-gate-evidence-template.md`.
+Normalize local statuses into `result: pass|fail|blocked` before handoff.
+Always include: `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`.
+Treat machine gate pass as non-equivalent to user approval.
+Use `branching.max_cycles: 2` unless the skill defines a stricter limit.
+
 ### Required output fields
+
+For Codex task-execution outputs, include all fields below.
 
 - `status` (`completed` / `needs_input` / `blocked` / `failed`)
 - `summary`
 - `changed_files`
 - `tests`
-- `quality_gate`
+- `quality_gate` (must include `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`; gate_type map: implementation/build/task -> `implementation`; review/diagnose -> `diagnosis`; design/plan/update-doc/reverse-engineer -> `document`; add-integration-tests -> `test_review`)
 - `blockers`
 - `next_actions`
 
@@ -106,9 +116,20 @@ tests:
   - name: "manual-review"
     result: "passed"
 quality_gate:
+  gate_id: "impl-quality-final"
+  gate_type: "implementation"
+  trigger: "post-change validation"
+  criteria:
+    - "All required contract fields are present"
+    - "No stop/approval protocol violations detected"
   result: "pass"
   evidence:
     - "Required contract fields are present"
+  blockers: []
+  branching:
+    on_pass: "handoff"
+    on_fail: "escalate"
+    max_cycles: 2
 blockers: []
 next_actions:
   - "Proceed to next task if no additional constraints are raised"
@@ -126,7 +147,7 @@ next_actions:
 ## Stop/Approval Protocol
 
 Use canonical markers: `[Stop: <Gate Name>]`.
-Classify every stop as `approval_gate` or `escalation_gate` and keep payload fields normalized (`status`, `gate`, `approved`, `revision_cycle`).
+Classify every stop as `approval_gate` or `escalation_gate`; include gate record keys (`gate_name`, `gate_type`, `trigger`, `ask_method`, `required_user_action`, `resume_if`, `fallback_if_rejected`) and keep payload fields normalized (`status`, `gate.gate_name`, `gate.gate_type`, `gate.approved`, `gate.batch_boundary`, `gate.revision_cycle`, `gate.max_revision_cycles`, `quality_gate.result`).
 `approval_gate` resumes only with explicit user `approved: true`; `escalation_gate` resumes only after reroute or user direction.
 Respect the batch boundary: do not enter autonomous implementation/test runs until `[Stop: pre-implementation-approval]` is approved.
 Enforce `max_revision_cycles: 2`; if exceeded, emit escalation and wait for user intervention.
@@ -138,6 +159,7 @@ Stop points for this skill:
 - `[Stop: high-risk-change]` (`approval_gate`)
 - `[Stop: quality-gate-failed]` (`escalation_gate`)
 - `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: revision-limit-reached]` (`escalation_gate`)
 
 Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
 
