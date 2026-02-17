@@ -139,6 +139,39 @@ Last Updated: 2026-02-17
 
 ---
 
+### 指摘点6: claude-code-workflows をベースにする
+
+**日時**: 2026-02-17
+**指摘内容**: 元にする考え方は claude-code-workflows で、これを codex に依頼する形に変換することがこの新しいワークフローの目的
+
+**詳細**:
+- **claude-code-workflows**: sub-agent を使って実行する形のオリジナルワークフロー
+- **新ワークフローの目的**: これを codex に依頼する形に変換すること
+- **重要原則**: claude-code-workflows の内容で問題ない部分はそのまま使う
+- 完全に新しく作るのではなく、既存の良い部分を再利用する
+
+**影響範囲**:
+- すべてのスキル設計・実装タスク
+- テンプレート作成
+- Stop/Approval プロトコル
+- 契約定義
+- 品質ゲート
+
+**claude-code-workflows の場所**:
+- ディレクトリ: `/home/ibis/dotnet_ws/ExcelReport/claude-code-workflows/`
+- 構成: backend/, frontend/, skills/, agents/, commands/
+
+**対応方針**:
+1. タスク実施前に必ず claude-code-workflows の該当部分を調査
+2. 再利用できる部分を特定(設計、フロー、テンプレート、文言など)
+3. codex に依頼する際は「claude-code-workflows の [該当部分] をベースにして、codex 実行形式に変換」と明示
+4. 新規作成ではなく「変換・適応」の視点で作業
+
+**状態**: 記録完了、今後の作業に反映
+**優先度**: 最高
+
+---
+
 ## 対応履歴
 
 （ここに対応した指摘点の履歴を記録）
