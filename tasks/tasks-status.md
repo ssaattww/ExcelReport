@@ -1,20 +1,20 @@
 # Tasks Status
 
-Last Updated: 2026-02-13
+Last Updated: 2026-02-17
 Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 0 / 24
+- Completed: 1 / 24
 - In Progress: 0 / 24
-- Not Started: 24 / 24
+- Not Started: 23 / 24
 - Completion Rate: 0%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
-| 2.1 | Create Phase 2 coverage matrix for 14 skills | Not Started | Codex | None |
+| 2.1 | Create Phase 2 coverage matrix for 14 skills | Done | Codex | None |
 | 2.2 | Define contract section template for non-entry skills | Not Started | Codex | 2.1 |
 | 2.3 | Define stop/approval section template | Not Started | Codex | 2.1 |
 | 2.4 | Define standard quality gate evidence template | Not Started | Codex | 2.1 |
