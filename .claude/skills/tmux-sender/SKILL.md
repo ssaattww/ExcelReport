@@ -11,88 +11,19 @@ This skill provides command sending and monitoring capabilities between tmux pan
 
 ## Execution Contract
 
-### Binding
-
-- This skill is a non-entry execution module and must comply with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
-- Baseline contract fields are mandatory for every invocation, even when this skill is used as a transport utility.
-- Required `contract_extensions` keys for this skill: `pane_target`, `command_count`.
-
-### Input
-
-- Required baseline input fields: `objective`, `scope`, `constraints`, `acceptance_criteria`, `allowed_commands`, `sandbox_mode`.
-- Required extension container: `contract_extensions`.
-- Required input extensions: `contract_extensions.pane_target`, `contract_extensions.command_count`.
-- Optional baseline input fields: `context_files`, `known_risks`, `stop_conditions`.
-
-### Output
-
-- Required baseline output fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
-- Required output extension echo: `contract_extensions.pane_target`, `contract_extensions.command_count`.
-- `quality_gate` must include `result` and `evidence`.
-
-### Status Semantics
-
-- `completed`: command dispatch/monitoring steps finished for the requested pane and command count.
-- `needs_input`: execution paused because pane target or command payload is incomplete or ambiguous.
-- `blocked`: execution cannot proceed due to tmux/environment constraints (pane not found, missing process, permission limits).
-- `failed`: execution attempted but command transport or monitoring did not complete successfully within safe retries.
-
-### Violation Handling
-
-- Missing required input field: stop execution and return `status: blocked` with missing fields in `blockers`.
-- Missing required output field: treat output as invalid and regenerate before handoff.
-- Invalid status value: treat as contract violation and stop handoff.
-- Missing required extensions: treat as contract violation and do not report completion.
-
-### Example
+This skill follows the non-entry execution contract standard.
+Required `contract_extensions`: `pane_target`, `command_count`.
+See [`codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md) and [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) for full rules.
 
 ```yaml
 input:
-  objective: "Send codex command to remote pane and monitor completion"
-  scope:
-    in_scope:
-      - "tmux command dispatch"
-      - "completion monitoring"
-    out_of_scope:
-      - "business workflow execution"
-  constraints:
-    - "Use two-step send-keys pattern"
-  acceptance_criteria:
-    - "Command reaches target pane and completion is detectable"
-  allowed_commands:
-    - "tmux"
-    - ".claude/skills/tmux-sender/scripts/monitor-completion.sh"
-  sandbox_mode: "workspace-write"
-  contract_extensions:
-    pane_target: "codex-session:0.1"
-    command_count: 2
+  objective: "Send command to target pane and monitor completion"
+  contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
 output:
   status: "completed"
-  summary: "Command sent to target pane and monitoring started"
-  changed_files: []
-  tests:
-    - name: "tmux-pane-delivery-check"
-      result: "passed"
-  quality_gate:
-    result: "pass"
-    evidence:
-      - "Target pane accepted command and Enter key dispatch"
-  blockers: []
-  next_actions:
-    - "Review command result from monitored pane"
-  contract_extensions:
-    pane_target: "codex-session:0.1"
-    command_count: 2
+  quality_gate: { result: "pass", evidence: ["pane accepted command"] }
+  contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
 ```
-
-### References
-
-- `.claude/skills/workflow-entry/references/codex-execution-contract.md`
-- `.claude/skills/workflow-entry/references/contract-checklist.md`
-- `.claude/skills/workflow-entry/references/mandatory-stops.md`
-- `.claude/skills/workflow-entry/references/stop-approval-protocol.md`
-- `.claude/skills/workflow-entry/references/sandbox-matrix.md`
-- `.claude/skills/workflow-entry/references/non-entry-execution-contract-template.md`
 
 ## Prerequisites
 

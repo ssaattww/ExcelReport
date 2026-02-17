@@ -22,7 +22,7 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 4. **Select the sandbox mode based on task intent** (see Sandbox Selection Matrix below):
    - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - ドキュメント作成には書き込み権限が必須
    - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - コード変更と自動実行
-   - **Review/Diagnose** (review/diagnose): Start with `read-only`, escalate to `workspace-write` only after user approval if fixes are needed
+   - **Review/Diagnose** (review/diagnose): Start with `read-only`; before write escalation emit `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
    - **Pure analysis**: `read-only` - 読み取りのみで十分な場合
    - **Network/broad access**: `danger-full-access` - 明示的な要求がある場合のみ
 5. Assemble the codex command with the appropriate options:
@@ -54,7 +54,7 @@ If the user explicitly asks for direct execution (not via tmux):
 | **Document generation** (design/plan/update-doc/reverse-engineer) | `workspace-write` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write "<prompt>"` |
 | **Implementation** (implement/build/task/add-integration-tests) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
 | **Review/Diagnose** (initial) | `read-only` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox read-only "<prompt>"` |
-| **Review/Diagnose** (with fixes after approval) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
+| **Review/Diagnose** (with fixes after `[Approve: sandbox-escalation]`) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
 | **Pure analysis** (no file changes) | `read-only` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox read-only "<prompt>"` |
 | Permit network or broad access | `danger-full-access` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox danger-full-access --full-auto "<prompt>"` |
 | Resume recent session | Inherited | `echo "<prompt>" \| codex exec --skip-git-repo-check resume --last` |
@@ -90,7 +90,7 @@ If the user explicitly asks for direct execution (not via tmux):
 ### `status` value meanings
 
 - `completed`: Task finished and acceptance criteria satisfied.
-- `needs_input`: Stop and request approval/clarification/additional inputs before continuing.
+- `needs_input`: emit an explicit stop tag pair and request approval/clarification/additional inputs before continuing.
 - `blocked`: Cannot proceed due to unresolved external dependency or hard constraint.
 - `failed`: Attempt executed but failed because of errors that require retry/rework.
 
@@ -123,6 +123,24 @@ next_actions:
 - The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
+## Stop/Approval Protocol
+
+Use explicit tag pairs for permission checks before any risky or state-changing Codex run.
+
+### Required Tag Pairs
+
+- Review/diagnose read-only to write escalation: `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
+- Starting implementation/test modification runs: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
+- High-impact flags (`--full-auto`, `--sandbox danger-full-access`): `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+- Unrecoverable quality gate failure from Codex output: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
+- Scope/requirement drift while resuming: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
+
+### Resume Handling
+
+- Resume only after a matching approval tag is confirmed.
+- If `scope_changes` are provided, rerun routing and sandbox selection before `codex exec resume --last`.
+- Merge approval constraints into the resumed prompt.
+
 ### Direct execution (only when explicitly requested)
 - After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
 - When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
@@ -150,5 +168,5 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 
 ## Error Handling
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
-- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
+- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`), emit `[Stop: high-risk-change]` + `[Approve: high-risk-change]` and get approval via `AskUserQuestion` unless it was already given.
 - When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.

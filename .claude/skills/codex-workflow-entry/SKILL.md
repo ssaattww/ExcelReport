@@ -44,3 +44,22 @@ This adapter does not perform contract validation - all validation is delegated 
 - Sandbox selection criteria are defined in `workflow-entry/references/sandbox-matrix.md` via delegated `workflow-entry`.
 - Keep sandbox behavior synchronized with `.claude/skills/codex/SKILL.md` (Codex-side sandbox selection guidance).
 - If drift is detected between this adapter, `workflow-entry` references, and `.claude/skills/codex/SKILL.md`, treat `workflow-entry/references/sandbox-matrix.md` as source of truth and update the mismatched documents together in the same change.
+
+## Stop/Approval Protocol
+
+This adapter is pass-through only. Stop/approval decisions are delegated to `workflow-entry`.
+
+- Forward upstream tag pairs unchanged.
+- Do not emit adapter-local stop reasons.
+- Do not resolve approvals locally.
+
+### Pass-through Tag Pairs
+
+- `[Stop: intent-unresolved]` + `[Approve: route-selection]`
+- `[Stop: ambiguous-intent]` + `[Approve: route-selection]`
+- `[Stop: pre-design-approval]` + `[Approve: design-approval]`
+- `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
+- `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
+- `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+- `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
+- `[Stop: requirement-change-detected]` + `[Approve: route-selection]`

@@ -12,89 +12,19 @@ description: Single-agent execution loop for implementation tasks. Replaces task
 
 ## Execution Contract
 
-### Binding
-
-- This skill is a non-entry execution module and must comply with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
-- Baseline contract fields are mandatory for every invocation.
-- Required `contract_extensions` keys for this skill: `task_unit_id`, `cycle_index`.
-
-### Input
-
-- Required baseline input fields: `objective`, `scope`, `constraints`, `acceptance_criteria`, `allowed_commands`, `sandbox_mode`.
-- Required extension container: `contract_extensions`.
-- Required input extensions: `contract_extensions.task_unit_id`, `contract_extensions.cycle_index`.
-- Optional baseline input fields: `context_files`, `known_risks`, `stop_conditions`.
-
-### Output
-
-- Required baseline output fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
-- Required output extension echo: `contract_extensions.task_unit_id`, `contract_extensions.cycle_index`.
-- `quality_gate` must include `result` and `evidence`.
-
-### Status Semantics
-
-- `completed`: current task unit cycle is complete and all required quality checks pass.
-- `needs_input`: cycle is paused because task scope or requirements need clarification.
-- `blocked`: cycle cannot continue due to external blockers (permissions, environment, missing dependency).
-- `failed`: cycle execution attempted but ended unrecoverably within allowed scope.
-
-### Violation Handling
-
-- Missing required input field: stop execution and return `status: blocked` with missing fields in `blockers`.
-- Missing required output field: treat output as invalid and regenerate before handoff.
-- Invalid status value: treat as contract violation and stop handoff.
-- Missing required extensions: treat as contract violation and do not report completion.
-
-### Example
+This skill follows the non-entry execution contract standard.
+Required `contract_extensions`: `task_unit_id`, `cycle_index`.
+See [`codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md) and [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) for full rules.
 
 ```yaml
 input:
   objective: "Implement one task unit and run quality gate"
-  scope:
-    in_scope:
-      - "Task unit implementation"
-    out_of_scope:
-      - "Unrelated refactor"
-  constraints:
-    - "One task unit per cycle"
-  acceptance_criteria:
-    - "Quality gate passes"
-  allowed_commands:
-    - "rg"
-    - "apply_patch"
-  sandbox_mode: "workspace-write"
-  contract_extensions:
-    task_unit_id: "task-12.3"
-    cycle_index: 2
+  contract_extensions: { task_unit_id: "task-12.3", cycle_index: 2 }
 output:
   status: "completed"
-  summary: "Task unit task-12.3 finished with passing gates"
-  changed_files:
-    - path: "src/example.cs"
-      change_type: "modified"
-  tests:
-    - name: "task-cycle-quality-gate"
-      result: "passed"
-  quality_gate:
-    result: "pass"
-    evidence:
-      - "Build and tests pass for cycle 2"
-  blockers: []
-  next_actions:
-    - "Proceed to next task unit"
-  contract_extensions:
-    task_unit_id: "task-12.3"
-    cycle_index: 2
+  quality_gate: { result: "pass", evidence: ["cycle checks passed"] }
+  contract_extensions: { task_unit_id: "task-12.3", cycle_index: 2 }
 ```
-
-### References
-
-- `.claude/skills/workflow-entry/references/codex-execution-contract.md`
-- `.claude/skills/workflow-entry/references/contract-checklist.md`
-- `.claude/skills/workflow-entry/references/mandatory-stops.md`
-- `.claude/skills/workflow-entry/references/stop-approval-protocol.md`
-- `.claude/skills/workflow-entry/references/sandbox-matrix.md`
-- `.claude/skills/workflow-entry/references/non-entry-execution-contract-template.md`
 
 ## 4-Step Cycle (Mandatory Per Task)
 
@@ -114,9 +44,9 @@ output:
 ### 2) Escalation check
 
 Escalate to user if any condition is true:
-- Requirements are unclear or changed.
-- Task is blocked by missing environment or permissions.
-- Fix would require architecture change not in design docs.
+- Requirements are unclear or changed: emit `[Stop: requirement-change-detected]` + `[Approve: route-selection]`.
+- Task is blocked by missing environment or permissions: emit `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]` with blocker details.
+- Fix would require architecture change not in design docs: emit `[Stop: high-risk-change]` + `[Approve: high-risk-change]`.
 
 ### 3) Quality gate
 
@@ -131,7 +61,7 @@ Use `ai-development-guide` for anti-pattern checks and fail-fast error handling 
 ### 4) Commit readiness and report
 
 - If all gates pass, mark task as ready.
-- If not, return explicit blockers and next action options.
+- If not, emit `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`, then return explicit blockers and next action options.
 
 ## Hard Rules
 
@@ -145,3 +75,12 @@ Use `ai-development-guide` for anti-pattern checks and fail-fast error handling 
 - Use `integration-e2e-testing` when adding or changing cross-component behavior.
 - Keep integration tests close to implementation.
 - Run E2E on milestone boundaries or before final handoff.
+
+## Stop/Approval Protocol
+
+Escalation/failure handling in this loop must use explicit tag pairs:
+
+- Requirement drift or unclear scope: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
+- Quality gate failed and safe auto-fix is not available: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
+- High-risk or architecture-expanding fix: `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+- New implementation scope introduced mid-loop: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`

@@ -41,3 +41,22 @@ This adapter does not perform contract validation - all validation is delegated 
 - Do not parse or classify intent.
 - Do not apply routing priority.
 - Do not decide sandbox mode.
+
+## Stop/Approval Protocol
+
+This adapter is pass-through only. Stop/approval decisions are delegated to `workflow-entry`.
+
+- Forward upstream tag pairs unchanged.
+- Do not emit adapter-local stop reasons.
+- Do not resolve approvals locally.
+
+### Pass-through Tag Pairs
+
+- `[Stop: intent-unresolved]` + `[Approve: route-selection]`
+- `[Stop: ambiguous-intent]` + `[Approve: route-selection]`
+- `[Stop: pre-design-approval]` + `[Approve: design-approval]`
+- `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
+- `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
+- `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
+- `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
+- `[Stop: requirement-change-detected]` + `[Approve: route-selection]`

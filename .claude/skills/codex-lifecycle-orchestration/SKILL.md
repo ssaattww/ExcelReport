@@ -20,89 +20,19 @@ description: End-to-end lifecycle orchestration with a single Codex agent. Repla
 
 ## Execution Contract
 
-### Binding
-
-- This skill is a non-entry execution module and must comply with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
-- Baseline contract fields are mandatory for every invocation.
-- Required `contract_extensions` keys for this skill: `lifecycle_scale`, `phase`.
-
-### Input
-
-- Required baseline input fields: `objective`, `scope`, `constraints`, `acceptance_criteria`, `allowed_commands`, `sandbox_mode`.
-- Required extension container: `contract_extensions`.
-- Required input extensions: `contract_extensions.lifecycle_scale`, `contract_extensions.phase`.
-- Optional baseline input fields: `context_files`, `known_risks`, `stop_conditions`.
-
-### Output
-
-- Required baseline output fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
-- Required output extension echo: `contract_extensions.lifecycle_scale`, `contract_extensions.phase`.
-- `quality_gate` must include `result` and `evidence`.
-
-### Status Semantics
-
-- `completed`: all lifecycle phases in current scope are completed with passing checks.
-- `needs_input`: lifecycle flow must pause for user decision or missing requirements.
-- `blocked`: execution cannot continue because an external dependency prevents phase progress.
-- `failed`: execution attempted but did not recover to a valid completion state.
-
-### Violation Handling
-
-- Missing required input field: stop execution and return `status: blocked` with missing fields in `blockers`.
-- Missing required output field: treat output as invalid and regenerate before handoff.
-- Invalid status value: treat as contract violation and stop handoff.
-- Missing required extensions: treat as contract violation and do not report completion.
-
-### Example
+This skill follows the non-entry execution contract standard.
+Required `contract_extensions`: `lifecycle_scale`, `phase`.
+See [`codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md) and [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) for full rules.
 
 ```yaml
 input:
   objective: "Run medium lifecycle orchestration"
-  scope:
-    in_scope:
-      - "Design and work plan generation"
-    out_of_scope:
-      - "Production deployment"
-  constraints:
-    - "Use approved templates"
-  acceptance_criteria:
-    - "Design and work plan are approved"
-  allowed_commands:
-    - "rg"
-    - "apply_patch"
-  sandbox_mode: "workspace-write"
-  contract_extensions:
-    lifecycle_scale: "medium"
-    phase: "design"
+  contract_extensions: { lifecycle_scale: "medium", phase: "design" }
 output:
   status: "completed"
-  summary: "Completed medium-scale design and planning phases"
-  changed_files:
-    - path: "docs/design/example-design.md"
-      change_type: "modified"
-  tests:
-    - name: "contract-consistency-check"
-      result: "passed"
-  quality_gate:
-    result: "pass"
-    evidence:
-      - "Required lifecycle artifacts completed"
-  blockers: []
-  next_actions:
-    - "Proceed to implementation loop"
-  contract_extensions:
-    lifecycle_scale: "medium"
-    phase: "implementation-ready"
+  quality_gate: { result: "pass", evidence: ["phase checks passed"] }
+  contract_extensions: { lifecycle_scale: "medium", phase: "design" }
 ```
-
-### References
-
-- `.claude/skills/workflow-entry/references/codex-execution-contract.md`
-- `.claude/skills/workflow-entry/references/contract-checklist.md`
-- `.claude/skills/workflow-entry/references/mandatory-stops.md`
-- `.claude/skills/workflow-entry/references/stop-approval-protocol.md`
-- `.claude/skills/workflow-entry/references/sandbox-matrix.md`
-- `.claude/skills/workflow-entry/references/non-entry-execution-contract-template.md`
 
 ## Legacy Replacement
 
@@ -124,15 +54,15 @@ ADR is conditional when architecture, technology choice, or data flow changes.
 
 1. Requirement analysis and scope clarification.
 2. Create or update PRD.
-3. Review PRD quality and request user approval.
+3. Review PRD quality and emit `[Stop: pre-design-approval]` + `[Approve: design-approval]`.
 4. Create ADR if required.
-5. Review ADR quality and request user approval.
+5. Review ADR quality and emit `[Stop: pre-design-approval]` + `[Approve: design-approval]`.
 6. Create Design Doc.
 7. Run cross-document consistency check.
-8. Request user approval for design.
+8. Emit `[Stop: pre-design-approval]` + `[Approve: design-approval]` for design handoff.
 9. Create acceptance test skeleton plan (integration and E2E).
 10. Create Work Plan.
-11. Request batch approval for implementation phase.
+11. Emit `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`.
 12. Execute implementation loop with quality gates.
 
 ### Medium (3-5 files)
@@ -140,16 +70,16 @@ ADR is conditional when architecture, technology choice, or data flow changes.
 1. Requirement analysis and scope clarification.
 2. Create Design Doc.
 3. Run document quality and consistency checks.
-4. Request user approval for design.
+4. Emit `[Stop: pre-design-approval]` + `[Approve: design-approval]`.
 5. Create acceptance test skeleton plan.
 6. Create Work Plan.
-7. Request batch approval for implementation phase.
+7. Emit `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`.
 8. Execute implementation loop with quality gates.
 
 ### Small (1-2 files)
 
 1. Create simplified plan.
-2. Request batch approval.
+2. Emit `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`.
 3. Execute implementation loop with quality gates.
 
 ## Required Skill Combination by Phase
@@ -159,6 +89,16 @@ ADR is conditional when architecture, technology choice, or data flow changes.
 - Implementation: `coding-principles`, `testing-principles`
 - Quality gate and anti-pattern checks: `ai-development-guide`
 - Integration/E2E quality: `integration-e2e-testing`
+
+## Stop/Approval Protocol
+
+Apply explicit tag pairs at every phase boundary:
+
+- Document boundary (PRD/ADR/Design completion): `[Stop: pre-design-approval]` + `[Approve: design-approval]`
+- Implementation start boundary: `[Stop: pre-implementation-approval]` + `[Approve: implementation-start]`
+- Requirement drift during any phase: `[Stop: requirement-change-detected]` + `[Approve: route-selection]`
+- Non-recoverable quality gate failure: `[Stop: quality-gate-failed]` + `[Approve: resume-after-fix]`
+- High-risk/destructive actions: `[Stop: high-risk-change]` + `[Approve: high-risk-change]`
 
 ## Stop Conditions
 
