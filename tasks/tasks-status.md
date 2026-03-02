@@ -1,43 +1,40 @@
 # Tasks Status
 
-Last Updated: 2026-03-02 (Task 2.24 完了)
-Scope: Phase 2 (全フロー展開)
+Last Updated: 2026-03-03 (Phase 3 開始)
+Scope: Phase 3 (収束・最適化)
 
 ## Progress Summary
 
-- Completed: 24 / 24
-- In Progress: 0 / 24
-- Not Started: 0 / 24
-- Completion Rate: 100%
+- Completed: 0 / 8
+- In Progress: 0 / 8
+- Not Started: 8 / 8
+- Completion Rate: 0%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
-| 2.1 | Create Phase 2 coverage matrix for 14 skills | Done | Codex | None |
-| 2.2 | Define contract section template for non-entry skills | Done | Codex | 2.1 |
-| 2.3 | Define stop/approval section template | Done | Codex | 2.1 |
-| 2.4 | Define standard quality gate evidence template | Done | Codex | 2.1 |
-| 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.6 | Update backend-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
-| 2.7 | Update codex-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
-| 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.9 | Update tmux-sender with contract-aware completion handoff guidance | Done | Codex | 2.2, 2.4 |
-| 2.10 | Integrate contract and stop protocol into codex-lifecycle-orchestration | Done | Codex | 2.2, 2.3, 2.4, 2.5 |
-| 2.11 | Integrate contract and stop protocol into backend-lifecycle-execution | Done | Codex | 2.2, 2.3, 2.4, 2.5 |
-| 2.12 | Integrate contract output and stop triggers into codex-task-execution-loop | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.13 | Integrate contract output and stop triggers into backend-task-quality-loop | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.14 | Integrate contract and stop gating into codex-diagnose-and-review | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.15 | Integrate contract and stop gating into backend-diagnose-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.16 | Integrate contract, stop tags, and gate result section into codex-document-flow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.17 | Integrate contract, stop tags, and gate result section into backend-document-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.18 | Integrate contract and stop/approval section into backend-integration-tests-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.19 | Synchronize references across all Phase 2 skills | Done | Codex | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18 |
-| 2.20 | Run sandbox policy consistency audit across execution skills | Done | Codex | 2.5, 2.8, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.19 |
-| 2.21 | Verification: contract compliance check for all 14 skills | Done | Claude Code + Codex | 2.19 |
-| 2.22 | Verification: Stop -> Approve -> Resume scenarios | Done | Claude Code + Codex | 2.19, 2.20 |
-| 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Done | Claude Code + Codex | 2.19 |
-| 2.24 | Create standard quality gate report and Phase 2 readiness summary | Done | Codex | 2.21, 2.22, 2.23 |
+| 3.1 | Define adapter deprecation policy and exit criteria | Not Started | Codex | None |
+| 3.2 | Add operational measurement model for adapters, fallback, and routing health | Not Started | Codex | 3.1 |
+| 3.3 | Harden legacy-fallback as incident-only rollback | Not Started | Codex | 3.1, 3.2 |
+| 3.4 | Classify and reduce routing-table compatibility fallbacks | Not Started | Codex | 3.1, 3.3 |
+| 3.5 | Run the first Phase 3 operational baseline audit | Not Started | Codex | 3.2, 3.3 |
+| 3.6 | Create the final Runbook | Not Started | Codex | 3.2, 3.3, 3.5 |
+| 3.7 | Execute final convergence cutover | Not Started | Codex | 3.4, 3.5, 3.6 |
+| 3.8 | Phase 3 closure verification and sign-off | Not Started | Codex | 3.7 |
+
+## Task Notes (Investigation-derived constraints)
+
+### Task 3.2 (Measurement model)
+- Must define HOW to capture adapter invocation counts and legacy-fallback activations in this skill-document system
+- Must distinguish between automatically measurable metrics vs. manually auditable metrics
+- Must define the audit evidence format and storage convention
+
+### Task 3.7 (Convergence cutover)
+- MUST NOT execute until 3.4, 3.5, and 3.6 are complete
+- Safety gate: require explicit confirmation that no active callers depend on adapters
+- Tombstone approach preferred over deletion (fail-closed with migration message)
+- Audit window duration must be defined in 3.1 before 3.7 can proceed
 
 ## Status Definitions
 
