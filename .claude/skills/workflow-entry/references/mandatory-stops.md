@@ -14,6 +14,7 @@ Mandatory stop points that must be enforced by `workflow-entry`.
 |---|---|---|---|---|
 | Intent unresolved | No intent candidate after normalization | all workflows | `[Approve: route-selection]` | user provides canonical intent |
 | Intent ambiguous | Multiple same-priority candidates remain | all workflows | `[Approve: route-selection]` | user selects one intent |
+| `[Stop: contract-missing-field]` | Required contract field is missing during contract assembly | all workflows | `[Approve: route-selection]` | User supplies missing required field(s); rerun contract assembly and full routing if scope changes |
 | Pre-design approval | Design-level document completion before next phase | `design`, `plan`, `update-doc`, `reverse-engineer` | `[Approve: design-approval]` | approval accepted with constraints merged |
 | Pre-implementation approval | Before starting code or test modifications | `implement`, `build`, `task`, `add-integration-tests` | `[Approve: implementation-start]` | approval accepted |
 | High-risk change | Destructive operation, data migration, or broad rewrite risk | all workflows | `[Approve: high-risk-change]` | explicit risk acceptance recorded |

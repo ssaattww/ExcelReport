@@ -25,7 +25,7 @@ Emit this notice on every invocation:
    - `legacy-fallback` (when explicitly set)
 3. Delegate intent routing and sandbox selection to `workflow-entry`.
 4. Execute only the route returned by `workflow-entry`.
-If `workflow-entry` is unavailable or fails to return a routing decision, emit `[Stop: routing-unavailable]` immediately.
+If `workflow-entry` is unavailable or fails to return a routing decision, return `status: failed` with a delegation error description. Do not emit a stop tag for infrastructure failures.
 
 ## Contract Compliance
 
