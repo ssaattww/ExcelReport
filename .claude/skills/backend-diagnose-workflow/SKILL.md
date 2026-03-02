@@ -22,7 +22,21 @@ input:
   contract_extensions: { confidence: "medium", hypothesis_count: 3 }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["primary hypothesis confirmed"] }
+  quality_gate:
+    gate_id: "backend-diagnosis-check"
+    gate_type: "diagnosis"
+    trigger: "post-diagnosis review"
+    criteria:
+      - "Primary hypothesis is validated"
+      - "Confidence level matches the findings"
+    result: "pass"
+    evidence:
+      - "Primary hypothesis confirmed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "deepen_diagnosis"
+      max_cycles: 2
   contract_extensions: { confidence: "high", hypothesis_count: 3 }
 ```
 

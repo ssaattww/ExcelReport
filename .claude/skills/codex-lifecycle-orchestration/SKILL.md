@@ -30,7 +30,21 @@ input:
   contract_extensions: { lifecycle_scale: "medium", phase: "design" }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["phase checks passed"] }
+  quality_gate:
+    gate_id: "lifecycle-phase-check"
+    gate_type: "implementation"
+    trigger: "post-phase validation"
+    criteria:
+      - "Phase-specific checks are complete"
+      - "Lifecycle contract fields remain aligned"
+    result: "pass"
+    evidence:
+      - "Phase checks passed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { lifecycle_scale: "medium", phase: "design" }
 ```
 

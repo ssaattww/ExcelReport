@@ -22,7 +22,21 @@ input:
   contract_extensions: { lifecycle_scale: "medium", required_docs: ["Design Doc", "Work Plan"] }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["required docs completed"] }
+  quality_gate:
+    gate_id: "backend-lifecycle-doc-check"
+    gate_type: "implementation"
+    trigger: "post-phase validation"
+    criteria:
+      - "Required lifecycle documents are complete"
+      - "Lifecycle contract fields remain aligned"
+    result: "pass"
+    evidence:
+      - "Required docs completed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { lifecycle_scale: "medium", required_docs: ["Design Doc", "Work Plan"] }
 ```
 

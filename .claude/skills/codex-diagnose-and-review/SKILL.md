@@ -17,7 +17,21 @@ input:
   contract_extensions: { mode: "diagnose", confidence: "medium" }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["reproduction fixed"] }
+  quality_gate:
+    gate_id: "diagnosis-resolution-check"
+    gate_type: "diagnosis"
+    trigger: "post-diagnosis review"
+    criteria:
+      - "Primary issue is reproduced or resolved"
+      - "Diagnosis output is consistent with findings"
+    result: "pass"
+    evidence:
+      - "Reproduction fixed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "deepen_diagnosis"
+      max_cycles: 2
   contract_extensions: { mode: "diagnose", confidence: "high" }
 ```
 

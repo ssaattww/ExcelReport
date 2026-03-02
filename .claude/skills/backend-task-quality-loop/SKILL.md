@@ -22,7 +22,21 @@ input:
   contract_extensions: { execution_mode: "autonomous-loop" }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["task quality gate passed"] }
+  quality_gate:
+    gate_id: "backend-task-quality-check"
+    gate_type: "implementation"
+    trigger: "post-cycle validation"
+    criteria:
+      - "Task-quality checks are complete"
+      - "Execution mode remains aligned with the contract"
+    result: "pass"
+    evidence:
+      - "Task quality gate passed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { execution_mode: "autonomous-loop" }
 ```
 

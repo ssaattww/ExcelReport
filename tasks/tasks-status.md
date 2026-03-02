@@ -5,10 +5,10 @@ Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 22 / 24
+- Completed: 23 / 24
 - In Progress: 0 / 24
-- Not Started: 2 / 24
-- Completion Rate: 92%
+- Not Started: 1 / 24
+- Completion Rate: 96%
 
 ## Task List
 
@@ -36,7 +36,7 @@ Scope: Phase 2 (全フロー展開)
 | 2.20 | Run sandbox policy consistency audit across execution skills | Done | Codex | 2.5, 2.8, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.19 |
 | 2.21 | Verification: contract compliance check for all 14 skills | Done | Claude Code + Codex | 2.19 |
 | 2.22 | Verification: Stop -> Approve -> Resume scenarios | Done | Claude Code + Codex | 2.19, 2.20 |
-| 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Not Started | Claude Code (manual testing) | 2.19 |
+| 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Done | Claude Code + Codex | 2.19 |
 | 2.24 | Create standard quality gate report and Phase 2 readiness summary | Not Started | Codex | 2.21, 2.22, 2.23 |
 
 ## Status Definitions

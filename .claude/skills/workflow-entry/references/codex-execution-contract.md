@@ -105,7 +105,7 @@ stop_conditions:
 
 ```yaml
 status: "completed"
-summary: "Codex実行契約仕様を新規作成し、入出力と違反時動作を定義した"
+summary: "Created the Codex execution contract spec and defined inputs, outputs, and violation handling"
 changed_files:
   - path: ".claude/skills/workflow-entry/references/codex-execution-contract.md"
     change_type: "added"
@@ -113,13 +113,23 @@ tests:
   - name: "manual-contract-review"
     result: "passed"
 quality_gate:
+  gate_id: "contract-spec-review"
+  gate_type: "document"
+  trigger: "post-document review"
+  criteria:
+    - "Required fields are documented"
+    - "Status transitions and stop conditions are documented"
   result: "pass"
   evidence:
-    - "必須フィールド一覧を明記"
-    - "status遷移と停止条件を明記"
-blockers: []
+    - "Required field list is documented"
+    - "Status transitions and stop conditions are documented"
+  blockers: []
+  branching:
+    on_pass: "handoff"
+    on_fail: "revise"
+    max_cycles: 2
 next_actions:
-  - "codex/SKILL.md に本契約参照を埋め込む（タスク3.4）"
+  - "Embed this contract reference in codex/SKILL.md (Task 3.4)"
 ```
 
 ## 6. 違反時の扱い

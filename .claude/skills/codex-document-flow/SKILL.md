@@ -22,7 +22,21 @@ input:
   contract_extensions: { mode: "update", target_docs: ["docs/design/feature-x-design.md", "docs/plans/feature-x-plan.md"] }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["target docs aligned"] }
+  quality_gate:
+    gate_id: "document-alignment-check"
+    gate_type: "document"
+    trigger: "post-document review"
+    criteria:
+      - "Target documents are updated"
+      - "Document set is internally consistent"
+    result: "pass"
+    evidence:
+      - "Target docs aligned"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { mode: "update", target_docs: ["docs/design/feature-x-design.md", "docs/plans/feature-x-plan.md"] }
 ```
 

@@ -22,7 +22,21 @@ input:
   contract_extensions: { mode: "design", target_docs: ["docs/design/backend-module-a.md", "docs/design/backend-module-b.md"] }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["docs reviewed and consistent"] }
+  quality_gate:
+    gate_id: "backend-document-review"
+    gate_type: "document"
+    trigger: "post-document review"
+    criteria:
+      - "Target documents are complete"
+      - "Document content is consistent across outputs"
+    result: "pass"
+    evidence:
+      - "Docs reviewed and consistent"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { mode: "design", target_docs: ["docs/design/backend-module-a.md", "docs/design/backend-module-b.md"] }
 ```
 

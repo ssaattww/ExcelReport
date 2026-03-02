@@ -22,7 +22,21 @@ input:
   contract_extensions: { revision_loop: 1, design_doc_path: "docs/design/payment-workflow-design.md" }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["new tests pass"] }
+  quality_gate:
+    gate_id: "integration-test-review"
+    gate_type: "test_review"
+    trigger: "post-test validation"
+    criteria:
+      - "New integration tests cover the target workflow"
+      - "New integration tests pass"
+    result: "pass"
+    evidence:
+      - "New tests pass"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise_tests"
+      max_cycles: 2
   contract_extensions: { revision_loop: 1, design_doc_path: "docs/design/payment-workflow-design.md" }
 ```
 

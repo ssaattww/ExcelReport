@@ -22,7 +22,21 @@ input:
   contract_extensions: { task_unit_id: "task-12.3", cycle_index: 2 }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["cycle checks passed"] }
+  quality_gate:
+    gate_id: "task-cycle-check"
+    gate_type: "implementation"
+    trigger: "post-cycle validation"
+    criteria:
+      - "Task unit checks are complete"
+      - "Cycle contract fields remain aligned"
+    result: "pass"
+    evidence:
+      - "Cycle checks passed"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   contract_extensions: { task_unit_id: "task-12.3", cycle_index: 2 }
 ```
 

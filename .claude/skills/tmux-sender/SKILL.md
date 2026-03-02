@@ -21,7 +21,22 @@ input:
   contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
 output:
   status: "completed"
-  quality_gate: { result: "pass", evidence: ["pane accepted command"] }
+  quality_gate:
+    # Caller-supplied; tmux-sender passes this field through without interpreting it.
+    gate_id: "caller-quality-gate"
+    gate_type: "implementation"
+    trigger: "caller-defined validation"
+    criteria:
+      - "Caller provides a canonical quality gate payload"
+      - "Payload is forwarded unchanged"
+    result: "pass"
+    evidence:
+      - "Pane accepted command"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "caller_handles_failure"
+      max_cycles: 1
   contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
 ```
 

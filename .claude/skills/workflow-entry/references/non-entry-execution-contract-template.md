@@ -67,10 +67,21 @@ output:
     - name: "contract-section-check"
       result: "passed"
   quality_gate:
+    gate_id: "contract-section-check"
+    gate_type: "document"
+    trigger: "post-document review"
+    criteria:
+      - "All required contract headings are present"
+      - "Example output includes the canonical quality gate shape"
     result: "pass"
     evidence:
       - "All required contract headings present"
-  blockers: []
+      - "Canonical quality gate fields are present"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "revise"
+      max_cycles: 2
   next_actions:
     - "Proceed to stop/approval template integration"
   contract_extensions:
