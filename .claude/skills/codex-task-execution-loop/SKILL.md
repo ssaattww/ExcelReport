@@ -25,13 +25,20 @@ output:
   quality_gate:
     gate_id: "task-cycle-check"
     gate_type: "implementation"
-    trigger: "post-cycle validation"
+    trigger:
+      event: "post-cycle validation"
+      source: "codex-task-execution-loop"
     criteria:
-      - "Task unit checks are complete"
-      - "Cycle contract fields remain aligned"
+      - id: "task-unit-complete"
+        description: "Task unit checks are complete"
+      - id: "contract-aligned"
+        description: "Cycle contract fields remain aligned"
     result: "pass"
     evidence:
-      - "Cycle checks passed"
+      - check_id: "cycle-checks"
+        status: "pass"
+        summary: "Cycle checks passed"
+        source_ref: ".claude/skills/codex-task-execution-loop/SKILL.md"
     blockers: []
     branching:
       on_pass: "handoff"
