@@ -19,6 +19,15 @@ Defines required stop tags and approval response contract for `workflow-entry`.
 - `quality-gate-failed`
 - `requirement-change-detected`
 - `destructive-operation`
+- `revision-limit-reached`
+
+For `revision-limit-reached`:
+
+- Description: Emitted when `max_revision_cycles` is exceeded without reaching pass state
+- Gate type: `escalation_gate`
+- Resume: User intervention or reroute required
+
+Stop and approval tags in this protocol apply to workflow state transitions only. Transport or runtime availability failures are terminal failures, not stop conditions.
 
 ## Standard Approval Phases
 

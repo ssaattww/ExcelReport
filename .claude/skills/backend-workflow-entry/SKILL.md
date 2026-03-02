@@ -25,6 +25,7 @@ Emit this notice on every invocation:
    - `legacy-fallback` (when explicitly set)
 3. Delegate intent routing and sandbox selection to `workflow-entry`.
 4. Execute only the route returned by `workflow-entry`.
+If `workflow-entry` is unavailable or fails to return a routing decision, return `status: failed` with a delegation error description. Do not emit a stop tag for infrastructure failures.
 
 ## Contract Compliance
 
@@ -41,3 +42,22 @@ This adapter does not perform contract validation - all validation is delegated 
 - Do not parse or classify intent.
 - Do not apply routing priority.
 - Do not decide sandbox mode.
+- Sandbox selection criteria are defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md) via delegated workflow-entry.
+- Keep sandbox behavior synchronized with [`codex/SKILL.md`](../codex/SKILL.md) (Codex-side sandbox selection guidance).
+- If drift is detected between this adapter, workflow-entry references, and [`codex/SKILL.md`](../codex/SKILL.md), treat [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md) as source of truth and update the mismatched documents together in the same change.
+
+## Stop/Approval Protocol
+
+Propagate all `[Stop: ...]` and `[Approve: ...]` markers and gate payloads from `workflow-entry` unchanged.
+Do not open, classify, or resolve stop gates in this adapter.
+Do not create adapter-local approval or escalation gates.
+Resume behavior is delegated to upstream gate state and approval outcomes from `workflow-entry`.
+Reference: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
+
+## Quality Gate Handoff
+
+Pass `quality_gate` objects through this adapter unchanged.
+Do not evaluate, normalize, or modify `quality_gate.result`, `evidence`, `blockers`, or `branching`.
+Do not add adapter-local gate IDs, criteria, or decision logic.
+`workflow-entry` performs boundary validation (`quality_gate` exists, `quality_gate.result` normalized); downstream executors perform interpretation and branching decisions.
+Reference: [`../workflow-entry/references/quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).

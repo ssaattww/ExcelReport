@@ -29,6 +29,14 @@ Run normalization before intent detection:
 2. Detect intent candidates from normalized request.
 3. If no candidate is found, emit `[Stop: intent-unresolved]` and request one canonical intent.
 
+## Lexical Guidance
+
+Use these terms consistently during normalization:
+
+- `investigate`: research, analysis, and report generation before design decisions; route as `design`.
+- `diagnose`: bug root-cause analysis and failure investigation; route as `diagnose`.
+- `debug` and `root cause`: explicit debugging workflows; route as `diagnose`.
+
 ## Deterministic Routing Priority
 
 Apply this exact logic to every request:
@@ -86,6 +94,16 @@ Use the following tags:
 Protocol and response schema are defined in `references/stop-approval-protocol.md`.
 Mandatory stop points and resume conditions are defined in `references/mandatory-stops.md`.
 No state transition is allowed unless approval response contains `approved: true`.
+
+## Quality Gate Handoff
+
+Require downstream to emit canonical `quality_gate` per `references/quality-gate-evidence-template.md` (authoritative schema).
+Require canonical fields: `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`.
+Router checks only boundary contract: `quality_gate` exists, `result` is normalized (`pass|fail|blocked`), and envelope fields from `references/codex-execution-contract.md` are present.
+Envelope required fields: `status`, `summary`, `changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`.
+Pass `quality_gate` through unchanged to the next-stage payload.
+Retry/cycle/branch decisions are owned by downstream executor/orchestrator skills, not by this router.
+If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval before continuing.
 
 ## Compatibility Adapter Policy
 

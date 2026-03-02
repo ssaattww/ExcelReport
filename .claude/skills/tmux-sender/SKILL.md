@@ -9,6 +9,37 @@ metadata:
 
 This skill provides command sending and monitoring capabilities between tmux panes.
 
+## Execution Contract
+
+This skill follows the non-entry execution contract standard.
+Required `contract_extensions`: `pane_target`, `command_count`.
+See [`codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md) and [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) for full rules.
+
+```yaml
+input:
+  objective: "Send command to target pane and monitor completion"
+  contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
+output:
+  status: "completed"
+  quality_gate:
+    # Caller-supplied; tmux-sender passes this field through without interpreting it.
+    gate_id: "caller-quality-gate"
+    gate_type: "implementation"
+    trigger: "caller-defined validation"
+    criteria:
+      - "Caller provides a canonical quality gate payload"
+      - "Payload is forwarded unchanged"
+    result: "pass"
+    evidence:
+      - "Pane accepted command"
+    blockers: []
+    branching:
+      on_pass: "handoff"
+      on_fail: "caller_handles_failure"
+      max_cycles: 1
+  contract_extensions: { pane_target: "codex-session:0.1", command_count: 2 }
+```
+
 ## Prerequisites
 
 **IMPORTANT**: For automatic completion monitoring and notification to work:
@@ -78,10 +109,10 @@ Automatically detect completion of long-running tasks (like Codex) and notify Cl
 
 ```bash
 # Basic monitoring (no notification)
-.claude/skills/tmux-sender/scripts/monitor-completion.sh [pane-target] [search-pattern]
+scripts/monitor-completion.sh [pane-target] [search-pattern]
 
 # With automatic Claude Code notification
-.claude/skills/tmux-sender/scripts/monitor-completion.sh [pane-target] [search-pattern] [notify-pane]
+scripts/monitor-completion.sh [pane-target] [search-pattern] [notify-pane]
 ```
 
 ### Parameters
@@ -101,7 +132,7 @@ Automatically detect completion of long-running tasks (like Codex) and notify Cl
 
 ```bash
 # Start monitoring in background
-.claude/skills/tmux-sender/scripts/monitor-completion.sh \
+scripts/monitor-completion.sh \
   codex-session:0.1 \
   "codex exec" \
   multiagent:0.1 &
@@ -127,7 +158,7 @@ tmux send-keys -t codex-session:0.1 Enter
 
 ```bash
 # Step 1: Launch monitoring script in background
-.claude/skills/tmux-sender/scripts/monitor-completion.sh \
+scripts/monitor-completion.sh \
   codex-session:0.1 \
   "codex exec" \
   multiagent:0.1 &
@@ -141,6 +172,14 @@ tmux send-keys -t codex-session:0.1 Enter
 # - Claude Code is awakened with "どうなった？"
 # - Ready to review results
 ```
+
+## Completion Notification Contract
+
+- When monitoring detects completion, notify the caller and pass raw Codex stdout unchanged.
+- `tmux-sender` owns completion detection, notification, and output pass-through only.
+- Do not parse, validate, or gate on `quality_gate` in this skill.
+- The caller (`workflow-entry` or Codex skill) is responsible for all `quality_gate` validation.
+- Keep context aligned with [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md) and [`quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).
 
 ## Best Practices
 
@@ -210,7 +249,7 @@ ps aux | grep "codex exec"
 tmux list-panes -t codex-session
 
 # Check 3: Does script have execute permission?
-chmod +x .claude/skills/tmux-sender/scripts/monitor-completion.sh
+chmod +x scripts/monitor-completion.sh
 ```
 
 ## Related Skills

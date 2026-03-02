@@ -22,9 +22,10 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 4. **Select the sandbox mode based on task intent** (see Sandbox Selection Matrix below):
    - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - ドキュメント作成には書き込み権限が必須
    - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - コード変更と自動実行
-   - **Review/Diagnose** (review/diagnose): Start with `read-only`, escalate to `workspace-write` only after user approval if fixes are needed
+   - **Review/Diagnose** (review/diagnose): Start with `read-only`; before write escalation emit `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
    - **Pure analysis**: `read-only` - 読み取りのみで十分な場合
    - **Network/broad access**: `danger-full-access` - 明示的な要求がある場合のみ
+   Sandbox selection criteria are centrally defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). If this skill's sandbox guidance diverges from the matrix, treat the matrix as source of truth.
 5. Assemble the codex command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
@@ -54,7 +55,7 @@ If the user explicitly asks for direct execution (not via tmux):
 | **Document generation** (design/plan/update-doc/reverse-engineer) | `workspace-write` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write "<prompt>"` |
 | **Implementation** (implement/build/task/add-integration-tests) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
 | **Review/Diagnose** (initial) | `read-only` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox read-only "<prompt>"` |
-| **Review/Diagnose** (with fixes after approval) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
+| **Review/Diagnose** (with fixes after `[Approve: sandbox-escalation]`) | `workspace-write` + `--full-auto` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write --full-auto "<prompt>"` |
 | **Pure analysis** (no file changes) | `read-only` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox read-only "<prompt>"` |
 | Permit network or broad access | `danger-full-access` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox danger-full-access --full-auto "<prompt>"` |
 | Resume recent session | Inherited | `echo "<prompt>" \| codex exec --skip-git-repo-check resume --last` |
@@ -71,26 +72,38 @@ If the user explicitly asks for direct execution (not via tmux):
 | Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
 | Resume recent session | Inherited | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` |
 
+> **Note**: `danger-full-access` is never selected by default per [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). It requires explicit user instruction and a separate `[Stop: high-risk-change]` approval cycle.
+
 ## Execution Contract Compliance
 
-- All Codex runs **must comply** with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
+- All Codex runs **must comply** with [`../workflow-entry/references/codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md).
 - Prompts sent to Codex should explicitly require contract-compliant structured output.
 - Treat any missing required output field as a contract violation and do not accept the result as complete.
 
+## Quality Gate Evidence
+
+Emit `quality_gate` using [`../workflow-entry/references/quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).
+Normalize local statuses into `result: pass|fail|blocked` before handoff.
+Always include: `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`.
+Treat machine gate pass as non-equivalent to user approval.
+Use `branching.max_cycles: 2` unless the skill defines a stricter limit.
+
 ### Required output fields
+
+For Codex task-execution outputs, include all fields below.
 
 - `status` (`completed` / `needs_input` / `blocked` / `failed`)
 - `summary`
 - `changed_files`
 - `tests`
-- `quality_gate`
+- `quality_gate` (must include `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`; gate_type map: implementation/build/task -> `implementation`; review/diagnose -> `diagnosis`; design/plan/update-doc/reverse-engineer -> `document`; add-integration-tests -> `test_review`)
 - `blockers`
 - `next_actions`
 
 ### `status` value meanings
 
 - `completed`: Task finished and acceptance criteria satisfied.
-- `needs_input`: Stop and request approval/clarification/additional inputs before continuing.
+- `needs_input`: emit an explicit stop tag pair and request approval/clarification/additional inputs before continuing.
 - `blocked`: Cannot proceed due to unresolved external dependency or hard constraint.
 - `failed`: Attempt executed but failed because of errors that require retry/rework.
 
@@ -106,9 +119,20 @@ tests:
   - name: "manual-review"
     result: "passed"
 quality_gate:
+  gate_id: "impl-quality-final"
+  gate_type: "implementation"
+  trigger: "post-change validation"
+  criteria:
+    - "All required contract fields are present"
+    - "No stop/approval protocol violations detected"
   result: "pass"
   evidence:
     - "Required contract fields are present"
+  blockers: []
+  branching:
+    on_pass: "handoff"
+    on_fail: "escalate"
+    max_cycles: 2
 blockers: []
 next_actions:
   - "Proceed to next task if no additional constraints are raised"
@@ -123,10 +147,24 @@ next_actions:
 - The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
-### Direct execution (only when explicitly requested)
-- After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
-- Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
+## Stop/Approval Protocol
+
+Use canonical markers: `[Stop: <Gate Name>]`.
+Classify every stop as `approval_gate` or `escalation_gate`; include gate record keys (`gate_name`, `gate_type`, `trigger`, `ask_method`, `required_user_action`, `resume_if`, `fallback_if_rejected`) and keep payload fields normalized (`status`, `gate.gate_name`, `gate.gate_type`, `gate.approved`, `gate.batch_boundary`, `gate.revision_cycle`, `gate.max_revision_cycles`, `quality_gate.result`).
+`approval_gate` resumes only with explicit user `approved: true`; `escalation_gate` resumes only after reroute or user direction.
+Respect the batch boundary: do not enter autonomous implementation/test runs until `[Stop: pre-implementation-approval]` is approved.
+Enforce `max_revision_cycles: 2`; if exceeded, emit escalation and wait for user intervention.
+Agent-local success from Codex output never replaces user approvals.
+
+Stop points for this skill:
+- `[Stop: sandbox-escalation-required]` (`approval_gate`)
+- `[Stop: pre-implementation-approval]` (`approval_gate`)
+- `[Stop: high-risk-change]` (`approval_gate`)
+- `[Stop: quality-gate-failed]` (`escalation_gate`)
+- `[Stop: requirement-change-detected]` (`escalation_gate`)
+- `[Stop: revision-limit-reached]` (`escalation_gate`)
+
+Full protocol and payload schema: [`../workflow-entry/references/stop-approval-section-template.md`](../workflow-entry/references/stop-approval-section-template.md).
 
 ## Critical Evaluation of Codex Output
 
@@ -150,5 +188,5 @@ Codex is powered by OpenAI models with their own knowledge cutoffs and limitatio
 
 ## Error Handling
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
-- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
+- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`), emit `[Stop: high-risk-change]` + `[Approve: high-risk-change]` and get approval via `AskUserQuestion` unless it was already given.
 - When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
