@@ -1,7 +1,7 @@
 # Next Session Resume Point
 
-**Session Date**: 2026-02-17
-**Last Updated**: 2026-02-17
+**Session Date**: 2026-03-02
+**Last Updated**: 2026-03-02
 
 ---
 
@@ -10,11 +10,11 @@
 ### Branch
 - **Current Branch**: `phase-2/task-breakdown`
 - **Base Branch**: `master`
-- **Status**: Feature branch, Wave C implementation complete
+- **Status**: Feature branch, Wave D in progress (2.19-2.20 complete)
 
 ### Phase Progress
 - **Phase 1**: ✅ Completed (22/22 tasks done)
-- **Phase 2**: 🟡 In Progress (18/24 tasks done - 75% complete)
+- **Phase 2**: 🟡 In Progress (20/24 tasks done - 83% complete)
 - **Phase 3**: Not Started
 
 ### Wave Progress
@@ -24,93 +24,60 @@
 | Wave A (Foundation Templates) | 2.1-2.4 | ✅ 4/4 Complete |
 | Wave B (Entry/Adapter Skills) | 2.5-2.9 | ✅ 5/5 Complete |
 | Wave C (Executor Skills) | 2.10-2.18 | ✅ 9/9 Complete |
-| Wave D (Sync/Audit/Verify) | 2.19-2.24 | ⏳ 0/6 Not Started |
+| Wave D (Sync/Audit/Verify) | 2.19-2.24 | 🟡 2/6 In Progress |
 
 ---
 
-## Session Summary (2026-02-17)
+## Session Summary (2026-03-02)
 
 ### Major Accomplishments
 
-1. **Task 2.4: Quality Gate Evidence Template** (Wave A completion)
-   - Investigation: `reports/claude-code-workflows-quality-gate-investigation-2026-02-17.md`
-   - Template: `.claude/skills/workflow-entry/references/quality-gate-evidence-template.md`
-   - 9 QG patterns found, 8 reusable components, 7 normalization gaps addressed
-   - Dual review caught cross-template blocked state mismatch (PM missed)
+1. **Tasks 2.19 & 2.20: Wave D start** (Reference sync + Sandbox audit)
+   - Audit report: `reports/phase2-reference-sandbox-sync-audit-2026-03-02.md`
+   - 5 files modified: codex, backend-workflow-entry, codex-workflow-entry, codex-lifecycle-orchestration, backend-lifecycle-execution
+   - 5 judgment calls documented (intentional N/A cases with rationale)
+   - Codex found codex-workflow-entry path inconsistency PM missed in initial exploration
+   - Codex independent review caught danger-full-access cross-reference omission
 
-2. **Tasks 2.5-2.9: Wave B** (Entry/Adapter skill integration)
-   - 2.5: workflow-entry Quality Gate Handoff section (router-only, boundary check)
-   - 2.6-2.7: adapter skills stop propagation (backend-/codex-workflow-entry)
-   - 2.8: codex skill alignment (gate_type mapping, revision-limit-reached stop)
-   - 2.9: tmux-sender Completion Notification Contract (pass-through only, SRP)
-   - Key rejection: tmux-sender quality gate validation was infeasible (monitor-completion.sh limitation)
+### Dual Review Pattern (Feedback Point 8 - Continued)
 
-3. **Tasks 2.10-2.18: Wave C** (Executor skill bulk integration)
-   - 11 skills updated with: Contract Compliance + Stop/Approval + Quality Gate Evidence
-   - Dual review pattern: Codex caught Medium issues PM missed in every batch
-   - gate_type mapping verified correct for all skill types
-
-### Dual Review Pattern (Feedback Point 8 - Key Learnings)
-
-Every implementation batch, Codex caught issues PM missed:
 | Task | PM Missed | Codex Caught |
 |---|---|---|
-| 2.4 (template) | Cross-template blocked state mismatch | ✅ High |
-| 2.5 (workflow-entry) | quality-gate-blocked vs quality-gate-failed | ✅ Medium |
-| 2.6-2.7 (adapters) | [Approve:] omission, delegation-failure | ✅ Medium x2 |
-| 2.8 (codex) | revision-limit-reached, example field gaps | ✅ Low x2 |
-| 2.9 (tmux-sender) | monitor-completion.sh infeasibility (High!) | ✅ High |
-| 2.10-2.11 (lifecycle) | stop payload incomplete, revision-limit-reached | ✅ Medium x2 |
-| 2.12-2.18 (executors) | input contract validation, violation handling | ✅ Medium x2 |
-
-**Pattern confirmed**: Dual review is essential. Codex consistently catches 1-2 issues PM misses.
-
-### Sandbox Fix (Task #2 prerequisite)
-- Fixed `investigate` routing: `investigate` → `design` (was `diagnose`)
-- `design` already has `workspace-write`, enabling report creation
-- Added Lexical Guidance to workflow-entry/SKILL.md
+| 2.19-2.20 (audit) | codex-workflow-entry sandbox-matrix path style (Low) | ✅ Low |
+| 2.19-2.20 (review) | danger-full-access cross-reference not implemented (Medium) | ✅ Medium |
 
 ### Feedback Points Added
-- **Feedback Point 7**: Codex writes `reports/` files (PM writes `tasks/`)
-- **Feedback Point 8**: Dual review (PM + independent Codex review)
+- **Feedback Point 9**: Codex report creation requires workspace-write (not read-only)
+
+### Previous Session (2026-02-17)
+- Wave A (2.1-2.4), Wave B (2.5-2.9), Wave C (2.10-2.18) completed
+- See git history for details
 
 ---
 
 ## Next Actions (Priority Order)
 
-### 1. Task 2.19: Synchronize references across all Phase 2 skills
-**Status**: Not Started
-**Dependencies**: 2.6-2.18 (all done) ✅
+### ✅ Task 2.19: Synchronize references across all Phase 2 skills (DONE)
+**Completed**: 2026-03-02
+- Audit report: `reports/phase2-reference-sandbox-sync-audit-2026-03-02.md`
+- Fixed: codex/SKILL.md path normalization, codex-workflow-entry path normalization
+- Judgment calls: 5 intentional N/A cases documented with rationale
 
-**Objective**: Ensure all 14 skills consistently reference the same template files with correct relative paths.
+### ✅ Task 2.20: Sandbox policy consistency audit (DONE)
+**Completed**: 2026-03-02
+- Fixed: backend-workflow-entry sandbox symmetry, lifecycle skills sandbox_mode validation
+- Added: codex/SKILL.md sandbox-matrix cross-reference and danger-full-access note
+- Dual review: Codex caught danger-full-access cross-reference omission PM missed
 
-**Approach**:
-1. Ask Codex to audit all 14 skills for reference consistency
-2. Check for broken/incorrect paths to `../workflow-entry/references/`
-3. Verify all templates are referenced (contract, stop-approval, quality-gate)
-4. Fix any inconsistencies
-
-### 2. Task 2.20: Sandbox policy consistency audit
-**Status**: Not Started
-**Dependencies**: 2.19
-
-**Objective**: Verify sandbox_mode assignments are consistent across all execution skills.
-
-**Approach**:
-1. Codex audits sandbox_mode usage across all 14 skills
-2. Verify against sandbox-matrix.md
-3. Fix any drift from policy
-
-### 3. Tasks 2.21-2.23: Verification (Manual Testing)
-**Status**: Not Started
-**Dependencies**: 2.19, 2.20
+### 1. Tasks 2.21-2.23: Verification (Manual Testing)
+**Status**: Not Started (dependencies 2.19, 2.20 now satisfied ✅)
 
 **Important**: These are manual testing tasks (Assignee: Claude Code manual testing).
 - 2.21: Contract compliance check for all 14 skills
 - 2.22: Stop → Approve → Resume scenarios
 - 2.23: Quality-gate pass/fail branching and blocker reporting
 
-### 4. Task 2.24: Phase 2 Readiness Report
+### 2. Task 2.24: Phase 2 Readiness Report
 **Status**: Not Started
 **Dependencies**: 2.21, 2.22, 2.23
 
@@ -163,6 +130,7 @@ Every implementation batch, Codex caught issues PM missed:
 6. 🔴 **Base on claude-code-workflows**: Investigate before implementation
 7. 🔴 **Codex writes reports/**: PM writes tasks/ documents
 8. 🔴 **Dual Review**: PM review + independent Codex review for all implementations
+9. 🔴 **Codex report creation requires workspace-write**: read-only ではファイル書き出し不可
 
 ---
 
@@ -189,23 +157,21 @@ Every implementation batch, Codex caught issues PM missed:
 git status
 git log --oneline -5
 
-# 2. Review feedback points (CRITICAL - especially points 7 & 8)
+# 2. Review feedback points (CRITICAL - especially points 7, 8 & 9)
 cat tasks/feedback-points.md
 
 # 3. Check current task status
 cat tasks/tasks-status.md | head -20
 
-# 4. Start Task 2.19 (reference sync):
-#    a. Ask Codex to audit reference paths in all 14 skills (read-only)
-#    b. Codex creates investigation report in reports/
-#    c. Fix any inconsistencies (workspace-write)
-#    d. Dual review: PM review + Codex independent review
-#    e. Update tasks-status.md, commit
+# 4. Tasks 2.21-2.23 (Manual Verification):
+#    2.21: Contract compliance check for all 14 skills
+#    2.22: Stop -> Approve -> Resume scenarios
+#    2.23: Quality-gate pass/fail branching and blocker reporting
+#    These are manual testing tasks - run actual workflow scenarios
 
-# 5. Task 2.20 (sandbox audit):
-#    a. Codex audits sandbox_mode across all skills
-#    b. Verify against sandbox-matrix.md
-#    c. Fix inconsistencies
+# 5. Task 2.24 (Phase 2 Readiness Report):
+#    Delegate to Codex: reports/phase2-readiness-report-2026-MM-DD.md
+#    Dependencies: 2.21, 2.22, 2.23 must be complete first
 ```
 
 ---

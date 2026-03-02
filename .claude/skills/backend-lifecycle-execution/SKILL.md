@@ -33,6 +33,7 @@ Always include required fields: `status`, `summary`, `changed_files`, `tests`, `
 Include required extension echo fields in `contract_extensions`: `lifecycle_scale`, `required_docs`.
 Treat missing required fields or invalid status values as contract violations and regenerate before handoff.
 Template reference: [`non-entry-execution-contract-template.md`](../workflow-entry/references/non-entry-execution-contract-template.md).
+Validate required input fields from [non-entry-execution-contract-template.md](../workflow-entry/references/non-entry-execution-contract-template.md) (objective, scope, constraints, acceptance_criteria, allowed_commands, sandbox_mode) before proceeding.
 
 ## Scale Determination
 

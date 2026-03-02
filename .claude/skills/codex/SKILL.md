@@ -25,6 +25,7 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
    - **Review/Diagnose** (review/diagnose): Start with `read-only`; before write escalation emit `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
    - **Pure analysis**: `read-only` - 読み取りのみで十分な場合
    - **Network/broad access**: `danger-full-access` - 明示的な要求がある場合のみ
+   Sandbox selection criteria are centrally defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). If this skill's sandbox guidance diverges from the matrix, treat the matrix as source of truth.
 5. Assemble the codex command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
@@ -71,15 +72,17 @@ If the user explicitly asks for direct execution (not via tmux):
 | Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
 | Resume recent session | Inherited | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` |
 
+> **Note**: `danger-full-access` is never selected by default per [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). It requires explicit user instruction and a separate `[Stop: high-risk-change]` approval cycle.
+
 ## Execution Contract Compliance
 
-- All Codex runs **must comply** with `.claude/skills/workflow-entry/references/codex-execution-contract.md`.
+- All Codex runs **must comply** with [`../workflow-entry/references/codex-execution-contract.md`](../workflow-entry/references/codex-execution-contract.md).
 - Prompts sent to Codex should explicitly require contract-compliant structured output.
 - Treat any missing required output field as a contract violation and do not accept the result as complete.
 
 ## Quality Gate Evidence
 
-Emit `quality_gate` using `.claude/skills/workflow-entry/references/quality-gate-evidence-template.md`.
+Emit `quality_gate` using [`../workflow-entry/references/quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md).
 Normalize local statuses into `result: pass|fail|blocked` before handoff.
 Always include: `gate_id`, `gate_type`, `trigger`, `criteria`, `result`, `evidence`, `blockers`, `branching`.
 Treat machine gate pass as non-equivalent to user approval.
