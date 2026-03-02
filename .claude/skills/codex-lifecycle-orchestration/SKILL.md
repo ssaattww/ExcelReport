@@ -123,6 +123,10 @@ Use canonical gate fields (`gate_id`, `gate_type`, `trigger`, `criteria`, `resul
 Normalize local outcomes to `result: pass|fail|blocked` before handoff.
 If `result: blocked`, emit `[Stop: quality-gate-failed]` and pause autonomous flow.
 Use gate-type `branching.max_cycles` limits from [`quality-gate-evidence-template.md`](../workflow-entry/references/quality-gate-evidence-template.md) (default `2`, stricter limits win).
+Map `gate_type` based on the current lifecycle phase:
+- Document creation and review phases: `gate_type: document`
+- Cross-phase consistency checks: `gate_type: consistency`
+- Implementation and post-change validation: `gate_type: implementation`
 
 ## Stop Conditions
 

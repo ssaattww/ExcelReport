@@ -5,10 +5,10 @@ Scope: Phase 2 (全フロー展開)
 
 ## Progress Summary
 
-- Completed: 20 / 24
+- Completed: 21 / 24
 - In Progress: 0 / 24
-- Not Started: 4 / 24
-- Completion Rate: 83%
+- Not Started: 3 / 24
+- Completion Rate: 88%
 
 ## Task List
 
@@ -34,7 +34,7 @@ Scope: Phase 2 (全フロー展開)
 | 2.18 | Integrate contract and stop/approval section into backend-integration-tests-workflow | Done | Codex | 2.2, 2.3, 2.4 |
 | 2.19 | Synchronize references across all Phase 2 skills | Done | Codex | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18 |
 | 2.20 | Run sandbox policy consistency audit across execution skills | Done | Codex | 2.5, 2.8, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.19 |
-| 2.21 | Verification: contract compliance check for all 14 skills | Not Started | Claude Code (manual testing) | 2.19 |
+| 2.21 | Verification: contract compliance check for all 14 skills | Done | Claude Code + Codex | 2.19 |
 | 2.22 | Verification: Stop -> Approve -> Resume scenarios | Not Started | Claude Code (manual testing) | 2.19, 2.20 |
 | 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Not Started | Claude Code (manual testing) | 2.19 |
 | 2.24 | Create standard quality gate report and Phase 2 readiness summary | Not Started | Codex | 2.21, 2.22, 2.23 |

@@ -94,10 +94,10 @@ Automatically detect completion of long-running tasks (like Codex) and notify Cl
 
 ```bash
 # Basic monitoring (no notification)
-.claude/skills/tmux-sender/scripts/monitor-completion.sh [pane-target] [search-pattern]
+scripts/monitor-completion.sh [pane-target] [search-pattern]
 
 # With automatic Claude Code notification
-.claude/skills/tmux-sender/scripts/monitor-completion.sh [pane-target] [search-pattern] [notify-pane]
+scripts/monitor-completion.sh [pane-target] [search-pattern] [notify-pane]
 ```
 
 ### Parameters
@@ -117,7 +117,7 @@ Automatically detect completion of long-running tasks (like Codex) and notify Cl
 
 ```bash
 # Start monitoring in background
-.claude/skills/tmux-sender/scripts/monitor-completion.sh \
+scripts/monitor-completion.sh \
   codex-session:0.1 \
   "codex exec" \
   multiagent:0.1 &
@@ -143,7 +143,7 @@ tmux send-keys -t codex-session:0.1 Enter
 
 ```bash
 # Step 1: Launch monitoring script in background
-.claude/skills/tmux-sender/scripts/monitor-completion.sh \
+scripts/monitor-completion.sh \
   codex-session:0.1 \
   "codex exec" \
   multiagent:0.1 &
@@ -234,7 +234,7 @@ ps aux | grep "codex exec"
 tmux list-panes -t codex-session
 
 # Check 3: Does script have execute permission?
-chmod +x .claude/skills/tmux-sender/scripts/monitor-completion.sh
+chmod +x scripts/monitor-completion.sh
 ```
 
 ## Related Skills

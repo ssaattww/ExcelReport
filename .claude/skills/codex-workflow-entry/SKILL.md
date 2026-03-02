@@ -43,8 +43,8 @@ This adapter does not perform contract validation - all validation is delegated 
 - Do not apply routing priority.
 - Do not decide sandbox mode.
 - Sandbox selection criteria are defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md) via delegated `workflow-entry`.
-- Keep sandbox behavior synchronized with `.claude/skills/codex/SKILL.md` (Codex-side sandbox selection guidance).
-- If drift is detected between this adapter, `workflow-entry` references, and `.claude/skills/codex/SKILL.md`, treat [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md) as source of truth and update the mismatched documents together in the same change.
+- Keep sandbox behavior synchronized with [`codex/SKILL.md`](../codex/SKILL.md) (Codex-side sandbox selection guidance).
+- If drift is detected between this adapter, `workflow-entry` references, and [`codex/SKILL.md`](../codex/SKILL.md), treat [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md) as source of truth and update the mismatched documents together in the same change.
 
 ## Stop/Approval Protocol
 
