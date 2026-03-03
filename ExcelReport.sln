@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelReportLib", "ExcelRepo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelReportExe", "ExcelReport\ExcelReportExe\ExcelReportExe.csproj", "{191598AA-B7DE-AFC4-96F2-AC0474C61711}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelReportLib.Tests", "ExcelReport\ExcelReportLib.Tests\ExcelReportLib.Tests.csproj", "{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +24,10 @@ Global
 		{191598AA-B7DE-AFC4-96F2-AC0474C61711}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{191598AA-B7DE-AFC4-96F2-AC0474C61711}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{191598AA-B7DE-AFC4-96F2-AC0474C61711}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -29,6 +35,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{E4AF7326-1370-83FF-933B-D4EB52798403} = {333B135C-6731-C278-15FE-60DC89C9F06C}
 		{191598AA-B7DE-AFC4-96F2-AC0474C61711} = {333B135C-6731-C278-15FE-60DC89C9F06C}
+		{A54B5730-2B1A-4B67-8305-1DB61D4A3F4D} = {333B135C-6731-C278-15FE-60DC89C9F06C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F724CC15-0264-4E1A-9611-789A91922948}
