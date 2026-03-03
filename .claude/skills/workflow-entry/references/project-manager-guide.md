@@ -2,17 +2,26 @@
 
 ## Responsibility Split
 
-- Project manager responsibilities:
-  - Manage tasks (`TaskCreate`, `TaskUpdate`, prioritization, dependency control)
-  - Track progress and maintain `tasks/*-status.md`
-  - Run quality checks before task closure
-- codex responsibilities:
-  - Implement requested changes
-  - Investigate and document technical findings
-  - Execute verification steps and report results
+- Project manager responsibilities (orchestration and decisions only):
+  - Define the plan and priorities.
+  - Approve starts, escalations, and directional changes.
+  - Create codex requests and confirm codex execution plans before work begins.
+  - Make the final Go/No-Go, design, and risk decisions.
+  - Execute `TaskCreate` / `TaskUpdate`.
+  - Keep `tasks/tasks-status.md`, `tasks/phases-status.md`, and `tasks/feedback-points.md` current.
+  - Create commits.
+  - Critically evaluate codex proposals rather than accepting them at face value. When in disagreement, compare perspectives and make an independent judgment.
+- codex responsibilities (execution and evidence only):
+  - Perform investigation and research.
+  - Write and update required reports in `reports/*`.
+  - Verify investigation results and implementation outcomes.
+  - Implement requested changes.
+  - Perform an independent post-execution review and return findings.
+- Do not delegate tracker updates or commits to codex.
 
-## Task Status File Management
+## Tracker Management
 
+- Treat `tasks/tasks-status.md`, `tasks/phases-status.md`, and `tasks/feedback-points.md` as the authoritative management trackers and keep them current at every relevant checkpoint.
 - Keep one status file per workstream: `tasks/*-status.md`.
 - Manage project-wide phase status in `tasks/phases-status.md`.
 - Manage detailed task status in `tasks/tasks-status.md`.
@@ -26,11 +35,13 @@
 
 ## Completion Workflow
 
-1. codex completes implementation and reports validation results.
-2. Project manager reviews output and performs quality checks.
-3. Project manager executes `TaskUpdate` in the task system.
-4. Project manager updates `tasks/*-status.md` to reflect final state.
-5. If additional analysis is needed, store it in `reports/*` without mixing status tracking.
+1. Before dispatch, ask codex for a short execution plan and confirm the scope, deliverables, and sandbox.
+2. codex executes the requested investigation or implementation and creates or updates any required `reports/*` files.
+3. codex performs an independent post-execution review in read-only and reports findings.
+4. The project manager critically evaluates the codex output and review findings, then makes the final decision.
+5. The project manager executes `TaskUpdate` in the task system.
+6. The project manager updates `tasks/tasks-status.md`, `tasks/phases-status.md`, and `tasks/feedback-points.md` as required.
+7. The project manager creates the commit on the active feature branch.
 
 ## Git Branch Strategy
 

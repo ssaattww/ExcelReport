@@ -5,13 +5,13 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 
 # Codex Skill Guide
 
-## Running a Task (Default: via tmux)
+## Running a Task
 
-**By default, all codex commands are sent to another tmux pane unless the user explicitly requests direct execution.**
+**Default mode: direct execution. Use tmux only when the user explicitly requests it.**
 
-**For tmux command sending, completion monitoring, and pane management, refer to the `tmux-sender` skill.**
+**For tmux-based execution, command sending, completion monitoring, and pane management, refer to the `tmux-sender` skill.**
 
-### Workflow
+### tmux Execution
 
 1. **Verify tmux environment**:
    - Check if running in tmux: `echo $TMUX` (should return session info)
@@ -20,11 +20,11 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 2. **Identify target pane**: Select the Codex execution pane (default: pane 1 or `codex-session:0.1`)
 3. Ask the user (via `AskUserQuestion`) which model to run (`gpt-5.3-codex` or `gpt-5.2`) AND which reasoning effort to use (`xhigh`, `high`, `medium`, or `low`) in a **single prompt with two questions**.
 4. **Select the sandbox mode based on task intent** (see Sandbox Selection Matrix below):
-   - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - ドキュメント作成には書き込み権限が必須
-   - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - コード変更と自動実行
+   - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - Write access is required for document creation
+   - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - Code changes and automatic execution
    - **Review/Diagnose** (review/diagnose): Start with `read-only`; before write escalation emit `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
-   - **Pure analysis**: `read-only` - 読み取りのみで十分な場合
-   - **Network/broad access**: `danger-full-access` - 明示的な要求がある場合のみ
+   - **Pure analysis**: `read-only` - When read-only access is sufficient
+   - **Network/broad access**: `danger-full-access` - Only when explicitly requested
    Sandbox selection criteria are centrally defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). If this skill's sandbox guidance diverges from the matrix, treat the matrix as source of truth.
 5. Assemble the codex command with the appropriate options:
    - `-m, --model <MODEL>`
@@ -39,9 +39,9 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 9. **Send command to tmux pane**: Use the `tmux-sender` skill to send the command correctly.
 10. **Notify user**: Inform the user that the codex command has been sent and monitoring is active (or warn if not in tmux).
 
-### Direct Execution (Only when user explicitly requests)
+### Direct Execution
 
-If the user explicitly asks for direct execution (not via tmux):
+When running in direct execution mode (the default):
 1. Follow steps 2-5 above to build the command.
 2. **IMPORTANT for direct execution**: Append `2>/dev/null` to suppress thinking tokens (stderr) which would clutter the output.
 3. Run the command directly using the Bash tool, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
@@ -49,7 +49,7 @@ If the user explicitly asks for direct execution (not via tmux):
 
 ### Codex Command Reference
 
-**For tmux execution (default - shows thinking tokens):**
+**For tmux execution (shows thinking tokens):**
 | Use case | Sandbox mode | Command pattern |
 | --- | --- | --- |
 | **Document generation** (design/plan/update-doc/reverse-engineer) | `workspace-write` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write "<prompt>"` |
@@ -140,7 +140,7 @@ next_actions:
 
 ## Following Up
 
-### Default (tmux execution)
+### tmux Follow-up
 - After sending a codex command to tmux, inform the user which pane is running the command.
 - After the user reports completion or when they ask to resume, use `AskUserQuestion` to confirm next steps or collect clarifications.
 - When resuming, use `echo "new prompt" | codex exec --skip-git-repo-check resume --last` (without `2>/dev/null`) and send via `tmux-sender`.

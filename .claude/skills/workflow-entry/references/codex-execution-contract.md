@@ -1,17 +1,17 @@
-# Codex実行契約仕様
+# Codex Execution Contract Specification
 
-## 1. 目的
+## 1. Purpose
 
-本契約は、Claude層とCodex層の責任分界を固定し、実行ごとの入出力を機械的に検証可能にするために定義する。  
-主な目的は次のとおり。
+This contract is defined to fix the responsibility boundary between the Claude layer and the Codex layer, and to make the input and output of each execution mechanically verifiable.  
+The main objectives are as follows.
 
-- 入口 (`workflow-entry`) からCodexへの入力形式を標準化し、解釈差分をなくす
-- Codexの実行結果を標準化し、品質ゲート・停止判定を自動化する
-- `status=needs_input` を明示的な停止トリガーとして扱い、承認/追加入力フローに確実に接続する
+- Standardize the input format from the entry point (`workflow-entry`) to Codex and eliminate interpretation differences
+- Standardize Codex execution results and automate quality gates and stop decisions
+- Treat `status=needs_input` as an explicit stop trigger and reliably connect it to the approval/additional-input flow
 
-## 2. 適用範囲
+## 2. Scope
 
-本契約は、`workflow-entry` 経由でCodexを実行する全フローに適用する。
+This contract applies to all flows that execute Codex through `workflow-entry`.
 
 - `implement`
 - `task`
@@ -24,20 +24,20 @@
 - `reverse-engineer`
 - `add-integration-tests`
 
-## 3. 責任分界
+## 3. Responsibility Boundary
 
-- Claude層:
-  - 契約準拠の入力を生成してCodexに渡す
-  - 出力の必須フィールド検証を行う
-  - `status` に応じて継続・停止・承認要求を制御する
-- Codex層:
-  - 契約準拠の出力を返す
-  - 実施内容、変更ファイル、検証結果、ブロッカーを明示する
-  - 追加情報が必要な場合は `status=needs_input` を返す
+- Claude layer:
+  - Generate contract-compliant input and pass it to Codex
+  - Validate required output fields
+  - Control continuation, stopping, and approval requests according to `status`
+- Codex layer:
+  - Return contract-compliant output
+  - Clearly state what was done, changed files, verification results, and blockers
+  - Return `status=needs_input` when additional information is required
 
-## 4. 入力スキーマ（タスク3.2）
+## 4. Input Schema (Task 3.2)
 
-### 4.1 必須フィールド
+### 4.1 Required Fields
 
 - `objective`
 - `scope`
@@ -46,27 +46,27 @@
 - `allowed_commands`
 - `sandbox_mode`
 
-### 4.2 任意フィールド
+### 4.2 Optional Fields
 
 - `context_files`
 - `known_risks`
 - `stop_conditions`
 
-### 4.3 例（YAML）
+### 4.3 Example (YAML)
 
 ```yaml
-objective: "タスク3.1を実装し、契約仕様ドキュメントを作成する"
+objective: "Implement Task 3.1 and create the contract specification document"
 scope:
   in_scope:
-    - ".claude/skills/workflow-entry/references/codex-execution-contract.md の新規作成"
+    - "Create .claude/skills/workflow-entry/references/codex-execution-contract.md"
   out_of_scope:
-    - "他スキルの改修"
+    - "Modify other skills"
 constraints:
-  - "既存仕様（Phase1計画）に整合すること"
-  - "必須フィールドを省略しないこと"
+  - "Must align with the existing specification (Phase 1 plan)"
+  - "Do not omit required fields"
 acceptance_criteria:
-  - "入力/出力スキーマ必須項目が明記されている"
-  - "違反時の扱いが定義されている"
+  - "Required items for the input/output schema are explicitly documented"
+  - "Handling for violations is defined"
 allowed_commands:
   - "rg"
   - "sed"
@@ -75,14 +75,14 @@ sandbox_mode: "workspace-write"
 context_files:
   - "reports/integration-implementation-plan.md"
 known_risks:
-  - "契約未準拠出力による停止漏れ"
+  - "A missed stop caused by contract-noncompliant output"
 stop_conditions:
-  - "required field欠落"
+  - "missing required field"
 ```
 
-## 5. 出力スキーマ（タスク3.3）
+## 5. Output Schema (Task 3.3)
 
-### 5.1 必須フィールド
+### 5.1 Required Fields
 
 - `status`
 - `summary`
@@ -92,14 +92,14 @@ stop_conditions:
 - `blockers`
 - `next_actions`
 
-### 5.2 `status` の許容値
+### 5.2 Allowed Values for `status`
 
 - `completed`
 - `needs_input`
 - `blocked`
 - `failed`
 
-### 5.3 例（YAML）
+### 5.3 Example (YAML)
 
 ```yaml
 status: "completed"
@@ -130,27 +130,27 @@ next_actions:
   - "Embed this contract reference in codex/SKILL.md (Task 3.4)"
 ```
 
-## 6. 違反時の扱い
+## 6. Handling Violations
 
-### 6.1 必須フィールド欠落時の動作
+### 6.1 Behavior When Required Fields Are Missing
 
-- 入力側欠落（Claude -> Codex）:
-  - Codex実行を開始しない
-  - `status=blocked` 相当として欠落フィールドを列挙して差し戻す
-- 出力側欠落（Codex -> Claude）:
-  - 実行結果を受理しない
-  - `quality_gate.result=fail` とし、再出力を要求する
-  - 再出力不能な場合は `status=blocked` として停止する
+- Input-side missing fields (Claude -> Codex):
+  - Do not start Codex execution
+  - Return it with the missing fields listed, treating it as equivalent to `status=blocked`
+- Output-side missing fields (Codex -> Claude):
+  - Do not accept the execution result
+  - Set `quality_gate.result=fail` and request re-output
+  - If re-output is not possible, stop with `status=blocked`
 
-### 6.2 `status=needs_input` の扱い
+### 6.2 Handling `status=needs_input`
 
-- Claude層は直ちに次フェーズ遷移を停止する
-- `[Stop: needs-input]` を発行し、承認または追加入力を要求する
-- 受領した入力を `constraints` / `scope` / `acceptance_criteria` に反映し、再実行する
-- 追加情報が解消されるまで `completed` へ遷移してはならない
+- The Claude layer immediately stops the next phase transition
+- Issue `[Stop: needs-input]` and request approval or additional input
+- Reflect the received input in `constraints` / `scope` / `acceptance_criteria` and re-run
+- It must not transition to `completed` until the missing information is resolved
 
-## 7. 検証観点
+## 7. Verification Points
 
-- implement/review/diagnose の3実行種別で必須項目が常に充足されること
-- `status=needs_input` がStop/Approvalフローへ確実に接続されること
-- 出力必須フィールド欠落率が0%であること
+- Required items are always satisfied for the three execution types: implement/review/diagnose
+- `status=needs_input` is reliably connected to the Stop/Approval flow
+- The missing rate for required output fields is 0%
