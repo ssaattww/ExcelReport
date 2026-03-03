@@ -8,9 +8,11 @@ description: Unified deterministic entry for workflow requests. Centralizes rout
 ## Purpose/Scope
 
 - Provide a single deterministic router for: `implement`, `build`, `task`, `review`, `diagnose`, `design`, `plan`, `update-doc`, `reverse-engineer`, `add-integration-tests`.
+- Use `claude-code-workflows/` as the default baseline for workflow structure and wording, then adapt it to codex-driven execution unless this repository defines an explicit override.
 - Centralize routing logic in a single entry skill.
 - Produce a routing decision with `route_intent`, `route_target`, `sandbox_mode`, and stop/approval state.
 - Keep routing policy centralized; downstream skills execute only the selected route.
+- This skill and its `references/*` documents are the sole authoritative workflow source for routing, responsibility split, sandbox policy, and completion order.
 
 ## First Action Rule
 
@@ -80,9 +82,12 @@ Until Task 3.1 is implemented, this section is the minimum contract baseline.
 
 Use `references/sandbox-matrix.md` as the single source of truth.
 
+- Choose the minimum sandbox allowed by `references/sandbox-matrix.md` that can complete the requested work and produce the required artifacts.
 - Never widen permissions outside matrix policy.
 - `review` and `diagnose` start in `read-only`; write escalation requires approval.
+- If the request includes creating or updating files in `reports/*`, select a write-capable sandbox; if the request is an independent review with no file mutation, keep read-only.
 - Include final sandbox decision in payload as `sandbox_mode`.
+- Preserve sandbox-selection rationale in downstream `quality_gate.evidence`. Include at least one entry with `check_id: sandbox-decision` explaining why the chosen sandbox level is sufficient.
 
 ## Stop/Approval Enforcement
 
@@ -107,6 +112,11 @@ If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval b
 
 ## Project Manager Workflow
 
+- Default operating model: the project manager orchestrates and codex executes.
+- The project manager owns planning, prioritization, approvals, final decisions, tracker updates, and commits.
+- codex owns investigation, report authoring, verification, implementation, and independent post-execution review.
+- Do not perform investigation, report authoring, implementation, or detailed verification directly when the work can be routed to codex.
+- Critically evaluate codex proposals and outputs. Understand the rationale behind codex suggestions rather than accepting them at face value. When the project manager's analysis disagrees with codex's opinion, compare both perspectives and make an independent judgment.
 - Task management is owned by the project manager, not codex.
 - The project manager must perform task operations directly (`TaskCreate`, `TaskUpdate`) and keep task state synchronized.
 - Do not ask codex to update task trackers or task management systems.
@@ -118,15 +128,18 @@ If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval b
   - `tasks/tasks-status.md` -> `references/task-status-template.md`
   - `tasks/phases-status.md` -> `references/phases-status-template.md`
   - `tasks/feedback-points.md` -> `references/feedback-points-template.md`
-- Use `reports/*` only for implementation findings, investigation notes, and analysis outputs.
+- Use `reports/*` only for codex-authored findings, investigation notes, validation evidence, and analysis outputs.
 - Keep task state and report content separated:
   - `tasks/*-status.md`: execution status, ownership, dependencies, progress totals.
   - `reports/*`: technical detail, root cause analysis, verification evidence.
 - Completion sequence must follow:
-  1. codex implementation
-  2. manager review and quality check
-  3. manager `TaskUpdate`
-  4. manager status file update (`tasks/*-status.md`)
+  1. project manager confirms the codex execution plan
+  2. codex completes execution and any required report updates
+  3. codex performs an independent review in read-only and reports findings
+  4. project manager evaluates codex evidence and makes the final decision
+  5. project manager `TaskUpdate`
+  6. project manager updates required tracking files (`tasks/tasks-status.md`, `tasks/phases-status.md`, and `tasks/feedback-points.md` as required)
+  7. project manager creates the commit on the active feature branch
 - After `TaskUpdate`, verify that all tracker updates required by `references/project-manager-guide.md` are complete before final completion.
 - If any required tracker update is still pending, emit the `Tracker sync pending` stop from `references/mandatory-stops.md` and pause final completion until its resume condition is satisfied.
 
