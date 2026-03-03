@@ -10,6 +10,8 @@ namespace ExcelReportLib.DSL.AST
     {
         public static string TagName => "sheet";
         public string Name { get; init; } = string.Empty;
+        public int Rows { get; init; }
+        public int Cols { get; init; }
 
         public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
         public IReadOnlyDictionary<Placement,LayoutNodeAst> Children { get; init; }
@@ -33,13 +35,35 @@ namespace ExcelReportLib.DSL.AST
 
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
-            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
+            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
 
             Name = name;
+            Rows = ParseRequiredPositiveIntAttribute(sheetElem, "rows", issues);
+            Cols = ParseRequiredPositiveIntAttribute(sheetElem, "cols", issues);
             StyleRefs = styles;
-            Children = children.ToDictionary(child => child.Place, child => child.Child);
+            Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
             Options = options;
             Span = SourceSpan.CreateSpanAttributes(sheetElem);
+        }
+
+        private static int ParseRequiredPositiveIntAttribute(XElement elem, string attrName, List<Issue> issues)
+        {
+            var attr = elem.Attribute(attrName);
+            if (attr is not null && int.TryParse(attr.Value, out var value) && value > 0)
+            {
+                return value;
+            }
+
+            issues.Add(new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = attr is null ? IssueKind.UndefinedRequiredAttribute : IssueKind.InvalidAttributeValue,
+                Message = attr is null
+                    ? $"<sheet> 要素に {attrName} 属性がありません。"
+                    : $"<sheet> 要素の {attrName} 属性が不正です。",
+                Span = SourceSpan.CreateSpanAttributes(elem),
+            });
+            return 0;
         }
     }
 }

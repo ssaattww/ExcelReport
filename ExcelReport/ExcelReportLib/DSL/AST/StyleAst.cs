@@ -77,11 +77,11 @@ namespace ExcelReportLib.DSL.AST
                     props["numberFormat.code"] = codeAttr.Value;
             }
 
-            var borderElem = styleElem.Element(ns + "border");
-            if (borderElem != null)
+            var borderElems = styleElem.Elements(ns + "border").ToList();
+            if (borderElems.Count > 0)
             {
                 var borders = new List<BorderInfo>();
-                foreach (var bElem in borderElem.Elements(ns + "borders"))
+                foreach (var bElem in borderElems)
                 {
                     var borderInfo = new BorderInfo
                     {

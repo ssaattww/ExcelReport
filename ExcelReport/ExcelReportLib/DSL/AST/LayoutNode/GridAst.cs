@@ -14,9 +14,9 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public GridAst(XElement elem, List<Issue> issues)
         {
             var layoutElems = elem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
-            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).Select(e => new { Child = e, Place = e.Placement }).ToList();
+            var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
 
-            Children = children.ToDictionary(e => e.Place, e => e.Child);
+            Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
         }
     }
 }

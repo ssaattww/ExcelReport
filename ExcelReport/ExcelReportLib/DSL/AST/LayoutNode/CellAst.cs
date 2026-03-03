@@ -15,7 +15,12 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public CellAst(XElement elem, List<Issue> issues)
         {
             var valueAttr = elem.Attribute("value");
+            var styleRefAttr = elem.Attribute("styleRef");
+            var formulaRefAttr = elem.Attribute("formulaRef");
+
             ValueRaw = valueAttr?.Value;
+            StyleRefShortcut = styleRefAttr?.Value;
+            FormulaRef = formulaRefAttr?.Value;
             // Todo: ValueRaw から式のパース
         }
     }

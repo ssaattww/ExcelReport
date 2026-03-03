@@ -37,11 +37,20 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <!-- 罫線モード: grid外枠 / grid全体 -->
+  <!-- 罫線モード: cell / grid外枠 / grid全体 -->
   <xs:simpleType name="BorderModeEnum">
     <xs:restriction base="xs:string">
+      <xs:enumeration value="cell"/>
       <xs:enumeration value="outer"/>
       <xs:enumeration value="all"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="StyleScopeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="cell"/>
+      <xs:enumeration value="grid"/>
+      <xs:enumeration value="both"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -132,6 +141,7 @@
       <xs:element name="numberFormat" type="NumberFormatType" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
     <xs:attribute name="name"  type="xs:string"      use="required"/>
+    <xs:attribute name="scope" type="StyleScopeEnum"/>
   </xs:complexType>
 
 <!-- インライン style 用 -->

@@ -50,6 +50,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public RepeatAst(XElement repeatElem, List<Issue> issues)
         {
             var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
+            var fromExprRaw = repeatElem.Attribute("from")?.Value ?? string.Empty;
 
             var varName = repeatElem.Attribute("var");
             // var は省略可能。未指定時は既定値 "item"
@@ -89,6 +90,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             LayoutNodeAst? body = layoutElems?.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).FirstOrDefault() ?? null;
             
             Name = nameStr;
+            FromExprRaw = fromExprRaw;
             VarName = varNameStr;
             Direction = repeatDirection;
             Body = body;
