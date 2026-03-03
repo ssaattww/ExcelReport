@@ -5,10 +5,10 @@ Scope: Phase 3 (収束)
 
 ## Progress Summary
 
-- Completed: 3 / 4
+- Completed: 4 / 4
 - In Progress: 0 / 4
-- Not Started: 1 / 4
-- Completion Rate: 75%
+- Not Started: 0 / 4
+- Completion Rate: 100%
 
 ## Task List
 
@@ -17,7 +17,7 @@ Scope: Phase 3 (収束)
 | 3.1 | Define adapter deprecation policy and exit criteria | Done | Codex | None |
 | 3.2 | Remove all legacy infrastructure | Done | Codex | 3.1 |
 | 3.3 | Create the final Runbook | Done | Codex | 3.2 |
-| 3.4 | Closure verification and sign-off | Not Started | Codex | 3.3 |
+| 3.4 | Closure verification and sign-off | Done | Codex | 3.3 |
 
 ## Task Notes
 
