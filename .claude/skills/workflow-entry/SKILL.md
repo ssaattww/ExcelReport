@@ -114,6 +114,10 @@ If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval b
 - Direct commits to `main` are prohibited.
 - For branch rules and lifecycle, see `references/project-manager-guide.md` (`Git Branch Strategy`).
 - Maintain a dedicated status file at `tasks/*-status.md` and update it continuously as work progresses.
+- When creating or resetting trackers, initialize from the workflow-entry templates:
+  - `tasks/tasks-status.md` -> `references/task-status-template.md`
+  - `tasks/phases-status.md` -> `references/phases-status-template.md`
+  - `tasks/feedback-points.md` -> `references/feedback-points-template.md`
 - Use `reports/*` only for implementation findings, investigation notes, and analysis outputs.
 - Keep task state and report content separated:
   - `tasks/*-status.md`: execution status, ownership, dependencies, progress totals.
@@ -134,3 +138,5 @@ If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval b
 - `references/sandbox-matrix.md`
 - `references/project-manager-guide.md`
 - `references/task-status-template.md`
+- `references/phases-status-template.md`
+- `references/feedback-points-template.md`

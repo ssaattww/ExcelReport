@@ -1,22 +1,35 @@
-# Task Status Template
+# Tasks Status Template
 
-## Metadata
+Use this template for `tasks/tasks-status.md`.
 
-- Project:
-- Scope:
-- Manager:
-- Last Updated: `YYYY-MM-DD HH:mm` (local time)
-
-## Task List
-
-| ID | Title | Status (`Not Started`/`In Progress`/`Done`) | Assignee | Dependencies |
-|---|---|---|---|---|
-| T-001 |  | Not Started |  | - |
-| T-002 |  | In Progress |  | T-001 |
+Last Updated: `YYYY-MM-DD`
+Scope: `<current scope>`
 
 ## Progress Summary
 
-- Done: `0`
-- In Progress: `0`
-- Not Started: `0`
-- Total: `0`
+- Completed: `0 / 0`
+- In Progress: `0 / 0`
+- Not Started: `0 / 0`
+- Completion Rate: `0%`
+
+## Task List
+
+| Task ID | Title | Status | Assignee | Dependencies |
+|---|---|---|---|---|
+| 1 | `<task title>` | Not Started | `<owner>` | None |
+
+## Task Notes
+
+### Task 1 (`<task title>`) - Not Started
+
+Changes:
+- `<path>` - `<planned change or completed change>`
+
+Reports:
+- `<path>` (`<purpose>`)
+
+## Status Definitions
+
+- Done: complete and verified
+- In Progress: actively being worked
+- Not Started: not yet started
