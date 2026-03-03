@@ -37,6 +37,7 @@ adapter-deprecation-policy.md は削除決定記録に差し替える。
 - .claude/skills/workflow-entry/references/codex-execution-contract.md (アダプター参照除去)
 - .claude/skills/tmux-sender/SKILL.md (アダプター参照除去)
 - tasks/integration-tasks.md (アダプター参照除去)
+- reports/* 内の削除済みファイルへのリンクも除去
 
 ### Task 3.3 (Final Runbook)
 - workflow-entry を唯一のルーティング権限として記述
@@ -44,8 +45,7 @@ adapter-deprecation-policy.md は削除決定記録に差し替える。
 - 統合後のシステム運用手順書
 
 ### Task 3.4 (Closure verification)
-- 削除後に壊れたリンクや矛盾がないか最終確認
-- reports/* は歴史的文書のため修正対象外 (アーカイブ扱い)
+- 削除後に壊れたリンクや矛盾が残っていないか最終確認
 - Phase 3 完了の品質ゲート
 
 ## Deleted Tasks (Phase 3 再構成)
