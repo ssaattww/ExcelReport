@@ -34,13 +34,11 @@ Operator runbook for `.claude/skills/workflow-entry`. This document is procedura
 
 ## 4. Sandbox Policy
 
-- Resolve sandbox only from [`sandbox-matrix.md`](sandbox-matrix.md).
-- Default to `workspace-write` for `implement`, `build`, `task`, `add-integration-tests`, `design`, `plan`, `update-doc`, and `reverse-engineer`.
-- Default to `read-only` for `review` and `diagnose`.
-- Escalate `review` or `diagnose` to `workspace-write` only when read-only analysis concludes edits are required and the user explicitly approves `[Approve: sandbox-escalation]`.
-- If sandbox cannot be resolved, emit `[Stop: sandbox-unresolved]`.
-- Never select broader access by default. Any broader access requires explicit user instruction and a separate stop/approval cycle.
-- Source files: [`sandbox-matrix.md`](sandbox-matrix.md), [`sandbox-escalation.md`](sandbox-escalation.md), [`stop-approval-protocol.md`](stop-approval-protocol.md)
+- Use [`sandbox-matrix.md`](sandbox-matrix.md) as the authoritative selection matrix and apply its default sandbox plus escalation rules without duplicating the table here.
+- Apply the `reports/*` exception from [`../SKILL.md`](../SKILL.md): when a `review` or `diagnose` request explicitly requires creating or updating `reports/*`, choose a write-capable sandbox instead of keeping pure read-only analysis.
+- If sandbox cannot be resolved, emit `[Stop: sandbox-unresolved]`. Never select broader access by default; any broader access still requires explicit user instruction and a separate stop/approval cycle.
+- Preserve sandbox rationale in downstream evidence by including at least one `quality_gate.evidence` entry for the sandbox decision (for example, `check_id: sandbox-decision`).
+- Source files: [`../SKILL.md`](../SKILL.md), [`sandbox-matrix.md`](sandbox-matrix.md), [`sandbox-escalation.md`](sandbox-escalation.md), [`stop-approval-protocol.md`](stop-approval-protocol.md)
 
 ## 5. Stop/Approval Operations
 
@@ -69,7 +67,7 @@ Operator runbook for `.claude/skills/workflow-entry`. This document is procedura
 - Keep task tracking under project manager control. `workflow-entry` and codex flows do not update the task system on behalf of the project manager.
 - Keep status tracking in `tasks/*-status.md` and technical findings in `reports/*`; do not mix the two.
 - Use [`task-status-template.md`](task-status-template.md) as the default status-file format.
-- Follow the completion order: codex execution, project manager review and quality check, project manager task update, then project manager status-file update.
+- For the authoritative completion workflow, follow [`project-manager-guide.md`](project-manager-guide.md); this runbook keeps only the summary order: confirm the codex plan, run codex execution plus any `reports/*` updates, require codex independent review, then complete PM decision, `TaskUpdate`, tracker sync, and commit.
 - Source files: [`../SKILL.md`](../SKILL.md), [`project-manager-guide.md`](project-manager-guide.md), [`task-status-template.md`](task-status-template.md)
 
 ## 8. Incident Handling
@@ -86,6 +84,25 @@ Operator runbook for `.claude/skills/workflow-entry`. This document is procedura
 
 - `workflow-entry` operator: run deterministic routing, enforce contract validation before handoff, enforce sandbox policy and stop/approval boundaries, and validate the returned output envelope at the router boundary.
 - Downstream execution skill: execute the selected route, produce the standard output envelope, and emit `quality_gate` plus route-specific evidence.
-- Project manager: own task creation, prioritization, dependency management, and task-state updates; run quality checks before closure; and maintain `tasks/*-status.md`.
-- codex: implement changes, investigate technical issues, run verification, and report results.
+- Project manager: own planning, prioritization, approvals, final decisions, `TaskCreate` and `TaskUpdate`, and keep `tasks/tasks-status.md`, `tasks/phases-status.md`, and `tasks/feedback-points.md` current. See [`project-manager-guide.md`](project-manager-guide.md) for the full operating model.
+- codex: execute investigation or implementation, write technical evidence in `reports/*`, run verification, and perform an independent post-execution review before PM closure.
 - Source files: [`../SKILL.md`](../SKILL.md), [`codex-execution-contract.md`](codex-execution-contract.md), [`project-manager-guide.md`](project-manager-guide.md), [`quality-gate-evidence-template.md`](quality-gate-evidence-template.md)
+
+## 10. FP6 Alignment Matrix
+
+Use `claude-code-workflows` as the upstream baseline unless this repository defines an explicit override; shared repository-wide deltas are deterministic routing, contract payload validation, stop/approval enforcement, and PM-owned tracker and commit flow, so `adaptation` lists only route-specific differences.
+
+| route | upstream | adaptation |
+|---|---|---|
+| `implement` | `/implement` end-to-end feature workflow | None beyond the shared rule. |
+| `build` | `/build` execute from an existing task plan | None beyond the shared rule. |
+| `task` | `/task` single-task execution | None beyond the shared rule. |
+| `review` | `/review` post-implementation verification | Start from `read-only` per the sandbox matrix; allow write-capable sandbox only when `reports/*` output is explicitly required or an approved escalation applies. |
+| `diagnose` | `/diagnose` investigation and solution derivation | Start from `read-only` per the sandbox matrix; allow write-capable sandbox only when `reports/*` output is explicitly required or an approved escalation applies. |
+| `design` | `/design` create design documentation | None beyond the shared rule. |
+| `plan` | `/plan` generate a work plan from design | None beyond the shared rule. |
+| `update-doc` | `/update-doc` document maintenance workflow | None beyond the shared rule. |
+| `reverse-engineer` | `/reverse-engineer` documentation generation from existing code | None beyond the shared rule. |
+| `add-integration-tests` | `/add-integration-tests` add integration or E2E coverage | None beyond the shared rule. |
+
+- Source files: [`../SKILL.md`](../SKILL.md), [`project-manager-guide.md`](project-manager-guide.md), [`sandbox-matrix.md`](sandbox-matrix.md), [`../../../../claude-code-workflows/README.md`](../../../../claude-code-workflows/README.md)
