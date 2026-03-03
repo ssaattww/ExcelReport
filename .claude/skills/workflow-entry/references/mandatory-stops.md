@@ -16,11 +16,13 @@ Mandatory stop points that must be enforced by `workflow-entry`.
 | Intent ambiguous | Multiple same-priority candidates remain | all workflows | `[Approve: route-selection]` | user selects one intent |
 | `[Stop: contract-missing-field]` | Required contract field is missing during contract assembly | all workflows | `[Approve: route-selection]` | User supplies missing required field(s); rerun contract assembly and full routing if scope changes |
 | Pre-design approval | Design-level document completion before next phase | `design`, `plan`, `update-doc`, `reverse-engineer` | `[Approve: design-approval]` | approval accepted with constraints merged |
+| Execution plan not confirmed | Work is about to be dispatched to codex without a reviewed execution plan | all workflows routed to codex | `[Approve: execution-plan]` | project manager confirms the codex plan and sandbox |
 | Pre-implementation approval | Before starting code or test modifications | `implement`, `build`, `task`, `add-integration-tests` | `[Approve: implementation-start]` | approval accepted |
 | High-risk change | Destructive operation, data migration, or broad rewrite risk | all workflows | `[Approve: high-risk-change]` | explicit risk acceptance recorded |
 | Sandbox escalation | `review` or `diagnose` requires write actions after read-only analysis | `review`, `diagnose` | `[Approve: sandbox-escalation]` | escalation approved and sandbox updated |
 | Quality gate failure | Required checks fail and safe auto-fix is not available | all workflows | `[Approve: resume-after-fix]` | user accepts remediation direction |
 | Requirement change detected | Scope/acceptance criteria changed during execution | all workflows | `[Approve: route-selection]` | reroute completed with updated request |
+| Independent review missing | Workflow completion attempted before required codex post-execution review | all write-capable workflows | `[Approve: post-execution-review]` | codex completes read-only review and PM evaluates findings |
 | Tracker sync pending | workflow completion attempted while required tracker updates (including status files and `tasks/feedback-points.md`, per `project-manager-guide.md`) are still pending | all workflows | `[Approve: tracker-sync]` | all required tracking files updated, or user explicitly approves deferral |
 
 ## Rejection Handling
