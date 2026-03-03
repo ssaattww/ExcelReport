@@ -5,39 +5,34 @@ Scope: Phase 3 (収束)
 
 ## Progress Summary
 
-- Completed: 1 / 4
+- Completed: 2 / 4
 - In Progress: 0 / 4
-- Not Started: 3 / 4
-- Completion Rate: 25%
+- Not Started: 2 / 4
+- Completion Rate: 50%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
 | 3.1 | Define adapter deprecation policy and exit criteria | Done | Codex | None |
-| 3.2 | Remove all legacy infrastructure | Not Started | Codex | 3.1 |
+| 3.2 | Remove all legacy infrastructure | Done | Codex | 3.1 |
 | 3.3 | Create the final Runbook | Not Started | Codex | 3.2 |
 | 3.4 | Closure verification and sign-off | Not Started | Codex | 3.3 |
 
 ## Task Notes
 
-### Task 3.2 (Legacy infrastructure removal)
+### Task 3.2 (Legacy infrastructure removal) - 実施済み
 
-前提: 3.1 の deprecation policy は段階的廃止を前提としていたが、ユーザー判断で即時全削除に変更。
-adapter-deprecation-policy.md は削除決定記録に差し替える。
+削除済み:
+- .claude/skills/backend-workflow-entry/ (ディレクトリごと削除)
+- .claude/skills/codex-workflow-entry/ (ディレクトリごと削除)
 
-削除対象:
-- .claude/skills/backend-workflow-entry/ (ディレクトリごと)
-- .claude/skills/codex-workflow-entry/ (ディレクトリごと)
-
-編集対象:
-- .claude/skills/workflow-entry/SKILL.md (Rollback Switch セクション削除, Compatibility Adapter Policy セクション削除・更新)
-- .claude/skills/workflow-entry/references/routing-table.md (Compatibility fallback 列削除)
-- .claude/skills/workflow-entry/references/adapter-deprecation-policy.md → 削除決定記録に差し替え
-- .claude/skills/workflow-entry/references/codex-execution-contract.md (アダプター参照除去)
-- .claude/skills/tmux-sender/SKILL.md (アダプター参照除去)
-- tasks/integration-tasks.md (アダプター参照除去)
-- reports/* 内の削除済みファイルへのリンクも除去
+編集済み:
+- workflow-entry/SKILL.md (Rollback Switch, Compatibility Adapter Policy 削除)
+- routing-table.md (Compatibility fallback 列削除)
+- adapter-deprecation-policy.md (削除決定記録に差し替え)
+- codex-execution-contract.md, tmux-sender/SKILL.md, integration-tasks.md (参照除去)
+- reports/* 12件 (壊れたリンク除去)
 
 ### Task 3.3 (Final Runbook)
 - workflow-entry を唯一のルーティング権限として記述

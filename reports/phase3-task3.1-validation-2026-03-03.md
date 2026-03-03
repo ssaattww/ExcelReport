@@ -60,22 +60,22 @@ Result: `NO DIRECT CONTRADICTION, BUNDLE DRIFT EXISTS`
 
 Assessment: no policy contradiction, but the operator-facing reference bundle has unresolved naming drift that should be fixed before the final runbook.
 
-### 6. `.claude/skills/backend-workflow-entry/SKILL.md`
+### 6. `backend-workflow-entry`
 
 Result: `PARTIALLY CONSISTENT`
 
-- The adapter doc matches the policy on deprecated status, pass-through behavior, deprecation notices, and prohibition on local routing/sandbox logic (`backend-workflow-entry/SKILL.md:8-18,35-38,40-47` vs `adapter-deprecation-policy.md:17-23,29-32,91-96`).
-- It forwards `workflow_entry_mode=legacy-fallback` without reintroducing local logic (`backend-workflow-entry/SKILL.md:35-38`), consistent with the policy's emergency-use stance.
+- The adapter doc matches the policy on deprecated status, pass-through behavior, deprecation notices, and prohibition on local routing/sandbox logic.
+- It forwards `workflow_entry_mode=legacy-fallback` without reintroducing local logic, consistent with the policy's emergency-use stance.
 - It does not mention the adapter lifecycle (`active`, `auditing`, `tombstoned`, `deleted`), audit windows, exit criteria, or approval gates from the policy.
 - It also does not link to the policy, so an operator reading only the adapter entry would miss retirement requirements.
 
 Assessment: behavior is consistent, but retirement-operability guidance is missing at the adapter surface.
 
-### 7. `.claude/skills/codex-workflow-entry/SKILL.md`
+### 7. `codex-workflow-entry`
 
 Result: `PARTIALLY CONSISTENT`
 
-- The same consistency pattern as the backend adapter applies: deprecated compatibility-only status, pass-through behavior, and no local routing/sandbox logic are aligned (`codex-workflow-entry/SKILL.md:8-18,35-38,40-47`).
+- The same consistency pattern as the backend adapter applies: deprecated compatibility-only status, pass-through behavior, and no local routing/sandbox logic are aligned.
 - The same omissions remain: no lifecycle, audit window, exit criteria, approval requirements, or explicit link to the retirement policy.
 
 Assessment: behavior is consistent, but retirement-operability guidance is missing at the adapter surface.
@@ -203,7 +203,7 @@ Result: `APPROPRIATELY SCOPED, SLIGHTLY UNDER-SPECIFIED`
    - `adapter-deprecation-policy.md:37` requires one documented, consistent timezone but does not define which timezone should be used.
 
 2. Adapter entry docs do not link to the retirement policy.
-   - The backend and codex adapter skills are behaviorally consistent, but they do not surface the lifecycle, audit, or approval rules to operators (`backend-workflow-entry/SKILL.md:8-55`, `codex-workflow-entry/SKILL.md:8-55`).
+   - The backend and codex adapter skills are behaviorally consistent, but they do not surface the lifecycle, audit, or approval rules to operators.
 
 3. The surrounding stop/approval reference bundle still has naming drift.
    - This is not caused by the target policy, but it remains an operator-readiness risk for the eventual runbook (`mandatory-stops.md:18-23` vs `stop-approval-protocol.md:12-22`).
@@ -227,4 +227,4 @@ Reason:
    - acceptable evidence forms
    - where the evidence is stored until Task 3.2 formalizes the measurement model
 4. Either declare a canonical audit timezone now, or explicitly defer timezone standardization to Task 3.2 with a temporary default.
-5. Add direct references from `backend-workflow-entry/SKILL.md` and `codex-workflow-entry/SKILL.md` to this policy so operators do not miss the retirement rules.
+5. Add direct references from the backend and codex adapters to this policy so operators do not miss the retirement rules.

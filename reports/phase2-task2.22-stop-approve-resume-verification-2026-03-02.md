@@ -24,7 +24,7 @@ The main compliance failures are structural rather than random:
   - `stop-approval-section-template.md` uses `[Stop: <Gate Name>]` and defines `revision-limit-reached` (`:7-15`, `:57-59`).
   - `stop-approval-protocol.md` uses `[Stop: reason]` and does not list `revision-limit-reached` in standard stop reasons (`:7`, `:10-21`).
 - Several skills list stop points but do not define explicit local `[Approve: ...]` pairings for all listed gates.
-- `backend-workflow-entry` and `codex-workflow-entry` explicitly say they must not create adapter-local gates, but both still emit `[Stop: routing-unavailable]` locally (`backend-workflow-entry:28,53`; `codex-workflow-entry:28,53`).
+- `backend-workflow-entry` and `codex-workflow-entry` explicitly say they must not create adapter-local gates, but both still emit `[Stop: routing-unavailable]` locally.
 - `workflow-entry` references the correct documents and blocks on stops, but it does not itself define gate types for its declared stop points and does not define `max_revision_cycles`.
 
 ## 2. Stop Point Inventory
@@ -73,10 +73,10 @@ Verdict: Partial
 Verdict: Fail
 
 - Check 1: Fail
-  - It emits local `[Stop: routing-unavailable]` (`backend-workflow-entry:28`), but that stop has no local `gate_type`, no trigger schema beyond prose, and no resume condition.
+  - It emits local `[Stop: routing-unavailable]`, but that stop has no local `gate_type`, no trigger schema beyond prose, and no resume condition.
 - Check 2: Fail
-  - The adapter correctly says it should propagate upstream markers unchanged (`backend-workflow-entry:51-55`).
-  - It also says it must not create adapter-local gates (`backend-workflow-entry:53`), but line 28 creates one anyway.
+  - The adapter correctly says it should propagate upstream markers unchanged.
+  - It also says it must not create adapter-local gates, but it still creates one anyway.
 - Check 3: Role-based N/A for revision loops, but the local stop still lacks explicit resume behavior.
 
 ### 3. codex-workflow-entry (Adapter)
@@ -84,10 +84,10 @@ Verdict: Fail
 Verdict: Fail
 
 - Check 1: Fail
-  - It emits local `[Stop: routing-unavailable]` (`codex-workflow-entry:28`) without `gate_type` or explicit resume conditions.
+  - It emits local `[Stop: routing-unavailable]` without `gate_type` or explicit resume conditions.
 - Check 2: Fail
-  - It correctly requires unchanged propagation and upstream-owned resume (`codex-workflow-entry:51-55`).
-  - It also forbids adapter-local gates (`codex-workflow-entry:53`), but line 28 still creates one.
+  - It correctly requires unchanged propagation and upstream-owned resume.
+  - It also forbids adapter-local gates, but it still creates one.
 - Check 3: Role-based N/A for revision loops, but the local stop remains unresolved from a protocol standpoint.
 
 ### 4. codex (CLI Wrapper)
@@ -255,7 +255,7 @@ The main inconsistency is not stop naming inside those skills. It is the missing
 Good overall.
 
 - All stop-owning non-entry workflow skills reference `../workflow-entry/references/stop-approval-section-template.md`.
-- Both adapters also reference that template (`backend-workflow-entry:55`; `codex-workflow-entry:55`).
+- Both adapters also reference that template.
 - `workflow-entry` correctly references the router-specific source documents instead (`workflow-entry:94-95`, `:150-151`).
 
 ### 4.4 Reference-set drift
@@ -264,7 +264,7 @@ This is the largest cross-skill documentation problem.
 
 - `revision-limit-reached` is mandated by the section template (`stop-approval-section-template.md:57-59`) and used by 10 skills, but it is missing from the standard stop list in `stop-approval-protocol.md:10-21`.
 - `contract-missing-field` is in `workflow-entry` and the standard stop list (`workflow-entry:76`; `stop-approval-protocol.md:14`) but is missing from `mandatory-stops.md:13-22`, so it has no canonical approval mapping.
-- `routing-unavailable` is used by both adapters (`backend-workflow-entry:28`; `codex-workflow-entry:28`) but is not defined in the reference protocol at all.
+- `routing-unavailable` is used by both adapters but is not defined in the reference protocol at all.
 
 ## 5. Special Role Verification
 
@@ -282,10 +282,10 @@ Result: mostly compliant, with one literal gap.
 
 Result: propagation behavior passes, adapter-local-gate rule fails.
 
-- Propagation is explicitly unchanged (`backend-workflow-entry:51-55`; `codex-workflow-entry:51-55`).
-- Adapter-local gates are explicitly forbidden (`backend-workflow-entry:53`; `codex-workflow-entry:53`).
-- Resume is explicitly delegated upstream (`backend-workflow-entry:54`; `codex-workflow-entry:54`).
-- Failure: both adapters still create `[Stop: routing-unavailable]` locally (`backend-workflow-entry:28`; `codex-workflow-entry:28`).
+- Propagation is explicitly unchanged.
+- Adapter-local gates are explicitly forbidden.
+- Resume is explicitly delegated upstream.
+- Failure: both adapters still create `[Stop: routing-unavailable]` locally.
 
 ### 5.3 Transport Layer (`tmux-sender`)
 

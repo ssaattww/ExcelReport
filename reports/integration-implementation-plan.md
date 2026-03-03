@@ -39,7 +39,7 @@ Step-by-step:
    想定ファイル: `.claude/skills/workflow-entry/SKILL.md`
 2. 既存の振り分け表を `workflow-entry` に移植し、実行先を「Claude制御 + Codex実行」に一本化する。
 3. `backend-workflow-entry` と `codex-workflow-entry` は互換アダプタへ変更する。  
-   想定変更: `.claude/skills/backend-workflow-entry/SKILL.md`, `.claude/skills/codex-workflow-entry/SKILL.md`
+   想定変更: `backend-workflow-entry`, `codex-workflow-entry`
 4. 互換アダプタは「新入口へ委譲するだけ」に制限し、独自ルーティングを禁止する。
 5. ルーティング優先順位を明文化する。  
    優先順: `implement/build/task` > `review/diagnose` > `design/plan/update-doc/reverse-engineer` > `add-integration-tests`
@@ -119,7 +119,7 @@ Step-by-step:
 3. `review`/`diagnose` は `read-only` 開始を維持し、修正フェーズで `workspace-write` へ昇格する2段階方式に変更する。
 4. 昇格条件を明文化する。  
    例: 修正適用が必要で、承認が得られた場合のみ
-5. `codex-workflow-entry/SKILL.md` と `codex/SKILL.md` の表記を同期する。
+5. `codex-workflow-entry` と `codex/SKILL.md` の表記を同期する。
 6. 5ケース以上の実行テストで期待sandboxが選ばれることを確認する。
 
 成果物:
@@ -277,4 +277,3 @@ Phase 3 ロールバック:
 8. 要件変更時に再分析フェーズへ戻る分岐が全フローで定義されている。
 9. 互換モードへのロールバックがフロー単位で実行可能である。
 10. 主要シナリオ（implement/design/diagnose/review）で連続3回の実行が安定する。
-

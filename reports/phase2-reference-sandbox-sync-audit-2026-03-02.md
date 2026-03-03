@@ -16,9 +16,9 @@ Overall state:
 Headline findings:
 
 - `codex/SKILL.md` still uses project-root-relative reference strings for two workflow-entry references, which breaks the dominant relative-path convention used by the other skills.
-- `backend-workflow-entry/SKILL.md` is not sandbox-symmetric with `codex-workflow-entry/SKILL.md`; it lacks both a `sandbox-matrix.md` source-of-truth note and a drift-handling clause.
+- `backend-workflow-entry` is not sandbox-symmetric with `codex-workflow-entry`; it lacks both a `sandbox-matrix.md` source-of-truth note and a drift-handling clause.
 - `codex-lifecycle-orchestration/SKILL.md` and `backend-lifecycle-execution/SKILL.md` reference the non-entry contract template but do not explicitly instruct local validation of required baseline input fields, including `sandbox_mode`.
-- `codex-workflow-entry/SKILL.md` contains a secondary path-style inconsistency for sandbox guidance: it uses `workflow-entry/references/sandbox-matrix.md` in plain text instead of the established `../workflow-entry/references/...` form.
+- `codex-workflow-entry` contains a secondary path-style inconsistency for sandbox guidance: it uses `workflow-entry/references/sandbox-matrix.md` in plain text instead of the established `../workflow-entry/references/...` form.
 - The requested "missing" references in `workflow-entry`, the two adapter skills, `codex`, and `tmux-sender` are mostly justifiable as intentional N/A based on skill role.
 
 ## 2. Per-Skill Audit Matrix
@@ -66,7 +66,7 @@ Reference coverage totals:
    - Fix intent:
      - Convert both to `../workflow-entry/references/...`.
 
-2. `backend-workflow-entry/SKILL.md` is not sandbox-policy symmetric with `codex-workflow-entry/SKILL.md`.
+2. `backend-workflow-entry` is not sandbox-policy symmetric with `codex-workflow-entry`.
    - Evidence:
      - `codex-workflow-entry` lines 45-47 explicitly tie sandbox decisions to `sandbox-matrix.md`, `workflow-entry`, and drift handling.
      - `backend-workflow-entry` has no corresponding sandbox source-of-truth or drift clause.
@@ -89,7 +89,7 @@ Reference coverage totals:
 
 ### Low
 
-4. `codex-workflow-entry/SKILL.md` uses a non-standard sandbox-matrix path string.
+4. `codex-workflow-entry` uses a non-standard sandbox-matrix path string.
    - Evidence:
      - Lines 45 and 47 use `workflow-entry/references/sandbox-matrix.md` in plain text.
    - Impact:
@@ -116,7 +116,7 @@ Reference coverage totals:
    - Judgment:
      - This is intentional and appropriate for the owning entry/router skill.
 
-7. `backend-workflow-entry/SKILL.md` and `codex-workflow-entry/SKILL.md` do not reference `non-entry-execution-contract-template.md`.
+7. `backend-workflow-entry` and `codex-workflow-entry` do not reference `non-entry-execution-contract-template.md`.
    - Evidence:
      - Both adapters state that contract validation is delegated to `workflow-entry`.
    - Judgment:
@@ -200,12 +200,12 @@ This plan is intentionally limited to documentation edits. No behavior changes a
    - Add a short sandbox source-of-truth sentence in the sandbox selection area (near lines 22-27 or just before the tables) that points to `../workflow-entry/references/sandbox-matrix.md`.
    - In the two `danger-full-access` rows (lines 59 and 71), add wording that this mode is never default-selected and requires explicit user instruction plus approval, matching the matrix guardrails.
 
-2. `.claude/skills/backend-workflow-entry/SKILL.md`
+2. `backend-workflow-entry`
    - Add a sandbox-policy bullet under `## Adapter Constraints` stating that sandbox selection criteria are defined in `../workflow-entry/references/sandbox-matrix.md` via delegated `workflow-entry`.
    - Add a drift-handling bullet mirroring `codex-workflow-entry`, but scoped to `backend-workflow-entry`, `workflow-entry`, and any backend-facing sandbox guidance that should stay synchronized.
    - Optionally add a short bullet clarifying that delegated output includes `route_intent`, `route_target`, and `sandbox_mode` for symmetry with `codex-workflow-entry`.
 
-3. `.claude/skills/codex-workflow-entry/SKILL.md`
+3. `codex-workflow-entry`
    - Replace the plain-text `workflow-entry/references/sandbox-matrix.md` strings at lines 45 and 47 with the standard `../workflow-entry/references/sandbox-matrix.md` form.
    - Prefer converting both references into markdown links, matching the existing style used for the other Wave A references in the file.
    - Keep the drift-handling clause, but normalize the path style in that clause as well.
@@ -253,4 +253,3 @@ This plan is intentionally limited to documentation edits. No behavior changes a
 1. Fix `codex/SKILL.md` path normalization first, because it is the only confirmed project-root-relative defect.
 2. Normalize the adapter pair next (`backend-workflow-entry` and `codex-workflow-entry`) so the compatibility layer is symmetric again.
 3. Patch the lifecycle pair last (`codex-lifecycle-orchestration` and `backend-lifecycle-execution`) to restore executor contract consistency.
-

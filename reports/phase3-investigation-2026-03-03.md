@@ -11,8 +11,6 @@ This investigation used the requested source set:
 - `claude-code-workflows/` (top-level structure, plus the original shared/backend plugin layout)
 - `.claude/skills/` current skill inventory
 - `.claude/skills/workflow-entry/references/routing-table.md`
-- `.claude/skills/backend-workflow-entry/SKILL.md`
-- `.claude/skills/codex-workflow-entry/SKILL.md`
 - `reports/phase2-readiness-report-2026-03-02.md`
 - `reports/phase2-coverage-matrix-2026-02-17.md`
 - `tasks/phases-status.md`
@@ -418,4 +416,3 @@ Phase 3 should be considered complete only when all of the following are true:
 - operational metrics are defined and at least one baseline measurement has been recorded
 - the final Runbook exists and reflects the converged operating model
 - a closure audit confirms no regression against the Phase 2 baseline
-

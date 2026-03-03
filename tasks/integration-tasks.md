@@ -22,15 +22,15 @@ Based on:
 
 - [ ] **1.1** Create new unified entry skill
   - File: `.claude/skills/workflow-entry/SKILL.md`
-  - Consolidate routing logic from `backend-workflow-entry` and `codex-workflow-entry`
+  - Consolidate routing logic from the former dual-entry setup
   - Define priority order: implement/build/task > review/diagnose > design/plan/update-doc/reverse-engineer > add-integration-tests
   - **Assignee**: Codex
   - **Estimate**: 1-2 hours
 
-- [ ] **1.2** Convert existing entries to compatibility adapters
-  - Files: `.claude/skills/backend-workflow-entry/SKILL.md`, `.claude/skills/codex-workflow-entry/SKILL.md`
-  - Change to "delegate to new entry only" mode
-  - Prohibit independent routing
+- [ ] **1.2** Remove legacy entry skills after cutover
+  - Scope: Remove any remaining legacy entry skill directories after cutover confirmation
+  - Delete the legacy entry skill directories after cutover confirmation
+  - Keep `workflow-entry` as the only active entry surface
   - **Assignee**: Codex
   - **Estimate**: 1 hour
 
@@ -43,7 +43,7 @@ Based on:
 - [ ] **1.4** Verification: Representative scenario testing
   - Test: implement, design, diagnose scenarios
   - Verify: Same input → same route (3x execution consistency)
-  - Verify: Old entries delegate to new entry
+  - Obsolete after 1.2: legacy-entry delegation verification is no longer applicable once the old entries are removed
   - **Assignee**: Claude Code (manual testing)
   - **Estimate**: 1 hour
 
@@ -120,8 +120,8 @@ Based on:
   - **Assignee**: Codex
   - **Estimate**: 1 hour
 
-- [ ] **3.5** Update compatibility adapters to reference contract
-  - Files: Backend/codex workflow entries
+- [ ] **3.5** Remove legacy adapter-era contract references
+  - Files: `workflow-entry` references and supporting reports
   - **Assignee**: Codex
   - **Estimate**: 30 minutes
 
@@ -170,8 +170,8 @@ Based on:
   - **Assignee**: Codex
   - **Estimate**: 1 hour
 
-- [ ] **4.5** Synchronize matrix across skills
-  - Files: `codex-workflow-entry/SKILL.md`, `codex/SKILL.md`
+- [ ] **4.5** Synchronize matrix across active skills
+  - Files: `workflow-entry/SKILL.md`, `codex/SKILL.md`
   - Ensure consistency
   - **Assignee**: Codex
   - **Estimate**: 30 minutes
@@ -194,7 +194,7 @@ Based on:
 
 **Rollback procedure:**
 1. Disable new `workflow-entry` skill
-2. Re-enable direct routing in compatibility adapters
+2. Restore the previous `workflow-entry` revision if cutover must be reverted
 3. Restore contract to warn-only mode (not strict)
 4. Keep legacy sandbox matrix available at `references/sandbox-matrix.legacy.md`
 
@@ -208,14 +208,14 @@ Based on:
 ## Phase 1 Acceptance Criteria
 
 - [ ] New `workflow-entry` skill can launch all 10 workflows
-- [ ] Old entries act as compatibility adapters and always delegate to new entry
+- [ ] Legacy entry infrastructure is removed after cutover validation
 - [ ] `design/plan/update-doc/reverse-engineer` execute with `workspace-write`
 - [ ] `review/diagnose` start with `read-only`, escalate to `workspace-write` only after approval
 - [ ] All workflows trigger stop points and do not transition without approval
 - [ ] Codex output always includes required contract items (`status`, `changed_files`, `tests`, `quality_gate`, `blockers`)
 - [ ] Quality gate results are attached to completion reports
 - [ ] All workflows define requirement-change → re-analysis branch
-- [ ] Rollback to compatibility mode is executable per workflow
+- [ ] Rollback to the prior `workflow-entry` revision is executable per workflow
 - [ ] Representative scenarios (implement/design/diagnose/review) execute stably 3 consecutive times
 
 ---

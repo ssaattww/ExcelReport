@@ -24,8 +24,6 @@
 - `reverse-engineer`
 - `add-integration-tests`
 
-互換アダプタ (`codex-workflow-entry` など) を経由する場合も同一契約を適用する。
-
 ## 3. 責任分界
 
 - Claude層:

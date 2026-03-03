@@ -255,4 +255,3 @@ chmod +x scripts/monitor-completion.sh
 ## Related Skills
 
 - **codex**: Codex CLI execution (references tmux execution method)
-- **backend-workflow-entry**: tmux usage in workflow execution
