@@ -148,7 +148,7 @@ tmux send-keys -t codex-session:0.1 Enter
 2. **Result Saving**: Saves tmux pane output to `/tmp/codex-result-YYYYMMDD-HHMMSS.txt` (if `save-result=1`)
 3. **Completion Flag**: Creates `/tmp/codex-completed.flag`
 4. **Notification with Smart Retry**:
-   - Sends "Codex exec完了。結果を確認してください。" to Claude Code pane
+   - Sends "Codex exec completed. Please check the result." to Claude Code pane
    - Skips notification when target pane is busy (Working/Thinking) if `skip-when-working=1`
    - Forces notification after N consecutive skips (configurable via `force-notify-after-skips`)
    - Continues notification loop every `notify-interval-sec` seconds until killed
@@ -169,7 +169,7 @@ tmux send-keys -t codex-session:0.1 Enter
 
 # On completion:
 # - Results are saved automatically
-# - Claude Code is awakened with "どうなった？"
+# - Claude Code is awakened with "What happened?"
 # - Ready to review results
 ```
 

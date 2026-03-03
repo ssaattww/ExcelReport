@@ -20,11 +20,11 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 2. **Identify target pane**: Select the Codex execution pane (default: pane 1 or `codex-session:0.1`)
 3. Ask the user (via `AskUserQuestion`) which model to run (`gpt-5.3-codex` or `gpt-5.2`) AND which reasoning effort to use (`xhigh`, `high`, `medium`, or `low`) in a **single prompt with two questions**.
 4. **Select the sandbox mode based on task intent** (see Sandbox Selection Matrix below):
-   - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - ドキュメント作成には書き込み権限が必須
-   - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - コード変更と自動実行
+   - **Document generation** (design/plan/update-doc/reverse-engineer): `workspace-write` - Write access is required for document creation
+   - **Implementation** (implement/build/task/add-integration-tests): `workspace-write` + `--full-auto` - Code changes and automatic execution
    - **Review/Diagnose** (review/diagnose): Start with `read-only`; before write escalation emit `[Stop: sandbox-escalation-required]` + `[Approve: sandbox-escalation]`
-   - **Pure analysis**: `read-only` - 読み取りのみで十分な場合
-   - **Network/broad access**: `danger-full-access` - 明示的な要求がある場合のみ
+   - **Pure analysis**: `read-only` - When read-only access is sufficient
+   - **Network/broad access**: `danger-full-access` - Only when explicitly requested
    Sandbox selection criteria are centrally defined in [sandbox-matrix.md](../workflow-entry/references/sandbox-matrix.md). If this skill's sandbox guidance diverges from the matrix, treat the matrix as source of truth.
 5. Assemble the codex command with the appropriate options:
    - `-m, --model <MODEL>`
