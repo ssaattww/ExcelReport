@@ -81,7 +81,7 @@
     <xs:sequence>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="style"  type="StyleType"/>
-        <xs:element name="import" type="StylesImportType"/>
+        <xs:element name="styleImport" type="StylesImportType"/>
       </xs:choice>
     </xs:sequence>
   </xs:complexType>
@@ -197,8 +197,8 @@
   <xs:attributeGroup name="PlacementAttrs">
     <xs:attribute name="r"       type="PositiveInt1"/>
     <xs:attribute name="c"       type="PositiveInt1"/>
-    <xs:attribute name="rowspan" type="PositiveInt1" default="1"/>
-    <xs:attribute name="colspan" type="PositiveInt1" default="1"/>
+    <xs:attribute name="rowSpan" type="PositiveInt1" default="1"/>
+    <xs:attribute name="colSpan" type="PositiveInt1" default="1"/>
     <xs:attribute name="when"    type="BoolExpr"/>
   </xs:attributeGroup>
 
@@ -227,7 +227,7 @@
     </xs:sequence>
     <xs:attributeGroup ref="PlacementAttrs"/>
     <xs:attribute name="component" type="xs:string"  use="required"/>
-    <xs:attribute name="name"      type="xs:string"/>
+    <xs:attribute name="instance"  type="xs:string"/>
     <xs:attribute name="with"      type="ExprString"/>
   </xs:complexType>
 

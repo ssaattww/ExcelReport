@@ -3,13 +3,13 @@
 
   <!-- このコンポーネント集で使用するスタイル定義を外部ファイルから読み込む -->
   <styles>
-    <import href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
   </styles>
 
   <!-- タイトル -->
   <component name="Title">
     <grid>
-      <cell r="1" c="1" colspan="3"
+      <cell r="1" c="1" colSpan="3"
             value="@(data.JobName)"
             styleRef="TitleCell"/>
     </grid>
