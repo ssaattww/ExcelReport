@@ -1,109 +1,108 @@
-# 契約準拠チェックリスト
+# Contract Compliance Checklist
 
-`codex-execution-contract.md` 準拠を機械的に検証するためのチェックリスト。
+Checklist for mechanically verifying compliance with `codex-execution-contract.md`.
 
-## 1. 入力検証項目
+## 1. Input Validation Items
 
-### 1.1 必須フィールド充足確認
+### 1.1 Required Field Presence Check
 
-| チェックID | 項目 | 判定条件 | 結果 |
+| Check ID | Item | Decision Criteria | Result |
 |---|---|---|---|
-| IN-REQ-01 | `objective` | フィールドが存在し、空文字でない | `pass` / `fail` |
-| IN-REQ-02 | `scope` | フィールドが存在する | `pass` / `fail` |
-| IN-REQ-03 | `constraints` | フィールドが存在する | `pass` / `fail` |
-| IN-REQ-04 | `acceptance_criteria` | フィールドが存在する | `pass` / `fail` |
-| IN-REQ-05 | `allowed_commands` | フィールドが存在する | `pass` / `fail` |
-| IN-REQ-06 | `sandbox_mode` | フィールドが存在する | `pass` / `fail` |
+| IN-REQ-01 | `objective` | The field exists and is not an empty string | `pass` / `fail` |
+| IN-REQ-02 | `scope` | The field exists | `pass` / `fail` |
+| IN-REQ-03 | `constraints` | The field exists | `pass` / `fail` |
+| IN-REQ-04 | `acceptance_criteria` | The field exists | `pass` / `fail` |
+| IN-REQ-05 | `allowed_commands` | The field exists | `pass` / `fail` |
+| IN-REQ-06 | `sandbox_mode` | The field exists | `pass` / `fail` |
 
-### 1.2 各フィールド妥当性確認基準
+### 1.2 Validity Criteria for Each Field
 
-| チェックID | 項目 | 妥当性基準 | 結果 |
+| Check ID | Item | Validity Criteria | Result |
 |---|---|---|---|
-| IN-VAL-01 | `objective` | 文字列型かつ 1 文字以上 | `pass` / `fail` |
-| IN-VAL-02 | `scope` | オブジェクト型で `in_scope` と `out_of_scope` を配列として保持 | `pass` / `fail` |
-| IN-VAL-03 | `constraints` | 配列型（0件以上可、各要素は文字列） | `pass` / `fail` |
-| IN-VAL-04 | `acceptance_criteria` | 配列型（1件以上推奨、各要素は文字列） | `pass` / `fail` |
-| IN-VAL-05 | `allowed_commands` | 配列型（各要素は文字列、空配列不可） | `pass` / `fail` |
-| IN-VAL-06 | `sandbox_mode` | 文字列型で有効値（例: `read-only`, `workspace-write`, `danger-full-access`） | `pass` / `fail` |
-| IN-VAL-07 | 任意: `context_files` | 存在する場合は配列型（各要素は文字列パス） | `pass` / `fail` / `n/a` |
-| IN-VAL-08 | 任意: `known_risks` | 存在する場合は配列型（各要素は文字列） | `pass` / `fail` / `n/a` |
-| IN-VAL-09 | 任意: `stop_conditions` | 存在する場合は配列型（各要素は文字列） | `pass` / `fail` / `n/a` |
+| IN-VAL-01 | `objective` | String type and at least 1 character | `pass` / `fail` |
+| IN-VAL-02 | `scope` | Object type that contains `in_scope` and `out_of_scope` as arrays | `pass` / `fail` |
+| IN-VAL-03 | `constraints` | Array type (0 or more items allowed, each element is a string) | `pass` / `fail` |
+| IN-VAL-04 | `acceptance_criteria` | Array type (1 or more items recommended, each element is a string) | `pass` / `fail` |
+| IN-VAL-05 | `allowed_commands` | Array type (each element is a string, empty arrays are not allowed) | `pass` / `fail` |
+| IN-VAL-06 | `sandbox_mode` | String type with a valid value (for example: `read-only`, `workspace-write`, `danger-full-access`) | `pass` / `fail` |
+| IN-VAL-07 | Optional: `context_files` | If present, array type (each element is a string path) | `pass` / `fail` / `n/a` |
+| IN-VAL-08 | Optional: `known_risks` | If present, array type (each element is a string) | `pass` / `fail` / `n/a` |
+| IN-VAL-09 | Optional: `stop_conditions` | If present, array type (each element is a string) | `pass` / `fail` / `n/a` |
 
-## 2. 出力検証項目
+## 2. Output Validation Items
 
-### 2.1 必須フィールド充足確認
+### 2.1 Required Field Presence Check
 
-| チェックID | 項目 | 判定条件 | 結果 |
+| Check ID | Item | Decision Criteria | Result |
 |---|---|---|---|
-| OUT-REQ-01 | `status` | フィールドが存在し、空文字でない | `pass` / `fail` |
-| OUT-REQ-02 | `summary` | フィールドが存在し、空文字でない | `pass` / `fail` |
-| OUT-REQ-03 | `changed_files` | フィールドが存在する | `pass` / `fail` |
-| OUT-REQ-04 | `tests` | フィールドが存在する | `pass` / `fail` |
-| OUT-REQ-05 | `quality_gate` | フィールドが存在する | `pass` / `fail` |
-| OUT-REQ-06 | `blockers` | フィールドが存在する | `pass` / `fail` |
-| OUT-REQ-07 | `next_actions` | フィールドが存在する | `pass` / `fail` |
+| OUT-REQ-01 | `status` | The field exists and is not an empty string | `pass` / `fail` |
+| OUT-REQ-02 | `summary` | The field exists and is not an empty string | `pass` / `fail` |
+| OUT-REQ-03 | `changed_files` | The field exists | `pass` / `fail` |
+| OUT-REQ-04 | `tests` | The field exists | `pass` / `fail` |
+| OUT-REQ-05 | `quality_gate` | The field exists | `pass` / `fail` |
+| OUT-REQ-06 | `blockers` | The field exists | `pass` / `fail` |
+| OUT-REQ-07 | `next_actions` | The field exists | `pass` / `fail` |
 
-### 2.2 `status` 妥当性確認
+### 2.2 `status` Validity Check
 
-| チェックID | 項目 | 妥当性基準 | 結果 |
+| Check ID | Item | Validity Criteria | Result |
 |---|---|---|---|
-| OUT-VAL-01 | `status` | 次のいずれか: `completed` / `needs_input` / `blocked` / `failed` | `pass` / `fail` |
+| OUT-VAL-01 | `status` | One of the following: `completed` / `needs_input` / `blocked` / `failed` | `pass` / `fail` |
 
-### 2.3 形式確認（`changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`）
+### 2.3 Format Check (`changed_files`, `tests`, `quality_gate`, `blockers`, `next_actions`)
 
-| チェックID | 項目 | 形式基準 | 結果 |
+| Check ID | Item | Format Criteria | Result |
 |---|---|---|---|
-| OUT-VAL-02 | `changed_files` | 配列型。各要素はオブジェクトで `path`(string), `change_type`(string) を保持 | `pass` / `fail` |
-| OUT-VAL-03 | `tests` | 配列型。各要素はオブジェクトで `name`(string), `result`(string) を保持 | `pass` / `fail` |
-| OUT-VAL-04 | `quality_gate` | オブジェクト型で `result`(string), `evidence`(array[string]) を保持 | `pass` / `fail` |
-| OUT-VAL-05 | `blockers` | 配列型。要素は文字列、または `{code, detail}` 形式オブジェクト | `pass` / `fail` |
-| OUT-VAL-06 | `next_actions` | 配列型（各要素は文字列） | `pass` / `fail` |
+| OUT-VAL-02 | `changed_files` | Array type. Each element is an object containing `path`(string) and `change_type`(string) | `pass` / `fail` |
+| OUT-VAL-03 | `tests` | Array type. Each element is an object containing `name`(string) and `result`(string) | `pass` / `fail` |
+| OUT-VAL-04 | `quality_gate` | Object type containing `result`(string) and `evidence`(array[string]) | `pass` / `fail` |
+| OUT-VAL-05 | `blockers` | Array type. Elements are strings, or objects in `{code, detail}` format | `pass` / `fail` |
+| OUT-VAL-06 | `next_actions` | Array type (each element is a string) | `pass` / `fail` |
 
-## 3. 実行種別ごとの特記事項
+## 3. Special Notes by Execution Type
 
 ### 3.1 implement
 
-| チェックID | 必須項目 | 判定条件 | 結果 |
+| Check ID | Required Item | Decision Criteria | Result |
 |---|---|---|---|
-| TYPE-IMP-01 | テスト実行結果 | `tests` が空でない、かつ少なくとも1件の実行結果を含む | `pass` / `fail` |
-| TYPE-IMP-02 | 品質ゲート | `quality_gate.result` が存在し、`evidence` が1件以上 | `pass` / `fail` |
+| TYPE-IMP-01 | Test execution result | `tests` is not empty and includes at least one execution result | `pass` / `fail` |
+| TYPE-IMP-02 | Quality gate | `quality_gate.result` exists and `evidence` has at least one item | `pass` / `fail` |
 
 ### 3.2 review
 
-| チェックID | 必須項目 | 判定条件 | 結果 |
+| Check ID | Required Item | Decision Criteria | Result |
 |---|---|---|---|
-| TYPE-REV-01 | 差分分析結果 | `summary` または `quality_gate.evidence` に差分分析結果が明示される | `pass` / `fail` |
-| TYPE-REV-02 | 修正提案 | `next_actions` に具体的な修正提案が1件以上ある | `pass` / `fail` |
+| TYPE-REV-01 | Diff analysis result | The diff analysis result is explicitly stated in `summary` or `quality_gate.evidence` | `pass` / `fail` |
+| TYPE-REV-02 | Fix proposal | `next_actions` contains at least one specific fix proposal | `pass` / `fail` |
 
 ### 3.3 diagnose
 
-| チェックID | 必須項目 | 判定条件 | 結果 |
+| Check ID | Required Item | Decision Criteria | Result |
 |---|---|---|---|
-| TYPE-DIA-01 | 原因特定 | `summary` または `quality_gate.evidence` に原因の記述がある | `pass` / `fail` |
-| TYPE-DIA-02 | 再現手順 | `next_actions` もしくは `tests` に再現手順が明示される | `pass` / `fail` |
+| TYPE-DIA-01 | Cause identification | The cause is described in `summary` or `quality_gate.evidence` | `pass` / `fail` |
+| TYPE-DIA-02 | Reproduction steps | Reproduction steps are explicitly stated in `next_actions` or `tests` | `pass` / `fail` |
 
-## 4. 検証手順
+## 4. Validation Procedure
 
-### 4.1 チェックリストの使用方法
+### 4.1 How to Use the Checklist
 
-1. 対象実行の入出力ペイロードを取得する。
-2. `1. 入力検証項目` を上から順に評価し、`fail` が1件でもあれば停止する。
-3. `2. 出力検証項目` を評価し、`status` と形式違反を確認する。
-4. 実行種別（`implement` / `review` / `diagnose`）に応じて `3. 実行種別ごとの特記事項` を追加評価する。
-5. 全チェック `pass` の場合のみ準拠 (`compliant=true`) と判定する。
+1. Obtain the input and output payloads of the target execution.
+2. Evaluate `1. Input Validation Items` from top to bottom, and stop if even one item is `fail`.
+3. Evaluate `2. Output Validation Items`, and check `status` and format violations.
+4. Add the checks in `3. Special Notes by Execution Type` according to the execution type (`implement` / `review` / `diagnose`).
+5. Judge it compliant (`compliant=true`) only when all checks are `pass`.
 
-### 4.2 不適合時の対応フロー
+### 4.2 Response Flow for Noncompliance
 
-1. `fail` 項目を `missing_fields` または `invalid_fields` として列挙する。
-2. 入力不適合の場合:
-   - Codex実行を開始しない。
-   - `[Stop: contract-missing-field]` を発行し、入力補完を要求する。
-3. 出力不適合の場合:
-   - 実行結果を受理しない。
-   - `quality_gate.result=fail` として再出力を要求する。
-4. `status=needs_input` の場合:
-   - 直ちに次フェーズ遷移を停止する。
-   - `[Stop: needs-input]` と対応する承認要求を発行する。
-5. 再試行後も不適合が解消しない場合:
-   - `status=blocked` として停止し、`blockers` に原因を記録する。
-
+1. List `fail` items as `missing_fields` or `invalid_fields`.
+2. If the input is noncompliant:
+   - Do not start Codex execution.
+   - Issue `[Stop: contract-missing-field]` and request input completion.
+3. If the output is noncompliant:
+   - Do not accept the execution result.
+   - Set `quality_gate.result=fail` and request re-output.
+4. If `status=needs_input`:
+   - Immediately stop the next phase transition.
+   - Issue `[Stop: needs-input]` and the corresponding approval request.
+5. If the noncompliance is still not resolved after retry:
+   - Stop with `status=blocked` and record the cause in `blockers`.
