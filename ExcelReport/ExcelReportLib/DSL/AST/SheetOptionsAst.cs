@@ -98,7 +98,19 @@ namespace ExcelReportLib.DSL.AST
         internal GroupRowsAst(XElement elem, List<Issue> issues)
         {
             Span = SourceSpan.CreateSpanAttributes(elem);
-            At = elem.Attribute("at")?.Value ?? string.Empty;
+            var atAttr = elem.Attribute("at");
+            if (atAttr is null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredAttribute,
+                    Message = "<groupRows> 要素に at 属性がありません。",
+                    Span = SourceSpan.CreateSpanAttributes(elem),
+                });
+            }
+
+            At = atAttr?.Value ?? string.Empty;
 
             var collapsedAttr = elem.Attribute("collapsed");
             if(collapsedAttr is null)

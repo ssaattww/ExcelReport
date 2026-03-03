@@ -22,7 +22,7 @@ namespace ExcelReportLib.DSL.AST
         /// <summary>
         /// スタイル参照 解析フェーズで設定される
         /// </summary>
-        public StyleAst StyleRef { get; set; }
+        public StyleAst? StyleRef { get; set; }
 
         public StyleRefAst(XElement styleRefElem, List<Issue> issues)
         {
@@ -34,7 +34,7 @@ namespace ExcelReportLib.DSL.AST
                 issues.Add(new Issue
                 {
                     Severity = IssueSeverity.Error,
-                    Kind = IssueKind.StyleScopeViolation,
+                    Kind = IssueKind.UndefinedRequiredAttribute,
                     Message = "スタイル参照の名前が指定されていません。",
                     Span = SourceSpan.CreateSpanAttributes(styleRefElem),
                 });

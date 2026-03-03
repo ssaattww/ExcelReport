@@ -10,4 +10,10 @@
     <Folder Include="LayoutEngine\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\Design\DslDefinition\DslDefinition_v1.xsd">
+      <LogicalName>ExcelReportLib.DSL.DslDefinition_v1.xsd</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>
