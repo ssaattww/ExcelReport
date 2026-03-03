@@ -26,27 +26,19 @@ namespace ExcelReportLib.DSL.AST
             {
                 Freeze = new FreezeAst(freezeElem, issues);
             }
-            var groupsElems = elem.Elements(ns + "groups");
-            if(groupsElems is not null)
+            var groupsElem = elem.Element(ns + "groups");
+            if(groupsElem is not null)
             {
-                var groupRowsElems = groupsElems.Elements(ns + "groupRows");
-                if (groupRowsElems is not null)
-                {
-                    GroupRows = groupRowsElems.Select(e => new GroupRowsAst(e, issues)).ToList();
-                }
+                GroupRows = groupsElem.Elements(ns + "groupRows")
+                    .Select(e => new GroupRowsAst(e, issues))
+                    .ToList();
+                GroupCols = groupsElem.Elements(ns + "groupCols")
+                    .Select(e => new GroupColsAst(e, issues))
+                    .ToList();
             }
             else
             {
                 GroupRows = Array.Empty<GroupRowsAst>();
-            }
-
-            var groupColsElems = elem.Elements(ns + "groupCols");
-            if (groupColsElems is not null)
-            {
-                GroupCols = groupColsElems.Select(e => new GroupColsAst(e, issues)).ToList();
-            }
-            else
-            {
                 GroupCols = Array.Empty<GroupColsAst>();
             }
 

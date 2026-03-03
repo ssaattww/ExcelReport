@@ -73,6 +73,13 @@ namespace ExcelReportLib.DSL.AST
             try
             {
                 doc = XDocument.Load(stream, LoadOptions.SetLineInfo);
+                var ns = doc.Root!.Name.Namespace;
+                var importDir = Path.GetDirectoryName(PathStr) ?? string.Empty;
+                var stylesElem = doc.Root.Element(ns + StylesAst.TagName);
+
+                Styles = stylesElem is null
+                    ? null
+                    : new StylesAst(stylesElem, issues, importDir);
                 Components = new ComponentsAst(doc.Root!, issues);
             }
             catch (XmlException ex)

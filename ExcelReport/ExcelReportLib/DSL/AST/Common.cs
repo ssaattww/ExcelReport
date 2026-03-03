@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExcelReportLib.DSL.AST.LayoutNode;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml;
@@ -78,6 +79,44 @@ namespace ExcelReportLib.DSL.AST
                 whenExprRaw = whenAttr.Value;
             }
             return new Placement(row, col, rowSpan, colSpan, whenExprRaw);
+        }
+    }
+
+    internal static class AstDictionaryBuilder
+    {
+        public static IReadOnlyDictionary<Placement, LayoutNodeAst> BuildLayoutNodeMap(
+            IEnumerable<LayoutNodeAst> nodes,
+            List<Issue> issues,
+            string ownerTag)
+        {
+            var result = new Dictionary<Placement, LayoutNodeAst>();
+            foreach (var node in nodes)
+            {
+                if (result.ContainsKey(node.Placement))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = $"<{ownerTag}> 要素内で配置が重複しています: {DescribePlacement(node.Placement)}",
+                        Span = node.Span,
+                    });
+                    continue;
+                }
+
+                result[node.Placement] = node;
+            }
+
+            return result;
+        }
+
+        private static string DescribePlacement(Placement placement)
+        {
+            var row = placement.Row?.ToString() ?? "auto";
+            var col = placement.Col?.ToString() ?? "auto";
+            var when = string.IsNullOrWhiteSpace(placement.WhenExprRaw) ? string.Empty : $", when={placement.WhenExprRaw}";
+
+            return $"r={row}, c={col}, rowSpan={placement.RowSpan}, colSpan={placement.ColSpan}{when}";
         }
     }
 }
