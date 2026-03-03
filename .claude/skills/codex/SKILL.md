@@ -5,13 +5,13 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 
 # Codex Skill Guide
 
-## Running a Task (Default: via tmux)
+## Running a Task
 
-**By default, all codex commands are sent to another tmux pane unless the user explicitly requests direct execution.**
+**Default mode: direct execution. Use tmux only when the user explicitly requests it.**
 
-**For tmux command sending, completion monitoring, and pane management, refer to the `tmux-sender` skill.**
+**For tmux-based execution, command sending, completion monitoring, and pane management, refer to the `tmux-sender` skill.**
 
-### Workflow
+### tmux Execution
 
 1. **Verify tmux environment**:
    - Check if running in tmux: `echo $TMUX` (should return session info)
@@ -39,9 +39,9 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 9. **Send command to tmux pane**: Use the `tmux-sender` skill to send the command correctly.
 10. **Notify user**: Inform the user that the codex command has been sent and monitoring is active (or warn if not in tmux).
 
-### Direct Execution (Only when user explicitly requests)
+### Direct Execution
 
-If the user explicitly asks for direct execution (not via tmux):
+When running in direct execution mode (the default):
 1. Follow steps 2-5 above to build the command.
 2. **IMPORTANT for direct execution**: Append `2>/dev/null` to suppress thinking tokens (stderr) which would clutter the output.
 3. Run the command directly using the Bash tool, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
@@ -49,7 +49,7 @@ If the user explicitly asks for direct execution (not via tmux):
 
 ### Codex Command Reference
 
-**For tmux execution (default - shows thinking tokens):**
+**For tmux execution (shows thinking tokens):**
 | Use case | Sandbox mode | Command pattern |
 | --- | --- | --- |
 | **Document generation** (design/plan/update-doc/reverse-engineer) | `workspace-write` | `codex exec --skip-git-repo-check -m <model> --config model_reasoning_effort="<effort>" --sandbox workspace-write "<prompt>"` |
@@ -140,7 +140,7 @@ next_actions:
 
 ## Following Up
 
-### Default (tmux execution)
+### tmux Follow-up
 - After sending a codex command to tmux, inform the user which pane is running the command.
 - After the user reports completion or when they ask to resume, use `AskUserQuestion` to confirm next steps or collect clarifications.
 - When resuming, use `echo "new prompt" | codex exec --skip-git-repo-check resume --last` (without `2>/dev/null`) and send via `tmux-sender`.
