@@ -19,6 +19,8 @@
 - Update the status file whenever task state, owner, dependency, or completion ratio changes.
 - Update `tasks/phases-status.md` whenever phase transitions occur.
 - Update `tasks/tasks-status.md` whenever any task state changes.
+- Update `tasks/feedback-points.md` whenever user feedback introduces corrective guidance, new constraints, rejection, or requested direction changes.
+- If one checkpoint triggers multiple tracking artifacts, update all affected tracking files within that same checkpoint.
 - Keep status content operational only (state and tracking data), and keep technical analysis in `reports/*`.
 - Use `references/task-status-template.md` as the default format.
 

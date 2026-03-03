@@ -123,6 +123,8 @@ If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval b
   2. manager review and quality check
   3. manager `TaskUpdate`
   4. manager status file update (`tasks/*-status.md`)
+- After `TaskUpdate`, verify that all tracker updates required by `references/project-manager-guide.md` are complete before final completion.
+- If any required tracker update is still pending, emit the `Tracker sync pending` stop from `references/mandatory-stops.md` and pause final completion until its resume condition is satisfied.
 
 ## References
 

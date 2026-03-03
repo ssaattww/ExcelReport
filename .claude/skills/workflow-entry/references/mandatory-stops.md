@@ -21,6 +21,7 @@ Mandatory stop points that must be enforced by `workflow-entry`.
 | Sandbox escalation | `review` or `diagnose` requires write actions after read-only analysis | `review`, `diagnose` | `[Approve: sandbox-escalation]` | escalation approved and sandbox updated |
 | Quality gate failure | Required checks fail and safe auto-fix is not available | all workflows | `[Approve: resume-after-fix]` | user accepts remediation direction |
 | Requirement change detected | Scope/acceptance criteria changed during execution | all workflows | `[Approve: route-selection]` | reroute completed with updated request |
+| Tracker sync pending | workflow completion attempted while required tracker updates (including status files and `tasks/feedback-points.md`, per `project-manager-guide.md`) are still pending | all workflows | `[Approve: tracker-sync]` | all required tracking files updated, or user explicitly approves deferral |
 
 ## Rejection Handling
 
