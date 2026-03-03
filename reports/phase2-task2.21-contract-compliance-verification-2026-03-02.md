@@ -70,19 +70,19 @@ Role note: entry/router skill. Router-specific contract and stop enforcement are
 
 Role note: compatibility adapter. Contract, stop ownership, and gate ownership are intentionally delegated to `workflow-entry`.
 
-- A: PASS. The `## Contract Compliance` section explicitly states the Codex execution contract applies and that validation is delegated to `workflow-entry`. This satisfies adapter-level compliance by delegation. Evidence: `.claude/skills/backend-workflow-entry/SKILL.md:30-33`.
-- B: PASS. The adapter correctly declares pass-through behavior for stop/approval markers and resume behavior, and references the stop template without claiming local gate ownership. Evidence: `.claude/skills/backend-workflow-entry/SKILL.md:49-55`.
-- C: PASS. The adapter explicitly passes `quality_gate` through unchanged, prohibits local normalization or branching, and references the quality-gate template. Evidence: `.claude/skills/backend-workflow-entry/SKILL.md:57-63`.
-- D: FAIL. The skill contains project-root-relative references to `.claude/skills/codex/SKILL.md`, which violate the required relative-path convention. Evidence: `.claude/skills/backend-workflow-entry/SKILL.md:46-47`. Fix: replace those literals with `../codex/SKILL.md` (or remove the direct file reference and refer only to the shared `sandbox-matrix.md` source of truth).
+- A: PASS. The `## Contract Compliance` section explicitly states the Codex execution contract applies and that validation is delegated to `workflow-entry`. This satisfies adapter-level compliance by delegation.
+- B: PASS. The adapter correctly declares pass-through behavior for stop/approval markers and resume behavior, and references the stop template without claiming local gate ownership.
+- C: PASS. The adapter explicitly passes `quality_gate` through unchanged, prohibits local normalization or branching, and references the quality-gate template.
+- D: FAIL. The skill contains project-root-relative references to `.claude/skills/codex/SKILL.md`, which violate the required relative-path convention. Fix: replace those literals with `../codex/SKILL.md` (or remove the direct file reference and refer only to the shared `sandbox-matrix.md` source of truth).
 
 ### 3.3 `codex-workflow-entry`
 
 Role note: compatibility adapter. Same delegation model as `backend-workflow-entry`.
 
-- A: PASS. The `## Contract Compliance` section explicitly applies the Codex execution contract and delegates validation to `workflow-entry`. Evidence: `.claude/skills/codex-workflow-entry/SKILL.md:30-33`.
-- B: PASS. Stop/approval handling is correctly defined as propagation-only, with resume delegated upstream and the template referenced for schema. Evidence: `.claude/skills/codex-workflow-entry/SKILL.md:49-55`.
-- C: PASS. The adapter explicitly treats `quality_gate` as pass-through and references the canonical template without local gate ownership. Evidence: `.claude/skills/codex-workflow-entry/SKILL.md:57-63`.
-- D: FAIL. The skill contains project-root-relative references to `.claude/skills/codex/SKILL.md`, which violate the required relative-path convention. Evidence: `.claude/skills/codex-workflow-entry/SKILL.md:46-47`. Fix: replace those literals with `../codex/SKILL.md` (or remove the direct file reference and rely only on shared references under `../workflow-entry/references/`).
+- A: PASS. The `## Contract Compliance` section explicitly applies the Codex execution contract and delegates validation to `workflow-entry`.
+- B: PASS. Stop/approval handling is correctly defined as propagation-only, with resume delegated upstream and the template referenced for schema.
+- C: PASS. The adapter explicitly treats `quality_gate` as pass-through and references the canonical template without local gate ownership.
+- D: FAIL. The skill contains project-root-relative references to `.claude/skills/codex/SKILL.md`, which violate the required relative-path convention. Fix: replace those literals with `../codex/SKILL.md` (or remove the direct file reference and rely only on shared references under `../workflow-entry/references/`).
 
 ### 3.4 `codex`
 

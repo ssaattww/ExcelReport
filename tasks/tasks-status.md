@@ -1,43 +1,59 @@
 # Tasks Status
 
-Last Updated: 2026-03-02 (Task 2.24 完了)
-Scope: Phase 2 (全フロー展開)
+Last Updated: 2026-03-03 (Phase 3 再構成・検証済み)
+Scope: Phase 3 (収束)
 
 ## Progress Summary
 
-- Completed: 24 / 24
-- In Progress: 0 / 24
-- Not Started: 0 / 24
+- Completed: 4 / 4
+- In Progress: 0 / 4
+- Not Started: 0 / 4
 - Completion Rate: 100%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
-| 2.1 | Create Phase 2 coverage matrix for 14 skills | Done | Codex | None |
-| 2.2 | Define contract section template for non-entry skills | Done | Codex | 2.1 |
-| 2.3 | Define stop/approval section template | Done | Codex | 2.1 |
-| 2.4 | Define standard quality gate evidence template | Done | Codex | 2.1 |
-| 2.5 | Extend workflow-entry with quality-gate handoff checkpoints | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.6 | Update backend-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
-| 2.7 | Update codex-workflow-entry for stop propagation | Done | Codex | 2.3, 2.5 |
-| 2.8 | Update codex skill for stop protocol and quality-gate evidence alignment | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.9 | Update tmux-sender with contract-aware completion handoff guidance | Done | Codex | 2.2, 2.4 |
-| 2.10 | Integrate contract and stop protocol into codex-lifecycle-orchestration | Done | Codex | 2.2, 2.3, 2.4, 2.5 |
-| 2.11 | Integrate contract and stop protocol into backend-lifecycle-execution | Done | Codex | 2.2, 2.3, 2.4, 2.5 |
-| 2.12 | Integrate contract output and stop triggers into codex-task-execution-loop | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.13 | Integrate contract output and stop triggers into backend-task-quality-loop | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.14 | Integrate contract and stop gating into codex-diagnose-and-review | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.15 | Integrate contract and stop gating into backend-diagnose-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.16 | Integrate contract, stop tags, and gate result section into codex-document-flow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.17 | Integrate contract, stop tags, and gate result section into backend-document-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.18 | Integrate contract and stop/approval section into backend-integration-tests-workflow | Done | Codex | 2.2, 2.3, 2.4 |
-| 2.19 | Synchronize references across all Phase 2 skills | Done | Codex | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18 |
-| 2.20 | Run sandbox policy consistency audit across execution skills | Done | Codex | 2.5, 2.8, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.19 |
-| 2.21 | Verification: contract compliance check for all 14 skills | Done | Claude Code + Codex | 2.19 |
-| 2.22 | Verification: Stop -> Approve -> Resume scenarios | Done | Claude Code + Codex | 2.19, 2.20 |
-| 2.23 | Verification: quality-gate pass/fail branching and blocker reporting | Done | Claude Code + Codex | 2.19 |
-| 2.24 | Create standard quality gate report and Phase 2 readiness summary | Done | Codex | 2.21, 2.22, 2.23 |
+| 3.1 | Define adapter deprecation policy and exit criteria | Done | Codex | None |
+| 3.2 | Remove all legacy infrastructure | Done | Codex | 3.1 |
+| 3.3 | Create the final Runbook | Done | Codex | 3.2 |
+| 3.4 | Closure verification and sign-off | Done | Codex | 3.3 |
+
+## Task Notes
+
+### Task 3.2 (Legacy infrastructure removal) - 実施済み
+
+削除済み:
+- .claude/skills/backend-workflow-entry/ (ディレクトリごと削除)
+- .claude/skills/codex-workflow-entry/ (ディレクトリごと削除)
+
+編集済み:
+- workflow-entry/SKILL.md (Rollback Switch, Compatibility Adapter Policy 削除)
+- routing-table.md (Compatibility fallback 列削除)
+- adapter-deprecation-policy.md (削除決定記録に差し替え)
+- codex-execution-contract.md, tmux-sender/SKILL.md, integration-tasks.md (参照除去)
+- reports/* 12件 (壊れたリンク除去)
+
+### Task 3.3 (Final Runbook)
+- workflow-entry を唯一のルーティング権限として記述
+- レガシー基盤削除済みの前提で作成
+- 統合後のシステム運用手順書
+
+### Task 3.4 (Closure verification)
+- 削除後に壊れたリンクや矛盾が残っていないか最終確認
+- Phase 3 完了の品質ゲート
+
+## Deleted Tasks (Phase 3 再構成)
+
+| 旧 Task ID | Title | 処理 |
+|---|---|---|
+| 旧 3.2 | Operational measurement model | 削除 (手動計測はコスト対効果が低い) |
+| 旧 3.3 | legacy-fallback hardening | 新 3.2 に統合 (制限ではなく削除) |
+| 旧 3.4 | Routing-table fallback reduction | 新 3.2 に統合 (制限ではなく削除) |
+| 旧 3.5 | Baseline operational audit | 削除 (計測モデル削除に伴い不要) |
+| 旧 3.6 | Final Runbook | 新 3.3 に再番 |
+| 旧 3.7 | Final convergence cutover | 新 3.2 に統合 |
+| 旧 3.8 | Closure verification | 新 3.4 に再番 |
 
 ## Status Definitions
 

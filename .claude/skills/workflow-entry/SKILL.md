@@ -1,6 +1,6 @@
 ---
 name: workflow-entry
-description: Unified deterministic entry for workflow requests. Consolidates backend-workflow-entry and codex-workflow-entry routing with stop/approval and sandbox controls.
+description: Unified deterministic entry for workflow requests. Centralizes routing with stop/approval and sandbox controls.
 ---
 
 # Workflow Entry
@@ -8,7 +8,7 @@ description: Unified deterministic entry for workflow requests. Consolidates bac
 ## Purpose/Scope
 
 - Provide a single deterministic router for: `implement`, `build`, `task`, `review`, `diagnose`, `design`, `plan`, `update-doc`, `reverse-engineer`, `add-integration-tests`.
-- Consolidate entry logic currently split across `backend-workflow-entry` and `codex-workflow-entry`.
+- Centralize routing logic in a single entry skill.
 - Produce a routing decision with `route_intent`, `route_target`, `sandbox_mode`, and stop/approval state.
 - Keep routing policy centralized; downstream skills execute only the selected route.
 
@@ -104,26 +104,6 @@ Envelope required fields: `status`, `summary`, `changed_files`, `tests`, `qualit
 Pass `quality_gate` through unchanged to the next-stage payload.
 Retry/cycle/branch decisions are owned by downstream executor/orchestrator skills, not by this router.
 If `result: blocked`, emit `[Stop: quality-gate-failed]` and wait for approval before continuing.
-
-## Compatibility Adapter Policy
-
-- `backend-workflow-entry` and `codex-workflow-entry` are compatibility adapters only.
-- Adapters must delegate intent routing and sandbox selection to `workflow-entry`.
-- Adapters must not perform independent intent parsing, priority application, or sandbox decisions.
-- During migration, adapter calls should include a deprecation notice.
-
-## Rollback Switch
-
-Feature flag: `workflow_entry_mode`.
-
-- `unified` (default): use this skill for all routing decisions.
-- `legacy-fallback`: bypass unified routing and temporarily allow legacy entry behavior.
-
-Rollback requirements:
-
-- Activate only for incident mitigation or migration rollback.
-- Record trigger reason, timestamp, and owner.
-- Return to `unified` after issue verification.
 
 ## Project Manager Workflow
 

@@ -176,7 +176,6 @@ quality_gate:
     - check_id: adapter-path-spot-check
       status: pass
       summary: "Representative adapter path normalization remains intact via relative cross-skill references."
-      source_ref: ".claude/skills/backend-workflow-entry/SKILL.md:46"
     - check_id: lifecycle-gate-type-spot-check
       status: pass
       summary: "Lifecycle multi-phase gate_type mappings remain present for document, consistency, and implementation phases."

@@ -75,16 +75,16 @@ Status: **Pass as boundary validator**.
 
 Status: **Pass-through adapter; quality-gate logic delegated**.
 
-- Propagates stop/approval markers unchanged and does not create adapter-local gate logic: `.claude/skills/backend-workflow-entry/SKILL.md:49-55`.
-- Passes `quality_gate` through unchanged and explicitly refuses to normalize or interpret it: `.claude/skills/backend-workflow-entry/SKILL.md:57-63`.
+- The backend adapter propagates stop/approval markers unchanged and does not create adapter-local gate logic.
+- The backend adapter passes `quality_gate` through unchanged and explicitly refuses to normalize or interpret it.
 - This is role-correct for an adapter, but it means most gate checks are delegated to `workflow-entry` and downstream executors.
 
 ### 3. codex-workflow-entry
 
 Status: **Pass-through adapter; quality-gate logic delegated**.
 
-- Mirrors the backend adapter: stop propagation is unchanged and adapter-local gate creation is prohibited: `.claude/skills/codex-workflow-entry/SKILL.md:49-55`.
-- `quality_gate` is passed through unchanged with no local normalization or branching: `.claude/skills/codex-workflow-entry/SKILL.md:57-63`.
+- The codex adapter mirrors the backend adapter: stop propagation is unchanged and adapter-local gate creation is prohibited.
+- In the codex adapter, `quality_gate` is passed through unchanged with no local normalization or branching.
 
 ### 4. codex
 

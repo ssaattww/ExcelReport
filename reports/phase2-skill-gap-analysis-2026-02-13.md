@@ -41,8 +41,8 @@ Legend: `Ready` = already aligned enough for Phase 2 baseline, `Partial` = exist
 | Skill | Contract | Stop | Quality | Operations | Verification | Key Evidence |
 |---|---|---|---|---|---|---|
 | `workflow-entry` | Ready | Ready | Gap | Ready | Partial | `.claude/skills/workflow-entry/SKILL.md:54`, `.claude/skills/workflow-entry/SKILL.md:83`, `.claude/skills/workflow-entry/SKILL.md:73` |
-| `backend-workflow-entry` | Partial | Gap | Gap | Ready | Gap | `.claude/skills/backend-workflow-entry/SKILL.md:29`, `.claude/skills/backend-workflow-entry/SKILL.md:26` |
-| `codex-workflow-entry` | Partial | Gap | Gap | Ready | Gap | `.claude/skills/codex-workflow-entry/SKILL.md:29`, `.claude/skills/codex-workflow-entry/SKILL.md:26` |
+| `backend-workflow-entry` | Partial | Gap | Gap | Ready | Gap | legacy adapter evidence removed on 2026-03-03 |
+| `codex-workflow-entry` | Partial | Gap | Gap | Ready | Gap | legacy adapter evidence removed on 2026-03-03 |
 | `codex` | Ready | Partial | Partial | Ready | Partial | `.claude/skills/codex/SKILL.md:74`, `.claude/skills/codex/SKILL.md:92`, `.claude/skills/codex/SKILL.md:153` |
 | `codex-lifecycle-orchestration` | Gap | Partial | Ready | Partial | Partial | `.claude/skills/codex-lifecycle-orchestration/SKILL.md:35`, `.claude/skills/codex-lifecycle-orchestration/SKILL.md:50`, `.claude/skills/codex-lifecycle-orchestration/SKILL.md:77` |
 | `backend-lifecycle-execution` | Gap | Partial | Ready | Gap | Partial | `.claude/skills/backend-lifecycle-execution/SKILL.md:23`, `.claude/skills/backend-lifecycle-execution/SKILL.md:66`, `.claude/skills/backend-lifecycle-execution/SKILL.md:70` |
