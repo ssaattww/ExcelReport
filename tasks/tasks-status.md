@@ -1,14 +1,14 @@
 # Tasks Status
 
 Last Updated: 2026-03-03
-Scope: ExcelReport開発 - Phase 1-2 完了
+Scope: ExcelReport開発 - Phase 4: LayoutEngine
 
 ## Progress Summary
 
-- Completed: 4 / 4
-- In Progress: 0 / 4
-- Not Started: 0 / 4
-- Completion Rate: 100%
+- Completed: 6 / 7
+- In Progress: 1 / 7
+- Not Started: 0 / 7
+- Completion Rate: 86%
 
 ## Task List
 
@@ -18,6 +18,9 @@ Scope: ExcelReport開発 - Phase 1-2 完了
 | 2 | DslParser実装の不備修正（属性未取得・バグ修正） | Done | Codex + PM | 1 | 1-2 |
 | 3 | DslParser単体テストプロジェクト新設 | Done | Codex + PM | 2 | 2 |
 | 4 | ValidateDsl実装とXSD検証有効化 | Done | Codex + PM | 3 | 2 |
+| 5 | ExpressionEngine実装 | Done | Codex + PM | 4 | 3 |
+| 6 | Styles resolver + StylePlan実装 | Done | Codex + PM | 5 | 3 |
+| 7 | LayoutEngine実装 | In Progress | Codex + PM | 6 | 4 |
 
 ## Task Notes
 
