@@ -122,7 +122,7 @@ Feature flag: `workflow_entry_mode`.
 Rollback requirements:
 
 - Activate only for incident mitigation or migration rollback.
-- Record trigger reason, timestamp, and owner.
+- Record trigger reason, timestamp, owner, and review or expiry expectation.
 - Return to `unified` after issue verification.
 
 ## Project Manager Workflow

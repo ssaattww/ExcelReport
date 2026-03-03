@@ -34,7 +34,7 @@ Adapters move through these states:
 ## Audit Window
 
 - The audit window is `7` calendar days.
-- Audit windows must use one documented, consistent timezone for the full audit.
+- Audit windows must use UTC as the documented, consistent timezone for the full audit.
 - Any adapter invocation within a window makes that window non-zero.
 - If any invocation occurs, the consecutive zero-invocation count resets to `0`.
 
@@ -106,3 +106,9 @@ For each retirement decision, retain:
 - approver names
 - decision taken (`tombstoned` or `deleted`)
 - any `legacy-fallback` activation notes, if applicable
+
+## Deferred Scope
+
+- Routing-table compatibility fallback governance is deferred to Task 3.4.
+- Evidence capture method, storage convention, and external caller confirmation procedure are deferred to Task 3.2.
+- Stop/approval naming normalization is deferred to Task 3.6 (Runbook).

@@ -17,6 +17,8 @@ Emit this notice on every invocation:
 
 `[Deprecation Notice] backend-workflow-entry is a compatibility adapter. Please migrate to workflow-entry.`
 
+Retirement and rollback rules: [`adapter-deprecation-policy.md`](../workflow-entry/references/adapter-deprecation-policy.md).
+
 ## Delegation Flow
 
 1. Preserve the original request without local intent parsing.
