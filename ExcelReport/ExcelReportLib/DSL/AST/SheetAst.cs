@@ -24,6 +24,26 @@ namespace ExcelReportLib.DSL.AST
             // <sheet> 要素から SheetAst を構築する。
             var nameAttr = sheetElem.Attribute("name");
             string name = nameAttr?.Value ?? "Sheet1";
+            if (nameAttr is null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredAttribute,
+                    Message = "<sheet> 要素に name 属性がありません。",
+                    Span = SourceSpan.CreateSpanAttributes(sheetElem),
+                });
+            }
+            else if (string.IsNullOrWhiteSpace(nameAttr.Value))
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = "<sheet> 要素の name 属性が空です。",
+                    Span = SourceSpan.CreateSpanAttributes(sheetElem),
+                });
+            }
 
             // スタイル参照の解析
             var styleElems = sheetElem.Elements(sheetElem.Name.Namespace + StyleRefAst.TagName);
