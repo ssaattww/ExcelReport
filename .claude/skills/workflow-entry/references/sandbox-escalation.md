@@ -1,28 +1,28 @@
 # Sandbox Escalation
 
-`workflow-entry` における `review` / `diagnose` ワークフローの sandbox 昇格ルール。
+Sandbox escalation rules for the `review` / `diagnose` workflows in `workflow-entry`.
 
-## 昇格が必要なワークフロー
+## Workflows That Require Escalation
 
-- `review`: 差分レビュー完了後、修正適用フェーズへ移行する場合。
-- `diagnose`: 原因調査完了後、修正実装フェーズへ移行する場合。
+- `review`: When moving to the fix-application phase after completing the diff review.
+- `diagnose`: When moving to the fix-implementation phase after completing the cause investigation.
 
-## 昇格条件
+## Escalation Conditions
 
-`read-only` から `workspace-write` への昇格は、次の 2 条件を**両方満たす場合のみ**許可する。
+Escalation from `read-only` to `workspace-write` is allowed **only when both** of the following conditions are satisfied.
 
-1. 修正適用が必要であると判定された。
-2. ユーザーから明示的な承認が得られた。
+1. It was determined that applying a fix is necessary.
+2. Explicit approval was obtained from the user.
 
-いずれか一方でも満たさない場合、昇格してはならず `read-only` を維持する。
+If either condition is not satisfied, escalation must not occur and `read-only` must be maintained.
 
-## 昇格手順
+## Escalation Procedure
 
-1. 初期状態: `read-only` で開始する。
-2. Stop 点: 修正提案を提示し、承認を要求する。
-3. 承認後: `workspace-write` へ昇格し、承認された修正を実施する。
+1. Initial state: Start in `read-only`.
+2. Stop point: Present the fix proposal and request approval.
+3. After approval: Escalate to `workspace-write` and perform the approved fix.
 
-## 禁止事項
+## Prohibited Actions
 
-- ユーザー承認なしでの昇格を禁止する。
-- 自動昇格を禁止する。
+- Escalation without user approval is prohibited.
+- Automatic escalation is prohibited.
