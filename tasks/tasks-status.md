@@ -5,16 +5,16 @@ Scope: Phase 3 (収束・最適化)
 
 ## Progress Summary
 
-- Completed: 0 / 8
+- Completed: 1 / 8
 - In Progress: 0 / 8
-- Not Started: 8 / 8
-- Completion Rate: 0%
+- Not Started: 7 / 8
+- Completion Rate: 13%
 
 ## Task List
 
 | Task ID | Title | Status | Assignee | Dependencies |
 |---|---|---|---|---|
-| 3.1 | Define adapter deprecation policy and exit criteria | Not Started | Codex | None |
+| 3.1 | Define adapter deprecation policy and exit criteria | Done | Codex | None |
 | 3.2 | Add operational measurement model for adapters, fallback, and routing health | Not Started | Codex | 3.1 |
 | 3.3 | Harden legacy-fallback as incident-only rollback | Not Started | Codex | 3.1, 3.2 |
 | 3.4 | Classify and reduce routing-table compatibility fallbacks | Not Started | Codex | 3.1, 3.3 |
