@@ -54,15 +54,21 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 - ビルドエラー・テスト失敗があればCodexに修正依頼
 - 現環境はSDK 8.0.416のためnet10.0ビルド不可（NETSDK1045）
 
-### 2. Program.cs更新
+### 2. 全パブリック関数・プロパティにXMLドキュメントコメント追加
+- 全モジュールのpublic/protectedメソッド・プロパティに `<summary>` コメントを追加
+- パラメータには `<param>`、戻り値には `<returns>` を付与
+- 対象: DslParser, ExpressionEngine, Styles, LayoutEngine, WorksheetState, Renderer, Logger, ReportGenerator, 全AST型
+- Codexに委譲（workspace-write, TDD不要）
+
+### 3. Program.cs更新
 - 現在のProgram.csはDslParser単体のサンプル実行コード
 - ReportGenerator経由のE2Eサンプルに更新する
 - ハードコードされたWindows絶対パスを修正
 
-### 3. masterへマージ
+### 4. masterへマージ
 - 動作確認完了後に `git checkout master && git merge --no-ff feat/excel-report-development`
 
-### 4. 今後の拡張候補
+### 5. 今後の拡張候補
 - ExpressionEngine: Roslyn (Microsoft.CodeAnalysis.CSharp.Scripting) による完全なC#式サポート
 - Logger: LogCategory, progress event, sink, audit export
 - ValidateDsl: 式構文検証、formulaRef系列検証
