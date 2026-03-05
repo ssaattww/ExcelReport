@@ -198,7 +198,7 @@ public sealed class LayoutEngine : ILayoutEngine
 
         foreach (var child in grid.Children.Values)
         {
-            var result = ExpandNode(
+            var childResult = ExpandNode(
                 child,
                 baseRow,
                 baseCol,
@@ -210,20 +210,22 @@ public sealed class LayoutEngine : ILayoutEngine
                 styleResolver,
                 issues);
 
-            if (result.Cells.Count == 0)
+            if (childResult.Cells.Count == 0)
             {
                 continue;
             }
 
-            cells.AddRange(result.Cells);
-            maxHeight = Math.Max(maxHeight, result.Height);
-            maxWidth = Math.Max(maxWidth, result.Width);
+            cells.AddRange(childResult.Cells);
+            maxHeight = Math.Max(maxHeight, childResult.Height);
+            maxWidth = Math.Max(maxWidth, childResult.Width);
         }
 
-        return new ExpandResult(
+        var result = new ExpandResult(
             cells,
             Math.Max(maxHeight, grid.Placement.RowSpan),
             Math.Max(maxWidth, grid.Placement.ColSpan));
+
+        return ApplyGridBorders(result, styleScope, styleResolver);
     }
 
     private ExpandResult ExpandRepeat(
@@ -665,6 +667,296 @@ public sealed class LayoutEngine : ILayoutEngine
             target.Add(issue);
         }
     }
+
+    /// <summary>
+    /// グリッド解決後のセル集合へ、mode=outer/all の border を mode=cell として展開する。
+    /// </summary>
+    /// <param name="result">グリッド展開結果。</param>
+    /// <param name="styleScope">グリッドに適用されるスタイルスコープ。</param>
+    /// <param name="styleResolver">スタイル解決器。</param>
+    /// <returns>border 展開後の展開結果。</returns>
+    private static ExpandResult ApplyGridBorders(
+        ExpandResult result,
+        StyleScope styleScope,
+        IStyleResolver styleResolver)
+    {
+        if (result.Cells.Count == 0)
+        {
+            return result;
+        }
+
+        var gridBorders = ResolveGridBorders(styleScope, styleResolver);
+        if (gridBorders.Count == 0)
+        {
+            return result;
+        }
+
+        var topRow = result.Cells.Min(cell => cell.Row);
+        var bottomRow = result.Cells.Max(cell => cell.Row + cell.RowSpan - 1);
+        var leftCol = result.Cells.Min(cell => cell.Col);
+        var rightCol = result.Cells.Max(cell => cell.Col + cell.ColSpan - 1);
+
+        var expandedCells = new List<LayoutCell>(result.Cells.Count);
+        foreach (var cell in result.Cells)
+        {
+            var expandedBorders = ExpandGridBordersForCell(gridBorders, cell, topRow, bottomRow, leftCol, rightCol);
+            expandedCells.Add(expandedBorders.Count == 0 ? cell : AppendBordersToCell(cell, expandedBorders));
+        }
+
+        return new ExpandResult(expandedCells, result.Height, result.Width);
+    }
+
+    /// <summary>
+    /// スタイルスコープから mode=outer/all の border を抽出する。
+    /// </summary>
+    /// <param name="styleScope">スタイルスコープ。</param>
+    /// <param name="styleResolver">スタイル解決器。</param>
+    /// <returns>抽出された grid border 一覧。</returns>
+    private static IReadOnlyList<BorderInfo> ResolveGridBorders(
+        StyleScope styleScope,
+        IStyleResolver styleResolver)
+    {
+        var borders = new List<BorderInfo>();
+
+        foreach (var styleRef in EnumerateStyleRefs(styleScope.StyleRefs))
+        {
+            var style = styleResolver.ResolveByName(styleRef.Name);
+            if (style is null || style.Scope == ExcelReportLib.DSL.AST.StyleScope.Cell)
+            {
+                continue;
+            }
+
+            borders.AddRange(style.Borders.Where(border => IsGridBorderMode(border.Mode)).Select(CloneBorder));
+        }
+
+        foreach (var inlineStyle in styleScope.InlineStyles)
+        {
+            if (inlineStyle.Scope == ExcelReportLib.DSL.AST.StyleScope.Cell)
+            {
+                continue;
+            }
+
+            borders.AddRange(inlineStyle.Borders.Where(border => IsGridBorderMode(border.Mode)).Select(CloneBorder));
+        }
+
+        return borders;
+    }
+
+    /// <summary>
+    /// styleRef の入れ子を含めて深さ優先で列挙する。
+    /// </summary>
+    /// <param name="roots">列挙開始する styleRef 群。</param>
+    /// <returns>順序を維持した styleRef 列挙。</returns>
+    private static IEnumerable<StyleRefAst> EnumerateStyleRefs(IEnumerable<StyleRefAst>? roots)
+    {
+        if (roots is null)
+        {
+            yield break;
+        }
+
+        var stack = new Stack<StyleRefAst>(roots.Reverse());
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            yield return current;
+
+            for (var i = current.StyleRefs.Count - 1; i >= 0; i--)
+            {
+                stack.Push(current.StyleRefs[i]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// セル位置に応じて grid border を cell border に展開する。
+    /// </summary>
+    /// <param name="gridBorders">mode=outer/all の border 一覧。</param>
+    /// <param name="cell">対象セル。</param>
+    /// <param name="topRow">グリッド上端行。</param>
+    /// <param name="bottomRow">グリッド下端行。</param>
+    /// <param name="leftCol">グリッド左端列。</param>
+    /// <param name="rightCol">グリッド右端列。</param>
+    /// <returns>展開された mode=cell border 一覧。</returns>
+    private static IReadOnlyList<BorderInfo> ExpandGridBordersForCell(
+        IReadOnlyList<BorderInfo> gridBorders,
+        LayoutCell cell,
+        int topRow,
+        int bottomRow,
+        int leftCol,
+        int rightCol)
+    {
+        var expanded = new List<BorderInfo>();
+        foreach (var gridBorder in gridBorders)
+        {
+            var border = ExpandBorderForCell(gridBorder, cell, topRow, bottomRow, leftCol, rightCol);
+            if (border is not null)
+            {
+                expanded.Add(border);
+            }
+        }
+
+        return expanded;
+    }
+
+    /// <summary>
+    /// 単一 border をセル境界に合わせて展開する。
+    /// </summary>
+    /// <param name="gridBorder">展開対象 border。</param>
+    /// <param name="cell">対象セル。</param>
+    /// <param name="topRow">グリッド上端行。</param>
+    /// <param name="bottomRow">グリッド下端行。</param>
+    /// <param name="leftCol">グリッド左端列。</param>
+    /// <param name="rightCol">グリッド右端列。</param>
+    /// <returns>展開後 border。適用不要なら <see langword="null"/>。</returns>
+    private static BorderInfo? ExpandBorderForCell(
+        BorderInfo gridBorder,
+        LayoutCell cell,
+        int topRow,
+        int bottomRow,
+        int leftCol,
+        int rightCol)
+    {
+        if (string.Equals(gridBorder.Mode, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            var allBorder = new BorderInfo
+            {
+                Mode = "cell",
+                Top = gridBorder.Top,
+                Bottom = gridBorder.Bottom,
+                Left = gridBorder.Left,
+                Right = gridBorder.Right,
+                Color = gridBorder.Color,
+            };
+
+            return HasAnyBorderSide(allBorder) ? allBorder : null;
+        }
+
+        if (!string.Equals(gridBorder.Mode, "outer", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var cellBottom = cell.Row + cell.RowSpan - 1;
+        var cellRight = cell.Col + cell.ColSpan - 1;
+        var outerBorder = new BorderInfo
+        {
+            Mode = "cell",
+            Top = cell.Row == topRow ? gridBorder.Top : null,
+            Bottom = cellBottom == bottomRow ? gridBorder.Bottom : null,
+            Left = cell.Col == leftCol ? gridBorder.Left : null,
+            Right = cellRight == rightCol ? gridBorder.Right : null,
+            Color = gridBorder.Color,
+        };
+
+        return HasAnyBorderSide(outerBorder) ? outerBorder : null;
+    }
+
+    /// <summary>
+    /// 既存セルへ追加 border を適用した新しいセルを生成する。
+    /// </summary>
+    /// <param name="cell">元セル。</param>
+    /// <param name="additionalBorders">追加する border 一覧。</param>
+    /// <returns>border 追加後セル。</returns>
+    private static LayoutCell AppendBordersToCell(LayoutCell cell, IReadOnlyList<BorderInfo> additionalBorders)
+    {
+        var updatedStylePlan = CreateStylePlanWithAdditionalBorders(cell.StylePlan, additionalBorders);
+        return new LayoutCell(
+            cell.Row,
+            cell.Col,
+            cell.RowSpan,
+            cell.ColSpan,
+            cell.Value,
+            cell.Formula,
+            cell.FormulaRef,
+            updatedStylePlan);
+    }
+
+    /// <summary>
+    /// 既存 StylePlan に border を追記した新しい StylePlan を生成する。
+    /// </summary>
+    /// <param name="stylePlan">元のスタイルプラン。</param>
+    /// <param name="additionalBorders">追記する border 一覧。</param>
+    /// <returns>border 追記後のスタイルプラン。</returns>
+    private static StylePlan CreateStylePlanWithAdditionalBorders(
+        StylePlan stylePlan,
+        IReadOnlyList<BorderInfo> additionalBorders)
+    {
+        if (additionalBorders.Count == 0)
+        {
+            return stylePlan;
+        }
+
+        var mergedBorders = additionalBorders
+            .Concat(stylePlan.Borders)
+            .Select(CloneBorder)
+            .ToArray();
+
+        var effectiveStyle = stylePlan.EffectiveStyle;
+        var updatedEffectiveStyle = new ResolvedStyle(
+            effectiveStyle.SourceName,
+            effectiveStyle.SourceKind,
+            effectiveStyle.DeclaredScope,
+            effectiveStyle.FontName,
+            effectiveStyle.FontSize,
+            effectiveStyle.FontBold,
+            effectiveStyle.FontItalic,
+            effectiveStyle.FontUnderline,
+            effectiveStyle.FillColor,
+            effectiveStyle.NumberFormatCode,
+            mergedBorders);
+
+        return new StylePlan(
+            updatedEffectiveStyle,
+            stylePlan.AppliedStyles,
+            stylePlan.WorkbookDefault,
+            stylePlan.SheetDefault,
+            stylePlan.ReferenceStyles,
+            stylePlan.InlineStyles,
+            stylePlan.FontNameTrace,
+            stylePlan.FontSizeTrace,
+            stylePlan.FontBoldTrace,
+            stylePlan.FontItalicTrace,
+            stylePlan.FontUnderlineTrace,
+            stylePlan.FillColorTrace,
+            stylePlan.NumberFormatCodeTrace,
+            stylePlan.BorderTraces);
+    }
+
+    /// <summary>
+    /// border mode が grid 展開対象かを判定する。
+    /// </summary>
+    /// <param name="mode">判定対象 mode。</param>
+    /// <returns>outer または all の場合 <see langword="true"/>。</returns>
+    private static bool IsGridBorderMode(string? mode) =>
+        string.Equals(mode, "outer", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(mode, "all", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// border に少なくとも1辺の定義があるか判定する。
+    /// </summary>
+    /// <param name="border">判定対象 border。</param>
+    /// <returns>いずれかの辺が定義されている場合 <see langword="true"/>。</returns>
+    private static bool HasAnyBorderSide(BorderInfo border) =>
+        border.Top is not null ||
+        border.Bottom is not null ||
+        border.Left is not null ||
+        border.Right is not null;
+
+    /// <summary>
+    /// border 情報を複製する。
+    /// </summary>
+    /// <param name="border">複製対象 border。</param>
+    /// <returns>複製された border。</returns>
+    private static BorderInfo CloneBorder(BorderInfo border) =>
+        new()
+        {
+            Mode = border.Mode,
+            Top = border.Top,
+            Bottom = border.Bottom,
+            Left = border.Left,
+            Right = border.Right,
+            Color = border.Color,
+        };
 
     private sealed record ExpandResult(IReadOnlyList<LayoutCell> Cells, int Height, int Width)
     {

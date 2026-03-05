@@ -1,11 +1,11 @@
 # Phases Status
 
-Last Updated: 2026-03-03 (ExcelReport開発開始)
+Last Updated: 2026-03-05
 
 ## Overall Progress
 
-- Completed Phases: 7 / 7
-- In Progress Phases: 0 / 7
+- Completed Phases: 8 / 8
+- In Progress Phases: 0 / 8
 - Overall Progress: 100%
 
 ## Phase Summary
@@ -19,6 +19,7 @@ Last Updated: 2026-03-03 (ExcelReport開発開始)
 | Phase 5: WorksheetState | Completed | 100% | LayoutPlanから最終状態への固定化 | WorksheetState |
 | Phase 6: Renderer | Completed | 100% | .xlsx物理出力、Issuesシート、Auditシート | Renderer |
 | Phase 7: Logger + ReportGenerator | Completed | 100% | 横断ログ導入、全体統合ファサード、E2Eテスト | Logger、ReportGenerator |
+| Phase 8: Border修正+テスト拡充 | Completed | 100% | CT_Border順序修正、Grid border展開、FullTemplate E2E | Border順序修正、Grid border展開、テスト78件全通過 |
 
 ## Status Definitions
 
