@@ -4,13 +4,12 @@
 
 /.vs
 /ExcelReport/.vs
-/ExcelReport/ExcelReportExe/bin/Debug/net10.0
+/ExcelReport/ExcelReportExe/bin
 /ExcelReport/ExcelReportExe/obj
-/ExcelReport/ExcelReportLib/bin/Debug/net10.0
+/ExcelReport/ExcelReportLib/bin
 /ExcelReport/ExcelReportLib/obj
-/ExcelReport/ExcelReportLibTest/bin/Debug/net10.0
+/ExcelReport/ExcelReportLibTest/bin
 /ExcelReport/ExcelReportLibTest/obj
 /ExcelReport/ExcelReportLib.Tests/bin
 /ExcelReport/ExcelReportLib.Tests/obj
 /.agents
-# /.claude
