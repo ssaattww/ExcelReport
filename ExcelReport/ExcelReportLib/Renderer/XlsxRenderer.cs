@@ -825,7 +825,7 @@ public sealed class XlsxRenderer : IRenderer
 
         public static StyleKey FromCell(CellState cellState)
         {
-            var border = cellState.Style.Borders.FirstOrDefault();
+            var mergedBorder = MergeBorders(cellState.Style.Borders);
             var numberFormatCode = cellState.Style.NumberFormatCode;
 
             if (numberFormatCode is null && cellState.Value is DateOnly or DateTime or DateTimeOffset)
@@ -841,11 +841,11 @@ public sealed class XlsxRenderer : IRenderer
                 cellState.Style.FontUnderline,
                 NormalizeColor(cellState.Style.FillColor),
                 numberFormatCode,
-                border?.Top,
-                border?.Bottom,
-                border?.Left,
-                border?.Right,
-                NormalizeColor(border?.Color));
+                mergedBorder.Top,
+                mergedBorder.Bottom,
+                mergedBorder.Left,
+                mergedBorder.Right,
+                mergedBorder.Color);
         }
 
         public Font ToFont()
@@ -890,11 +890,50 @@ public sealed class XlsxRenderer : IRenderer
 
         public Border ToBorder() =>
             new(
-                CreateTopBorder(BorderTop, BorderColor),
-                CreateBottomBorder(BorderBottom, BorderColor),
                 CreateLeftBorder(BorderLeft, BorderColor),
                 CreateRightBorder(BorderRight, BorderColor),
+                CreateTopBorder(BorderTop, BorderColor),
+                CreateBottomBorder(BorderBottom, BorderColor),
                 new DiagonalBorder());
+
+        private static MergedBorder MergeBorders(IReadOnlyList<BorderInfo> borders)
+        {
+            var top = default(string);
+            var bottom = default(string);
+            var left = default(string);
+            var right = default(string);
+            var color = default(string);
+
+            foreach (var border in borders)
+            {
+                if (border.Top is not null)
+                {
+                    top = border.Top;
+                }
+
+                if (border.Bottom is not null)
+                {
+                    bottom = border.Bottom;
+                }
+
+                if (border.Left is not null)
+                {
+                    left = border.Left;
+                }
+
+                if (border.Right is not null)
+                {
+                    right = border.Right;
+                }
+
+                if (border.Color is not null)
+                {
+                    color = NormalizeColor(border.Color);
+                }
+            }
+
+            return new MergedBorder(top, bottom, left, right, color);
+        }
 
         private static TopBorder CreateTopBorder(string? style, string? color) =>
             new()
@@ -958,5 +997,12 @@ public sealed class XlsxRenderer : IRenderer
 
             return normalized.ToUpperInvariant();
         }
+
+        private sealed record MergedBorder(
+            string? Top,
+            string? Bottom,
+            string? Left,
+            string? Right,
+            string? Color);
     }
 }

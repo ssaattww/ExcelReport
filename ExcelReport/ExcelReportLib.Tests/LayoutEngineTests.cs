@@ -210,6 +210,150 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    [Fact]
+    public void Expand_GridBorderModeAll_AppliedToAllCells()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <styles>
+                <style name="GridAll" scope="grid">
+                  <border mode="all" top="thin" bottom="thin" left="thin" right="thin" color="#123456" />
+                </style>
+              </styles>
+              <sheet name="Summary" rows="10" cols="10">
+                <grid r="1" c="1">
+                  <styleRef name="GridAll" />
+                  <cell r="1" c="1" value="A" />
+                  <cell r="1" c="2" value="B" />
+                  <cell r="2" c="1" value="C" />
+                  <cell r="2" c="2" value="D" />
+                </grid>
+              </sheet>
+            </workbook>
+            """);
+
+        var cells = Assert.Single(plan.Sheets).Cells;
+        Assert.Equal(4, cells.Count);
+
+        foreach (var cell in cells)
+        {
+            var border = Assert.Single(cell.StylePlan.Borders);
+            Assert.Equal("cell", border.Mode);
+            Assert.Equal("thin", border.Top);
+            Assert.Equal("thin", border.Bottom);
+            Assert.Equal("thin", border.Left);
+            Assert.Equal("thin", border.Right);
+            Assert.Equal("#123456", border.Color);
+        }
+
+        Assert.DoesNotContain(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.StyleScopeViolation);
+    }
+
+    [Fact]
+    public void Expand_GridBorderModeOuter_AppliedToEdgeCells()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <styles>
+                <style name="GridOuter" scope="grid">
+                  <border mode="outer" top="thin" bottom="thin" left="thin" right="thin" color="#654321" />
+                </style>
+              </styles>
+              <sheet name="Summary" rows="10" cols="10">
+                <grid r="1" c="1">
+                  <styleRef name="GridOuter" />
+                  <cell r="1" c="1" value="A" />
+                  <cell r="1" c="2" value="B" />
+                  <cell r="2" c="1" value="C" />
+                  <cell r="2" c="2" value="D" />
+                </grid>
+              </sheet>
+            </workbook>
+            """);
+
+        var cells = Assert.Single(plan.Sheets).Cells.ToDictionary(cell => (cell.Row, cell.Col));
+        Assert.Equal(4, cells.Count);
+
+        var topLeft = Assert.Single(cells[(1, 1)].StylePlan.Borders);
+        Assert.Equal("cell", topLeft.Mode);
+        Assert.Equal("thin", topLeft.Top);
+        Assert.Null(topLeft.Bottom);
+        Assert.Equal("thin", topLeft.Left);
+        Assert.Null(topLeft.Right);
+        Assert.Equal("#654321", topLeft.Color);
+
+        var topRight = Assert.Single(cells[(1, 2)].StylePlan.Borders);
+        Assert.Equal("cell", topRight.Mode);
+        Assert.Equal("thin", topRight.Top);
+        Assert.Null(topRight.Bottom);
+        Assert.Null(topRight.Left);
+        Assert.Equal("thin", topRight.Right);
+
+        var bottomLeft = Assert.Single(cells[(2, 1)].StylePlan.Borders);
+        Assert.Equal("cell", bottomLeft.Mode);
+        Assert.Null(bottomLeft.Top);
+        Assert.Equal("thin", bottomLeft.Bottom);
+        Assert.Equal("thin", bottomLeft.Left);
+        Assert.Null(bottomLeft.Right);
+
+        var bottomRight = Assert.Single(cells[(2, 2)].StylePlan.Borders);
+        Assert.Equal("cell", bottomRight.Mode);
+        Assert.Null(bottomRight.Top);
+        Assert.Equal("thin", bottomRight.Bottom);
+        Assert.Null(bottomRight.Left);
+        Assert.Equal("thin", bottomRight.Right);
+
+        Assert.DoesNotContain(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.StyleScopeViolation);
+    }
+
+    [Fact]
+    public void Expand_GridBorderAndCellInlineBorder_CellBorderWinsByOrder()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <styles>
+                <style name="GridAll" scope="grid">
+                  <border mode="all" top="thin" color="#111111" />
+                </style>
+              </styles>
+              <sheet name="Summary" rows="10" cols="10">
+                <grid r="1" c="1">
+                  <styleRef name="GridAll" />
+                  <cell r="1" c="1" value="A">
+                    <style>
+                      <border mode="cell" top="thick" color="#222222" />
+                    </style>
+                  </cell>
+                </grid>
+              </sheet>
+            </workbook>
+            """);
+
+        var cell = Assert.Single(Assert.Single(plan.Sheets).Cells);
+        Assert.Equal(2, cell.StylePlan.Borders.Count);
+
+        var expandedGridBorder = cell.StylePlan.Borders[0];
+        Assert.Equal("cell", expandedGridBorder.Mode);
+        Assert.Equal("thin", expandedGridBorder.Top);
+        Assert.Equal("#111111", expandedGridBorder.Color);
+
+        var inlineCellBorder = cell.StylePlan.Borders[1];
+        Assert.Equal("cell", inlineCellBorder.Mode);
+        Assert.Equal("thick", inlineCellBorder.Top);
+        Assert.Equal("#222222", inlineCellBorder.Color);
+
+        Assert.DoesNotContain(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.StyleScopeViolation);
+    }
+
     private static LayoutPlan Expand(string workbookXml, object? rootData = null)
     {
         var parseResult = DslParser.ParseFromText(

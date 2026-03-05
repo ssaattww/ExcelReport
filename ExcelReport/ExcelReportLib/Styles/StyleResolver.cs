@@ -335,17 +335,21 @@ public sealed class StyleResolver : IStyleResolver
         var borders = style.Borders
             .Select(CloneBorder)
             .ToList();
+        var isGridStyleResolvedForCell = target == StyleTarget.Cell && style.Scope == StyleScope.Grid;
 
         if (IsScopeViolation(style.Scope, target))
         {
-            issues.Add(new Issue
+            if (!isGridStyleResolvedForCell)
             {
-                Severity = IssueSeverity.Warning,
-                Kind = IssueKind.StyleScopeViolation,
-                Message =
-                    $"style '{sourceName}' は {DescribeTarget(target)} コンテキストと scope が一致しません。border は無視され、その他のプロパティは維持されます。",
-                Span = span,
-            });
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Warning,
+                    Kind = IssueKind.StyleScopeViolation,
+                    Message =
+                        $"style '{sourceName}' は {DescribeTarget(target)} コンテキストと scope が一致しません。border は無視され、その他のプロパティは維持されます。",
+                    Span = span,
+                });
+            }
 
             borders.Clear();
         }
@@ -356,7 +360,7 @@ public sealed class StyleResolver : IStyleResolver
                 .Where(border => !IsCellIncompatibleBorderMode(border.Mode))
                 .ToArray();
 
-            if (filteredBorders.Length != borders.Count)
+            if (filteredBorders.Length != borders.Count && !isGridStyleResolvedForCell)
             {
                 issues.Add(new Issue
                 {

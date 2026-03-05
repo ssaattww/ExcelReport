@@ -1,13 +1,13 @@
 # Tasks Status
 
-Last Updated: 2026-03-03
-Scope: ExcelReport開発 - 全Phase完了
+Last Updated: 2026-03-05
+Scope: ExcelReport開発 - Border修正+テスト完了
 
 ## Progress Summary
 
-- Completed: 11 / 11
-- In Progress: 0 / 11
-- Not Started: 0 / 11
+- Completed: 15 / 15
+- In Progress: 0 / 15
+- Not Started: 0 / 15
 - Completion Rate: 100%
 
 ## Task List
@@ -25,6 +25,10 @@ Scope: ExcelReport開発 - 全Phase完了
 | 9 | Renderer実装 (TDD) | Done | Codex + PM | 8 | 6 |
 | 10 | Logger実装 (TDD) | Done | Codex + PM | 9 | 7 |
 | 11 | ReportGenerator実装 (TDD) | Done | Codex + PM | 10 | 7 |
+| 12 | Fix Border要素順序 (CT_Border schema準拠) | Done | Codex + PM | 9 | 8 |
+| 13 | Fix 複数BorderInfo統合 (StyleKey.FromCell) | Done | Codex + PM | 12 | 8 |
+| 14 | Grid border展開 (mode="outer"/"all") | Done | Codex + PM | 13 | 8 |
+| 15 | FullTemplate E2Eテスト + borderテスト追加 | Done | Codex + PM | 12 | 8 |
 
 ## Status Definitions
 

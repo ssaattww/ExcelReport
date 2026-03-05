@@ -38,7 +38,7 @@ public sealed class StyleResolverTests
     }
 
     [Fact]
-    public void Resolve_ScopeViolation_ReturnsWarning()
+    public void Resolve_GridScopeForCell_SuppressesScopeViolationAndDropsBorders()
     {
         var resolver = CreateResolver("""
             <style name="GridOnly" scope="grid">
@@ -49,6 +49,24 @@ public sealed class StyleResolverTests
         var issues = new List<Issue>();
 
         var resolved = Assert.IsType<ResolvedStyle>(resolver.Resolve("GridOnly", StyleTarget.Cell, issues));
+
+        Assert.Empty(issues);
+        Assert.Equal("Calibri", resolved.FontName);
+        Assert.Empty(resolved.Borders);
+    }
+
+    [Fact]
+    public void Resolve_CellScopeForGrid_ReturnsScopeViolationWarning()
+    {
+        var resolver = CreateResolver("""
+            <style name="CellOnly" scope="cell">
+              <font name="Calibri" />
+              <border mode="cell" top="thin" color="#000000" />
+            </style>
+            """);
+        var issues = new List<Issue>();
+
+        var resolved = Assert.IsType<ResolvedStyle>(resolver.Resolve("CellOnly", StyleTarget.Grid, issues));
 
         var issue = Assert.Single(issues);
         Assert.Equal(IssueSeverity.Warning, issue.Severity);

@@ -88,7 +88,7 @@ public sealed class RendererTests
         var mergeCells = worksheetPart.Worksheet.Elements<MergeCells>().Single();
         var mergeCell = mergeCells.Elements<MergeCell>().Single();
 
-        Assert.Equal("B2:D3", mergeCell.Reference!.Value);
+        Assert.Equal("$B$2:$D$3", mergeCell.Reference!.Value);
     }
 
     [Fact]
@@ -134,12 +134,111 @@ public sealed class RendererTests
         Assert.NotNull(font.Bold);
 
         var fill = stylesheet.Fills!.Elements<Fill>().ElementAt((int)cellFormat.FillId!.Value);
-        Assert.Equal("FFFF00", fill.PatternFill!.ForegroundColor!.Rgb!.Value);
+        Assert.Equal("FFFFFF00", fill.PatternFill!.ForegroundColor!.Rgb!.Value);
 
         var border = stylesheet.Borders!.Elements<Border>().ElementAt((int)cellFormat.BorderId!.Value);
         Assert.Equal(BorderStyleValues.Thick, border.TopBorder!.Style!.Value);
         Assert.Equal(BorderStyleValues.Thin, border.BottomBorder!.Style!.Value);
-        Assert.Equal("FF0000", border.TopBorder.Color!.Rgb!.Value);
+        Assert.Equal("FFFF0000", border.TopBorder.Color!.Rgb!.Value);
+    }
+
+    [Fact]
+    public void Render_Border_ChildElementOrder_MatchesCTBorderSchema()
+    {
+        var style = CreateStyle(
+            borders:
+            [
+                new BorderInfo
+                {
+                    Top = "thin",
+                    Bottom = "thin",
+                    Left = "thin",
+                    Right = "thin",
+                    Color = "#000000",
+                },
+            ]);
+
+        var sheet = CreateWorksheet(
+            "Styles",
+            cells:
+            [
+                CreateCell(1, 1, "Styled", style),
+            ]);
+
+        var renderer = CreateRenderer();
+
+        var result = renderer.Render([sheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Styles");
+        var cell = GetCell(worksheetPart, "A1");
+        var cellFormat = GetCellFormat(document, cell);
+        var border = document.WorkbookPart!
+            .WorkbookStylesPart!
+            .Stylesheet
+            .Borders!
+            .Elements<Border>()
+            .ElementAt((int)cellFormat.BorderId!.Value);
+
+        Assert.Equal(
+            ["left", "right", "top", "bottom", "diagonal"],
+            border.ChildElements.Select(child => child.LocalName));
+    }
+
+    [Fact]
+    public void Render_MultipleBorders_MergedBySide()
+    {
+        var style = CreateStyle(
+            borders:
+            [
+                new BorderInfo
+                {
+                    Top = "thin",
+                    Color = "#111111",
+                },
+                new BorderInfo
+                {
+                    Bottom = "medium",
+                    Left = "dashed",
+                },
+                new BorderInfo
+                {
+                    Top = "double",
+                    Right = "thick",
+                    Color = "#00FF00",
+                },
+            ]);
+
+        var sheet = CreateWorksheet(
+            "Styles",
+            cells:
+            [
+                CreateCell(1, 1, "Styled", style),
+            ]);
+
+        var renderer = CreateRenderer();
+
+        var result = renderer.Render([sheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Styles");
+        var cell = GetCell(worksheetPart, "A1");
+        var cellFormat = GetCellFormat(document, cell);
+        var border = document.WorkbookPart!
+            .WorkbookStylesPart!
+            .Stylesheet
+            .Borders!
+            .Elements<Border>()
+            .ElementAt((int)cellFormat.BorderId!.Value);
+
+        Assert.Equal(BorderStyleValues.Double, border.TopBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Medium, border.BottomBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Dashed, border.LeftBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Thick, border.RightBorder!.Style!.Value);
+        Assert.Equal("FF00FF00", border.TopBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF00FF00", border.BottomBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF00FF00", border.LeftBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF00FF00", border.RightBorder.Color!.Rgb!.Value);
     }
 
     [Fact]
@@ -183,7 +282,7 @@ public sealed class RendererTests
                 CreateCell(1, 1, "Value"),
             ]);
 
-        var issues =
+        Issue[] issues =
         [
             new Issue
             {
@@ -275,7 +374,7 @@ public sealed class RendererTests
             GeneratedAt = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero),
         };
 
-    private static WorksheetState CreateWorksheet(
+    private static ExcelReportLib.WorksheetState.WorksheetState CreateWorksheet(
         string name,
         IReadOnlyList<CellState> cells,
         IReadOnlyList<MergedCellRange>? mergedRanges = null,
@@ -283,7 +382,7 @@ public sealed class RendererTests
     {
         var dictionary = cells.ToDictionary(cell => (cell.Row, cell.Column));
 
-        return new WorksheetState(
+        return new ExcelReportLib.WorksheetState.WorksheetState(
             name,
             rowCount: Math.Max(10, cells.DefaultIfEmpty().Max(cell => cell?.Row ?? 0)),
             columnCount: Math.Max(10, cells.DefaultIfEmpty().Max(cell => cell?.Column ?? 0)),
