@@ -5,10 +5,10 @@ Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
 
 ## Progress Summary
 
-- Completed: 20 / 21
+- Completed: 21 / 21
 - In Progress: 0 / 21
-- Not Started: 1 / 21
-- Completion Rate: 95%
+- Not Started: 0 / 21
+- Completion Rate: 100%
 
 ## Task List
 
@@ -33,7 +33,7 @@ Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
 | 17 | LayoutEngine外部component展開 + 重複style import対応 | Done | Codex + PM | 16 | 9 |
 | 18 | sheetOptions at="名前"→実座標マッピング実装 | Done | Codex + PM | 17 | 9 |
 | 19 | formulaRef / #{...}プレースホルダ置換実装 | Done | Codex + PM | 17 | 9 |
-| 20 | FullTemplate E2Eテスト（実xlsx生成検証） | Not Started | Codex + PM | 18, 19, 21 | 9 |
+| 20 | FullTemplate E2Eテスト（実xlsx生成検証） | Done | Codex + PM | 18, 19, 21 | 9 |
 | 21 | sheet/gridのrows/cols省略→自動計算 + Design XML修正 | Done | Codex + PM | 17 | 9 |
 
 ## Status Definitions
