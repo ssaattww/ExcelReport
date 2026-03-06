@@ -8,8 +8,14 @@ using Xunit;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>WorksheetState</c> feature.
+/// </summary>
 public sealed class WorksheetStateTests
 {
+    /// <summary>
+    /// Verifies that build from layout plan produces cells.
+    /// </summary>
     [Fact]
     public void Build_FromLayoutPlan_ProducesCells()
     {
@@ -42,6 +48,9 @@ public sealed class WorksheetStateTests
         Assert.Equal(42, valueCell.Value);
     }
 
+    /// <summary>
+    /// Verifies that build merged cells tracked correctly.
+    /// </summary>
     [Fact]
     public void Build_MergedCells_TrackedCorrectly()
     {
@@ -69,6 +78,9 @@ public sealed class WorksheetStateTests
         Assert.True(mergedHead.IsMergedHead);
     }
 
+    /// <summary>
+    /// Verifies that build named area registered.
+    /// </summary>
     [Fact]
     public void Build_NamedArea_Registered()
     {
@@ -99,6 +111,9 @@ public sealed class WorksheetStateTests
         Assert.Equal(2, area.RightColumn);
     }
 
+    /// <summary>
+    /// Verifies that build freeze panes applied.
+    /// </summary>
     [Fact]
     public void Build_FreezePanes_Applied()
     {
@@ -122,6 +137,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("header", sheet.Options.FreezePanes!.Target);
     }
 
+    /// <summary>
+    /// Verifies that build auto filter applied.
+    /// </summary>
     [Fact]
     public void Build_AutoFilter_Applied()
     {
@@ -145,6 +163,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("table", sheet.Options.AutoFilter!.Target);
     }
 
+    /// <summary>
+    /// Verifies that build group rows applied.
+    /// </summary>
     [Fact]
     public void Build_GroupRows_Applied()
     {
@@ -184,6 +205,9 @@ public sealed class WorksheetStateTests
             });
     }
 
+    /// <summary>
+    /// Verifies that build sheet option targets resolved from named areas.
+    /// </summary>
     [Fact]
     public void Build_SheetOptionTargets_ResolvedFromNamedAreas()
     {
@@ -231,6 +255,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("B5:D5", sheet.Options.AutoFilter!.Target);
     }
 
+    /// <summary>
+    /// Verifies that build sheet bounds validated.
+    /// </summary>
     [Fact]
     public void Build_SheetBounds_Validated()
     {
@@ -250,6 +277,9 @@ public sealed class WorksheetStateTests
         Assert.Throws<InvalidOperationException>(() => builder.Build(plan));
     }
 
+    /// <summary>
+    /// Verifies that build formula cells preserved.
+    /// </summary>
     [Fact]
     public void Build_FormulaCells_Preserved()
     {
@@ -274,6 +304,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("Total", cell.FormulaReference);
     }
 
+    /// <summary>
+    /// Verifies that build formula ref placeholders resolved to cell references.
+    /// </summary>
     [Fact]
     public void Build_FormulaRefPlaceholders_ResolvedToCellReferences()
     {
@@ -304,6 +337,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("=SUM(B6:B7)+B6", formulaCell.Formula);
     }
 
+    /// <summary>
+    /// Verifies that build formula placeholder range with multi cell named area uses bottom right as end reference.
+    /// </summary>
     [Fact]
     public void Build_FormulaPlaceholderRange_WithMultiCellNamedArea_UsesBottomRightAsEndReference()
     {
@@ -330,6 +366,9 @@ public sealed class WorksheetStateTests
         Assert.Equal("=SUM(B6:D8)", formulaCell.Formula);
     }
 
+    /// <summary>
+    /// Verifies that build formula ref named area when name collides preserves existing named area definition.
+    /// </summary>
     [Fact]
     public void Build_FormulaRefNamedArea_WhenNameCollides_PreservesExistingNamedAreaDefinition()
     {

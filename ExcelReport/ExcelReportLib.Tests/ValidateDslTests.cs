@@ -2,8 +2,14 @@ using ExcelReportLib.DSL;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>ValidateDsl</c> feature.
+/// </summary>
 public sealed class ValidateDslTests
 {
+    /// <summary>
+    /// Verifies that validate DSL duplicate sheet name returns error.
+    /// </summary>
     [Fact]
     public void ValidateDsl_DuplicateSheetName_ReturnsError()
     {
@@ -21,6 +27,9 @@ public sealed class ValidateDslTests
             issue => issue.Severity == IssueSeverity.Error && issue.Kind == IssueKind.DuplicateSheetName);
     }
 
+    /// <summary>
+    /// Verifies that validate DSL unresolved style ref returns error.
+    /// </summary>
     [Fact]
     public void ValidateDsl_UnresolvedStyleRef_ReturnsError()
     {
@@ -39,6 +48,9 @@ public sealed class ValidateDslTests
             issue => issue.Severity == IssueSeverity.Error && issue.Kind == IssueKind.UndefinedStyle);
     }
 
+    /// <summary>
+    /// Verifies that validate DSL unresolved component ref returns error.
+    /// </summary>
     [Fact]
     public void ValidateDsl_UnresolvedComponentRef_ReturnsError()
     {
@@ -57,6 +69,9 @@ public sealed class ValidateDslTests
             issue => issue.Severity == IssueSeverity.Error && issue.Kind == IssueKind.UndefinedComponent);
     }
 
+    /// <summary>
+    /// Verifies that validate DSL valid document no errors.
+    /// </summary>
     [Fact]
     public void ValidateDsl_ValidDocument_NoErrors()
     {
@@ -85,6 +100,9 @@ public sealed class ValidateDslTests
         Assert.Empty(result.Issues);
     }
 
+    /// <summary>
+    /// Verifies that XSD validation invalid XML returns issues.
+    /// </summary>
     [Fact]
     public void XsdValidation_InvalidXml_ReturnsIssues()
     {

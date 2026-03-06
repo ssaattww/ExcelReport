@@ -4,8 +4,14 @@ using ExcelReportLib.DSL.AST.LayoutNode;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>LayoutNode</c> feature.
+/// </summary>
 public sealed class LayoutNodeTests
 {
+    /// <summary>
+    /// Verifies that parse cell has style ref and formula ref.
+    /// </summary>
     [Fact]
     public void Parse_Cell_HasStyleRefAndFormulaRef()
     {
@@ -22,6 +28,9 @@ public sealed class LayoutNodeTests
         Assert.Equal("BaseCell", Assert.Single(cell.StyleRefs).Name);
     }
 
+    /// <summary>
+    /// Verifies that parse repeat has from expr raw.
+    /// </summary>
     [Fact]
     public void Parse_Repeat_HasFromExprRaw()
     {
@@ -34,6 +43,9 @@ public sealed class LayoutNodeTests
         Assert.Equal("@(root.Lines)", repeat.FromExprRaw);
     }
 
+    /// <summary>
+    /// Verifies that parse use has instance attribute.
+    /// </summary>
     [Fact]
     public void Parse_Use_HasInstanceAttribute()
     {
@@ -50,6 +62,9 @@ public sealed class LayoutNodeTests
         Assert.Equal("Title", use.ComponentName);
     }
 
+    /// <summary>
+    /// Verifies that parse grid child nodes.
+    /// </summary>
     [Fact]
     public void Parse_Grid_ChildNodes()
     {

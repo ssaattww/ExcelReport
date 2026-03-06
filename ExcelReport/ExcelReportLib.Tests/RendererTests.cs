@@ -11,8 +11,14 @@ using Xunit;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>Renderer</c> feature.
+/// </summary>
 public sealed class RendererTests
 {
+    /// <summary>
+    /// Verifies that render single sheet produces XLSX.
+    /// </summary>
     [Fact]
     public void Render_SingleSheet_ProducesXlsx()
     {
@@ -38,6 +44,9 @@ public sealed class RendererTests
         Assert.NotNull(GetSheet(document, "_Audit"));
     }
 
+    /// <summary>
+    /// Verifies that render cell values written.
+    /// </summary>
     [Fact]
     public void Render_CellValues_Written()
     {
@@ -67,6 +76,9 @@ public sealed class RendererTests
         Assert.NotEqual("0", GetCell(worksheetPart, "A4").CellValue!.Text);
     }
 
+    /// <summary>
+    /// Verifies that render merged cells applied.
+    /// </summary>
     [Fact]
     public void Render_MergedCells_Applied()
     {
@@ -93,6 +105,9 @@ public sealed class RendererTests
         Assert.Equal("$B$2:$D$3", mergeCell.Reference!.Value);
     }
 
+    /// <summary>
+    /// Verifies that render styles applied.
+    /// </summary>
     [Fact]
     public void Render_Styles_Applied()
     {
@@ -144,6 +159,9 @@ public sealed class RendererTests
         Assert.Equal("FFFF0000", border.TopBorder.Color!.Rgb!.Value);
     }
 
+    /// <summary>
+    /// Verifies that render border child element order matches ct border schema.
+    /// </summary>
     [Fact]
     public void Render_Border_ChildElementOrder_MatchesCTBorderSchema()
     {
@@ -187,6 +205,9 @@ public sealed class RendererTests
             border.ChildElements.Select(child => child.LocalName));
     }
 
+    /// <summary>
+    /// Verifies that render multiple borders merged by side.
+    /// </summary>
     [Fact]
     public void Render_MultipleBorders_MergedBySide()
     {
@@ -243,6 +264,9 @@ public sealed class RendererTests
         Assert.Equal("FF00FF00", border.RightBorder.Color!.Rgb!.Value);
     }
 
+    /// <summary>
+    /// Verifies that render freeze panes applied.
+    /// </summary>
     [Fact]
     public void Render_FreezePanes_Applied()
     {
@@ -274,6 +298,9 @@ public sealed class RendererTests
         Assert.Equal(PaneStateValues.Frozen, pane.State!.Value);
     }
 
+    /// <summary>
+    /// Verifies that render sheet options with named targets applied after state build.
+    /// </summary>
     [Fact]
     public void Render_SheetOptionsWithNamedTargets_AppliedAfterStateBuild()
     {
@@ -336,6 +363,9 @@ public sealed class RendererTests
         Assert.True(rows[8U].Collapsed!.Value);
     }
 
+    /// <summary>
+    /// Verifies that render formula ref placeholders are resolved before writing formula.
+    /// </summary>
     [Fact]
     public void Render_FormulaRefPlaceholders_AreResolvedBeforeWritingFormula()
     {
@@ -362,6 +392,9 @@ public sealed class RendererTests
         Assert.Equal("SUM(B6:B7)+B6", GetCell(worksheetPart, "B8").CellFormula!.Text);
     }
 
+    /// <summary>
+    /// Verifies that render issues sheet generated.
+    /// </summary>
     [Fact]
     public void Render_IssuesSheet_Generated()
     {
@@ -393,6 +426,9 @@ public sealed class RendererTests
         Assert.Equal("A warning was emitted.", ReadCellValue(document, GetCell(issuesPart, "B2")));
     }
 
+    /// <summary>
+    /// Verifies that render audit sheet generated.
+    /// </summary>
     [Fact]
     public void Render_AuditSheet_Generated()
     {
@@ -424,6 +460,9 @@ public sealed class RendererTests
         Assert.Equal("WarehouseDb", ReadCellValue(document, GetCell(auditPart, "B3")));
     }
 
+    /// <summary>
+    /// Verifies that render multiple sheets all rendered.
+    /// </summary>
     [Fact]
     public void Render_MultipleSheets_AllRendered()
     {

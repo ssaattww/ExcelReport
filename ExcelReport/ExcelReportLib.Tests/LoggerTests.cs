@@ -2,8 +2,14 @@ using ExcelReportLib.Logger;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>Logger</c> feature.
+/// </summary>
 public sealed class LoggerTests
 {
+    /// <summary>
+    /// Verifies that log info records entry.
+    /// </summary>
     [Fact]
     public void Log_Info_RecordsEntry()
     {
@@ -16,6 +22,9 @@ public sealed class LoggerTests
         Assert.Equal("info message", entry.Message);
     }
 
+    /// <summary>
+    /// Verifies that log warning records entry.
+    /// </summary>
     [Fact]
     public void Log_Warning_RecordsEntry()
     {
@@ -28,6 +37,9 @@ public sealed class LoggerTests
         Assert.Equal("warning message", entry.Message);
     }
 
+    /// <summary>
+    /// Verifies that log error records entry.
+    /// </summary>
     [Fact]
     public void Log_Error_RecordsEntry()
     {
@@ -40,6 +52,9 @@ public sealed class LoggerTests
         Assert.Equal("error message", entry.Message);
     }
 
+    /// <summary>
+    /// Verifies that log with phase includes phase info.
+    /// </summary>
     [Fact]
     public void Log_WithPhase_IncludesPhaseInfo()
     {
@@ -52,6 +67,9 @@ public sealed class LoggerTests
         Assert.Equal(ReportPhase.Parsing, entry.Phase);
     }
 
+    /// <summary>
+    /// Verifies that get entries returns all entries.
+    /// </summary>
     [Fact]
     public void GetEntries_ReturnsAllEntries()
     {
@@ -69,6 +87,9 @@ public sealed class LoggerTests
             entries.Select(entry => entry.Level).ToArray());
     }
 
+    /// <summary>
+    /// Verifies that get entries filter by level returns filtered.
+    /// </summary>
     [Fact]
     public void GetEntries_FilterByLevel_ReturnsFiltered()
     {
@@ -85,6 +106,9 @@ public sealed class LoggerTests
         Assert.All(entries, entry => Assert.Equal(LogLevel.Warning, entry.Level));
     }
 
+    /// <summary>
+    /// Verifies that get audit trail returns chronological.
+    /// </summary>
     [Fact]
     public void GetAuditTrail_ReturnsChronological()
     {
@@ -111,6 +135,9 @@ public sealed class LoggerTests
         Assert.Equal(new[] { "earlier", "later" }, auditTrail.Select(entry => entry.Message).ToArray());
     }
 
+    /// <summary>
+    /// Verifies that clear removes all entries.
+    /// </summary>
     [Fact]
     public void Clear_RemovesAllEntries()
     {

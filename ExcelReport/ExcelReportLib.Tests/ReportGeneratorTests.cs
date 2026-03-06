@@ -8,8 +8,14 @@ using Xunit;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>ReportGenerator</c> feature.
+/// </summary>
 public sealed class ReportGeneratorTests
 {
+    /// <summary>
+    /// Verifies that generate valid DSL and data produces XLSX.
+    /// </summary>
     [Fact]
     public void Generate_ValidDslAndData_ProducesXlsx()
     {
@@ -33,6 +39,9 @@ public sealed class ReportGeneratorTests
         Assert.Equal("Sales", ReadCellValue(document, GetCell(document, "Summary", "A1")));
     }
 
+    /// <summary>
+    /// Verifies that generate invalid DSL returns errors.
+    /// </summary>
     [Fact]
     public void Generate_InvalidDsl_ReturnsErrors()
     {
@@ -52,6 +61,9 @@ public sealed class ReportGeneratorTests
         Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.XmlMalformed);
     }
 
+    /// <summary>
+    /// Verifies that generate with logger logs all phases.
+    /// </summary>
     [Fact]
     public void Generate_WithLogger_LogsAllPhases()
     {
@@ -84,6 +96,9 @@ public sealed class ReportGeneratorTests
         Assert.Contains(ReportPhase.Rendering, phases);
     }
 
+    /// <summary>
+    /// Verifies that generate empty data produces empty sheets.
+    /// </summary>
     [Fact]
     public void Generate_EmptyData_ProducesEmptySheets()
     {
@@ -110,6 +125,9 @@ public sealed class ReportGeneratorTests
         Assert.Empty(sheetPart.Worksheet.Descendants<Cell>());
     }
 
+    /// <summary>
+    /// Verifies that generate multiple sheets all rendered.
+    /// </summary>
     [Fact]
     public void Generate_MultipleSheets_AllRendered()
     {
@@ -137,6 +155,9 @@ public sealed class ReportGeneratorTests
         Assert.Contains("Detail", sheetNames);
     }
 
+    /// <summary>
+    /// Verifies that generate issues in DSL included in result.
+    /// </summary>
     [Fact]
     public void Generate_IssuesInDsl_IncludedInResult()
     {
@@ -156,6 +177,9 @@ public sealed class ReportGeneratorTests
         Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.UndefinedStyle);
     }
 
+    /// <summary>
+    /// Verifies that generate full template sample produces valid XLSX.
+    /// </summary>
     [Fact]
     public void Generate_FullTemplateSample_ProducesValidXlsx()
     {
@@ -293,6 +317,9 @@ public sealed class ReportGeneratorTests
         Assert.Equal("A02", ReadCellValue(document, GetCell(document, "Summary", "C8")));
     }
 
+    /// <summary>
+    /// Verifies that generate cell border style no excel repair needed.
+    /// </summary>
     [Fact]
     public void Generate_CellBorderStyle_NoExcelRepairNeeded()
     {
@@ -339,6 +366,9 @@ public sealed class ReportGeneratorTests
             border.ChildElements.Select(child => child.LocalName));
     }
 
+    /// <summary>
+    /// Verifies that DslParser.ParseFromFile with full template sample resolves relative imports.
+    /// </summary>
     [Fact]
     public void GenerateFromFile_WithFullTemplateSample_ResolvesRelativeImports()
     {
@@ -354,6 +384,9 @@ public sealed class ReportGeneratorTests
         Assert.NotNull(parseResult.Root);
     }
 
+    /// <summary>
+    /// Verifies that DslParser.ParseFromFile does not depend on current directory.
+    /// </summary>
     [Fact]
     public void GenerateFromFile_DoesNotDependOnCurrentDirectory()
     {
@@ -380,6 +413,9 @@ public sealed class ReportGeneratorTests
         }
     }
 
+    /// <summary>
+    /// Verifies that generate from file missing file returns fatal issue.
+    /// </summary>
     [Fact]
     public void GenerateFromFile_MissingFile_ReturnsFatalIssue()
     {
@@ -400,6 +436,9 @@ public sealed class ReportGeneratorTests
             issue => issue.Kind == IssueKind.LoadFile && issue.Severity == IssueSeverity.Fatal);
     }
 
+    /// <summary>
+    /// Verifies that generate from file full template produces valid XLSX with all features.
+    /// </summary>
     [Fact]
     public void GenerateFromFile_FullTemplate_ProducesValidXlsxWithAllFeatures()
     {

@@ -3,8 +3,14 @@ using ExcelReportLib.DSL.AST;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>WorkbookAst</c> feature.
+/// </summary>
 public sealed class WorkbookAstTests
 {
+    /// <summary>
+    /// Verifies that parse full template has expected sheets.
+    /// </summary>
     [Fact]
     public void Parse_FullTemplate_HasExpectedSheets()
     {
@@ -14,6 +20,9 @@ public sealed class WorkbookAstTests
         Assert.Equal("Summary", sheet.Name);
     }
 
+    /// <summary>
+    /// Verifies that parse full template has styles.
+    /// </summary>
     [Fact]
     public void Parse_FullTemplate_HasStyles()
     {
@@ -27,6 +36,9 @@ public sealed class WorkbookAstTests
         Assert.Contains(importedStyles, style => style.Name == "BaseCell");
     }
 
+    /// <summary>
+    /// Verifies that parse full template has components.
+    /// </summary>
     [Fact]
     public void Parse_FullTemplate_HasComponents()
     {

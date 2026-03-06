@@ -4,8 +4,14 @@ using ExcelReportLib.DSL.AST.LayoutNode;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>DslParser</c> feature.
+/// </summary>
 public sealed class DslParserTests
 {
+    /// <summary>
+    /// Verifies that parse from text valid XML returns workbook ast.
+    /// </summary>
     [Fact]
     public void ParseFromText_ValidXml_ReturnsWorkbookAst()
     {
@@ -24,6 +30,9 @@ public sealed class DslParserTests
         Assert.Single(root.Sheets);
     }
 
+    /// <summary>
+    /// Verifies that parse from text invalid XML returns fatal issue.
+    /// </summary>
     [Fact]
     public void ParseFromText_InvalidXml_ReturnsFatalIssue()
     {
@@ -38,6 +47,9 @@ public sealed class DslParserTests
         Assert.Equal(IssueKind.XmlMalformed, issue.Kind);
     }
 
+    /// <summary>
+    /// Verifies that parse from text empty input returns fatal issue.
+    /// </summary>
     [Fact]
     public void ParseFromText_EmptyInput_ReturnsFatalIssue()
     {
@@ -50,6 +62,9 @@ public sealed class DslParserTests
             issue => issue.Severity == IssueSeverity.Fatal && issue.Kind == IssueKind.XmlMalformed);
     }
 
+    /// <summary>
+    /// Verifies that parse from file full template resolves all imports.
+    /// </summary>
     [Fact]
     public void ParseFromFile_FullTemplate_ResolvesAllImports()
     {
@@ -72,6 +87,9 @@ public sealed class DslParserTests
             issue => issue.Kind == IssueKind.LoadFile && issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
     }
 
+    /// <summary>
+    /// Verifies that parse from file full template does not emit duplicate style name.
+    /// </summary>
     [Fact]
     public void ParseFromFile_FullTemplate_DoesNotEmitDuplicateStyleName()
     {
@@ -84,6 +102,9 @@ public sealed class DslParserTests
             issue => issue.Kind == IssueKind.DuplicateStyleName && issue.Severity == IssueSeverity.Error);
     }
 
+    /// <summary>
+    /// Verifies that duplicate inline style name still emits duplicate style name.
+    /// </summary>
     [Fact]
     public void DuplicateInlineStyleName_StillEmitsDuplicateStyleName()
     {
@@ -103,6 +124,9 @@ public sealed class DslParserTests
             issue => issue.Kind == IssueKind.DuplicateStyleName && issue.Severity == IssueSeverity.Error);
     }
 
+    /// <summary>
+    /// Verifies that parse from text omitted sheet and grid rows cols does not error.
+    /// </summary>
     [Fact]
     public void ParseFromText_OmittedSheetAndGridRowsCols_DoesNotError()
     {
