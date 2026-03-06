@@ -213,6 +213,91 @@ public sealed class LayoutEngineTests
     }
 
     [Fact]
+    public void Expand_WhenComponentImportLoadFails_DoesNotThrowNullReference()
+    {
+        var missingImportPath = Path.Combine(
+            Path.GetTempPath(),
+            $"excelreport-missing-component-{Guid.NewGuid():N}.xml");
+
+        var parseResult = DslParser.ParseFromText(
+            $"""
+             <workbook xmlns="urn:excelreport:v1">
+               <componentImport href="{missingImportPath}" />
+               <sheet name="Summary">
+                 <cell r="1" c="1" value="Safe" />
+               </sheet>
+             </workbook>
+             """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = false,
+            });
+
+        Assert.False(parseResult.HasFatal);
+        Assert.NotNull(parseResult.Root);
+        Assert.Contains(parseResult.Issues, issue => issue.Kind == IssueKind.LoadFile);
+
+        LayoutPlan? plan = null;
+        var exception = Record.Exception(() => plan = new LayoutEngine.LayoutEngine().Expand(parseResult.Root!, null));
+
+        Assert.Null(exception);
+        var cell = Assert.Single(Assert.Single(plan!.Sheets).Cells);
+        Assert.Equal("Safe", cell.Value);
+    }
+
+    [Fact]
+    public void Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins()
+    {
+        var importPath = Path.Combine(
+            Path.GetTempPath(),
+            $"excelreport-import-{Guid.NewGuid():N}.xml");
+        File.WriteAllText(
+            importPath,
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <component name="SharedComp">
+                <cell r="1" c="1" value="Imported" />
+              </component>
+            </workbook>
+            """);
+
+        try
+        {
+            var parseResult = DslParser.ParseFromText(
+                $"""
+                 <workbook xmlns="urn:excelreport:v1">
+                   <component name="SharedComp">
+                     <cell r="1" c="1" value="Local" />
+                   </component>
+                   <componentImport href="{importPath}" />
+                   <sheet name="Summary">
+                     <use component="SharedComp" r="1" c="1" />
+                   </sheet>
+                 </workbook>
+                 """,
+                new DslParserOptions
+                {
+                    EnableSchemaValidation = false,
+                });
+
+            Assert.False(parseResult.HasFatal);
+            Assert.NotNull(parseResult.Root);
+
+            var plan = new LayoutEngine.LayoutEngine().Expand(parseResult.Root!, null);
+            var cell = Assert.Single(Assert.Single(plan.Sheets).Cells);
+
+            Assert.Equal("Local", cell.Value);
+        }
+        finally
+        {
+            if (File.Exists(importPath))
+            {
+                File.Delete(importPath);
+            }
+        }
+    }
+
+    [Fact]
     public void Expand_WhenFalse_SkipsNode()
     {
         var plan = Expand(
@@ -481,6 +566,46 @@ public sealed class LayoutEngineTests
         Assert.Equal(4, sheet.Rows);
         Assert.Equal(6, sheet.Cols);
         Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.CoordinateOutOfRange);
+    }
+
+    [Fact]
+    public void Expand_GridAutoSize_AccountsForChildOffsetsInRepeatDirections()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.DownItems)" var="it">
+                  <grid>
+                    <cell r="2" c="1" value="@(it)" />
+                  </grid>
+                </repeat>
+                <repeat r="1" c="10" direction="right" from="@(root.RightItems)" var="it">
+                  <grid>
+                    <cell r="1" c="3" value="@(it)" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            new
+            {
+                DownItems = new[] { "D1", "D2" },
+                RightItems = new[] { "R1", "R2" },
+            });
+
+        var cellsByValue = Assert.Single(plan.Sheets).Cells.ToDictionary(cell => cell.Value?.ToString()!);
+        Assert.Equal(4, cellsByValue.Count);
+
+        Assert.Equal(2, cellsByValue["D1"].Row);
+        Assert.Equal(1, cellsByValue["D1"].Col);
+        Assert.Equal(4, cellsByValue["D2"].Row);
+        Assert.Equal(1, cellsByValue["D2"].Col);
+
+        Assert.Equal(1, cellsByValue["R1"].Row);
+        Assert.Equal(12, cellsByValue["R1"].Col);
+        Assert.Equal(1, cellsByValue["R2"].Row);
+        Assert.Equal(15, cellsByValue["R2"].Col);
     }
 
     private static LayoutPlan Expand(string workbookXml, object? rootData = null)

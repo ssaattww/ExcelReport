@@ -232,8 +232,10 @@ public sealed class LayoutEngine : ILayoutEngine
             }
 
             cells.AddRange(childResult.Cells);
-            maxHeight = Math.Max(maxHeight, childResult.Height);
-            maxWidth = Math.Max(maxWidth, childResult.Width);
+            var childHeightWithOffset = ResolveOffset(child.Placement.Row) + childResult.Height;
+            var childWidthWithOffset = ResolveOffset(child.Placement.Col) + childResult.Width;
+            maxHeight = Math.Max(maxHeight, childHeightWithOffset);
+            maxWidth = Math.Max(maxWidth, childWidthWithOffset);
         }
 
         var result = new ExpandResult(
@@ -528,7 +530,7 @@ public sealed class LayoutEngine : ILayoutEngine
         {
             foreach (var componentImport in workbook.ComponentInports)
             {
-                IndexComponents(componentImport.Components.ComponentList, index);
+                IndexComponents(componentImport.Components?.ComponentList, index);
             }
         }
 
@@ -548,7 +550,7 @@ public sealed class LayoutEngine : ILayoutEngine
         {
             if (!string.IsNullOrWhiteSpace(component.Name))
             {
-                index[component.Name] = component;
+                index.TryAdd(component.Name, component);
             }
         }
     }
