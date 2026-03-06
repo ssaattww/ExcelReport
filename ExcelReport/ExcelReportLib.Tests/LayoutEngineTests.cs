@@ -137,6 +137,82 @@ public sealed class LayoutEngineTests
     }
 
     [Fact]
+    public void Expand_UseInstanceAndRepeatName_GeneratesNamedAreas()
+    {
+        var root = new RepeatRoot
+        {
+            Items =
+            [
+                new RepeatItem { Name = "First" },
+                new RepeatItem { Name = "Second" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <component name="DetailHeader">
+                <grid>
+                  <cell r="1" c="1" value="H1" />
+                  <cell r="1" c="2" value="H2" />
+                  <cell r="1" c="3" value="H3" />
+                </grid>
+              </component>
+              <component name="DetailRow">
+                <grid>
+                  <cell r="1" c="1" value="@(data.Name)" />
+                  <cell r="1" c="2" value="V" />
+                  <cell r="1" c="3" value="C" />
+                </grid>
+              </component>
+              <sheet name="Summary" rows="20" cols="10">
+                <use component="DetailHeader" instance="DetailHeader" r="5" c="2" />
+                <repeat name="DetailRows" r="6" c="2" direction="down" from="@(root.Items)" var="it">
+                  <use component="DetailRow" with="@(it)" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var areas = sheet.NamedAreas.ToDictionary(area => area.Name, StringComparer.Ordinal);
+
+        var detailHeader = areas["DetailHeader"];
+        Assert.Equal(5, detailHeader.TopRow);
+        Assert.Equal(2, detailHeader.LeftColumn);
+        Assert.Equal(5, detailHeader.BottomRow);
+        Assert.Equal(4, detailHeader.RightColumn);
+
+        var detailRows = areas["DetailRows"];
+        Assert.Equal(6, detailRows.TopRow);
+        Assert.Equal(2, detailRows.LeftColumn);
+        Assert.Equal(7, detailRows.BottomRow);
+        Assert.Equal(4, detailRows.RightColumn);
+
+        Assert.Empty(plan.Issues);
+    }
+
+    [Fact]
+    public void Expand_WithComponentImport_ResolvesImportedComponentUse()
+    {
+        var filePath = DslTestFixtures.GetPath(DslTestFixtures.FullTemplateFile);
+        var parseResult = DslParser.ParseFromFile(filePath);
+
+        Assert.False(parseResult.HasFatal);
+        Assert.NotNull(parseResult.Root);
+        var workbook = parseResult.Root!;
+
+        var engine = new LayoutEngine.LayoutEngine();
+        var plan = engine.Expand(workbook, DslTestFixtures.CreateFullTemplateData());
+
+        Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.UndefinedComponent);
+        Assert.Contains(
+            Assert.Single(plan.Sheets).Cells,
+            cell => cell.Row == 1 && cell.Col == 1 && cell.Value?.ToString() == "Test Report");
+    }
+
+    [Fact]
     public void Expand_WhenFalse_SkipsNode()
     {
         var plan = Expand(
@@ -352,6 +428,59 @@ public sealed class LayoutEngineTests
         Assert.DoesNotContain(
             plan.Issues,
             issue => issue.Kind == IssueKind.StyleScopeViolation);
+    }
+
+    [Fact]
+    public void Expand_FormulaRefAndFormulaPlaceholder_PreservedForStateBuild()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary" rows="20" cols="10">
+                <repeat r="6" c="2" direction="down" from="@(root.Values)" var="it">
+                  <cell value="@(it)" formulaRef="Detail.Value" />
+                </repeat>
+                <cell r="8" c="2" value="=SUM(#{Detail.Value:Detail.ValueEnd})" />
+              </sheet>
+            </workbook>
+            """,
+            new
+            {
+                Values = new[] { 100, 200 },
+            });
+
+        var cells = Assert.Single(plan.Sheets).Cells;
+        var detailCells = cells
+            .Where(cell => cell.FormulaRef == "Detail.Value")
+            .ToArray();
+
+        Assert.Equal(2, detailCells.Length);
+        Assert.Contains(detailCells, cell => cell.Row == 6 && cell.Col == 2);
+        Assert.Contains(detailCells, cell => cell.Row == 7 && cell.Col == 2);
+
+        var totalsCell = cells.Single(cell => cell.Row == 8 && cell.Col == 2);
+        Assert.Equal("=SUM(#{Detail.Value:Detail.ValueEnd})", totalsCell.Formula);
+    }
+
+    [Fact]
+    public void Expand_OmittedSheetRowsCols_AutoCalculatesFromCellPlacement()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <cell r="1" c="1" value="A" />
+                <grid r="2" c="3">
+                  <cell r="2" c="2" rowSpan="2" colSpan="3" value="B" />
+                </grid>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        Assert.Equal(4, sheet.Rows);
+        Assert.Equal(6, sheet.Cols);
+        Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.CoordinateOutOfRange);
     }
 
     private static LayoutPlan Expand(string workbookXml, object? rootData = null)

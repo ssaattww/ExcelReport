@@ -9,8 +9,20 @@ namespace ExcelReportLib.DSL.AST
     public sealed class SheetAst : IAst<SheetAst>
     {
         public static string TagName => "sheet";
+
+        /// <summary>
+        /// シート名。
+        /// </summary>
         public string Name { get; init; } = string.Empty;
+
+        /// <summary>
+        /// シート行数。省略時は 0。
+        /// </summary>
         public int Rows { get; init; }
+
+        /// <summary>
+        /// シート列数。省略時は 0。
+        /// </summary>
         public int Cols { get; init; }
 
         public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
@@ -58,31 +70,36 @@ namespace ExcelReportLib.DSL.AST
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
 
             Name = name;
-            Rows = ParseRequiredPositiveIntAttribute(sheetElem, "rows", issues);
-            Cols = ParseRequiredPositiveIntAttribute(sheetElem, "cols", issues);
+            Rows = ParseOptionalNonNegativeIntAttribute(sheetElem, "rows", issues);
+            Cols = ParseOptionalNonNegativeIntAttribute(sheetElem, "cols", issues);
             StyleRefs = styles;
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
             Options = options;
             Span = SourceSpan.CreateSpanAttributes(sheetElem);
         }
 
-        private static int ParseRequiredPositiveIntAttribute(XElement elem, string attrName, List<Issue> issues)
+        private static int ParseOptionalNonNegativeIntAttribute(XElement elem, string attrName, List<Issue> issues)
         {
             var attr = elem.Attribute(attrName);
-            if (attr is not null && int.TryParse(attr.Value, out var value) && value > 0)
+            if (attr is null)
             {
-                return value;
+                return 0;
             }
 
-            issues.Add(new Issue
+            if (int.TryParse(attr.Value, out var parsedValue) && parsedValue >= 0)
+            {
+                return parsedValue;
+            }
+
+            issues.Add(
+                new Issue
             {
                 Severity = IssueSeverity.Error,
-                Kind = attr is null ? IssueKind.UndefinedRequiredAttribute : IssueKind.InvalidAttributeValue,
-                Message = attr is null
-                    ? $"<sheet> 要素に {attrName} 属性がありません。"
-                    : $"<sheet> 要素の {attrName} 属性が不正です。",
+                Kind = IssueKind.InvalidAttributeValue,
+                Message = $"<sheet> 要素の {attrName} 属性が不正です。0 以上の整数を指定してください。",
                 Span = SourceSpan.CreateSpanAttributes(elem),
             });
+
             return 0;
         }
     }

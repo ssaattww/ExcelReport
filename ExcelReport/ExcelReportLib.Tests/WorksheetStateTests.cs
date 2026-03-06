@@ -185,6 +185,53 @@ public sealed class WorksheetStateTests
     }
 
     [Fact]
+    public void Build_SheetOptionTargets_ResolvedFromNamedAreas()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 5, col: 2, value: "Header"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("DetailHeader", topRow: 5, leftColumn: 2, bottomRow: 5, rightColumn: 4),
+                        new LayoutNamedArea("DetailRows", topRow: 6, leftColumn: 2, bottomRow: 8, rightColumn: 4),
+                    ],
+                    options: CreateSheetOptions(
+                        """
+                        <freeze at="DetailHeader" />
+                        <groups>
+                          <groupRows at="DetailRows" collapsed="true" />
+                          <groupCols at="DetailHeader" collapsed="false" />
+                        </groups>
+                        <autoFilter at="DetailHeader" />
+                        """)),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.NotNull(sheet.Options.FreezePanes);
+        Assert.Equal("B5", sheet.Options.FreezePanes!.Target);
+
+        var rowGroup = Assert.Single(sheet.Options.RowGroups);
+        Assert.Equal("6:8", rowGroup.Target);
+        Assert.True(rowGroup.Collapsed);
+
+        var columnGroup = Assert.Single(sheet.Options.ColumnGroups);
+        Assert.Equal("B:D", columnGroup.Target);
+        Assert.False(columnGroup.Collapsed);
+
+        Assert.NotNull(sheet.Options.AutoFilter);
+        Assert.Equal("B5:D5", sheet.Options.AutoFilter!.Target);
+    }
+
+    [Fact]
     public void Build_SheetBounds_Validated()
     {
         var plan = new LayoutPlan(
@@ -225,6 +272,101 @@ public sealed class WorksheetStateTests
         Assert.True(cell.IsFormula);
         Assert.Equal("=SUM(B1:B2)", cell.Formula);
         Assert.Equal("Total", cell.FormulaReference);
+    }
+
+    [Fact]
+    public void Build_FormulaRefPlaceholders_ResolvedToCellReferences()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 6, col: 2, value: 100, formulaRef: "Detail.Value"),
+                        CreateCell(row: 7, col: 2, value: 200, formulaRef: "Detail.Value"),
+                        CreateCell(row: 8, col: 2, value: null, formula: "=SUM(#{Detail.Value:Detail.ValueEnd})+#{Detail.Value}"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+
+        var sheet = Assert.Single(builder.Build(plan));
+        var formulaCell = sheet.Cells[(8, 2)];
+        var start = sheet.NamedAreas["Detail.Value"];
+        var end = sheet.NamedAreas["Detail.ValueEnd"];
+
+        Assert.Equal(6, start.TopRow);
+        Assert.Equal(2, start.LeftColumn);
+        Assert.Equal(7, end.TopRow);
+        Assert.Equal(2, end.LeftColumn);
+        Assert.Equal("=SUM(B6:B7)+B6", formulaCell.Formula);
+    }
+
+    [Fact]
+    public void Build_FormulaPlaceholderRange_WithMultiCellNamedArea_UsesBottomRightAsEndReference()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 10, col: 2, value: null, formula: "=SUM(#{DetailRange:DetailRange})"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("DetailRange", topRow: 6, leftColumn: 2, bottomRow: 8, rightColumn: 4),
+                    ]),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+
+        var sheet = Assert.Single(builder.Build(plan));
+        var formulaCell = sheet.Cells[(10, 2)];
+
+        Assert.Equal("=SUM(B6:D8)", formulaCell.Formula);
+    }
+
+    [Fact]
+    public void Build_FormulaRefNamedArea_WhenNameCollides_PreservesExistingNamedAreaDefinition()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 6, col: 2, value: 100, formulaRef: "Detail.Value"),
+                        CreateCell(row: 7, col: 2, value: 200, formulaRef: "Detail.Value"),
+                        CreateCell(row: 8, col: 2, value: null, formula: "=SUM(#{Detail.Value:Detail.ValueEnd})"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("Detail.Value", topRow: 1, leftColumn: 1, bottomRow: 3, rightColumn: 1),
+                        new LayoutNamedArea("Detail.ValueEnd", topRow: 4, leftColumn: 3, bottomRow: 5, rightColumn: 4),
+                    ]),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+
+        var sheet = Assert.Single(builder.Build(plan));
+        var start = sheet.NamedAreas["Detail.Value"];
+        var end = sheet.NamedAreas["Detail.ValueEnd"];
+        var formulaCell = sheet.Cells[(8, 2)];
+
+        Assert.Equal(1, start.TopRow);
+        Assert.Equal(1, start.LeftColumn);
+        Assert.Equal(3, start.BottomRow);
+        Assert.Equal(1, start.RightColumn);
+        Assert.Equal(4, end.TopRow);
+        Assert.Equal(3, end.LeftColumn);
+        Assert.Equal(5, end.BottomRow);
+        Assert.Equal(4, end.RightColumn);
+        Assert.Equal("=SUM(A1:D5)", formulaCell.Formula);
     }
 
     private static LayoutCell CreateCell(

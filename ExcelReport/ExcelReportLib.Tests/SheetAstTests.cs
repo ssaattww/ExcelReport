@@ -11,8 +11,9 @@ public sealed class SheetAstTests
     {
         var sheet = CreateSheet();
 
-        Assert.Equal(40, sheet.Rows);
-        Assert.Equal(4, sheet.Cols);
+        // rows/cols omitted in FullTemplate → 0 (auto-calculate)
+        Assert.Equal(0, sheet.Rows);
+        Assert.Equal(0, sheet.Cols);
     }
 
     [Fact]

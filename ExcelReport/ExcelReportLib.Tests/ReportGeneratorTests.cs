@@ -339,6 +339,67 @@ public sealed class ReportGeneratorTests
             border.ChildElements.Select(child => child.LocalName));
     }
 
+    [Fact]
+    public void GenerateFromFile_WithFullTemplateSample_ResolvesRelativeImports()
+    {
+        // Task 16検証: ファイルパス指定でimportが正しく解決されることのみ確認
+        // xlsx生成の完全検証はTask 20 (E2E)で実施
+        var filePath = DslTestFixtures.GetPath(DslTestFixtures.FullTemplateFile);
+        var parseResult = DslParser.ParseFromFile(filePath);
+
+        Assert.False(parseResult.HasFatal);
+        Assert.DoesNotContain(
+            parseResult.Issues,
+            issue => issue.Kind == IssueKind.LoadFile && issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        Assert.NotNull(parseResult.Root);
+    }
+
+    [Fact]
+    public void GenerateFromFile_DoesNotDependOnCurrentDirectory()
+    {
+        var filePath = DslTestFixtures.GetPath(DslTestFixtures.FullTemplateFile);
+        var tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"ExcelReportLib.Tests.{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDirectoryPath);
+
+        var originalCurrentDirectory = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(tempDirectoryPath);
+
+            var parseResult = DslParser.ParseFromFile(filePath);
+
+            Assert.False(parseResult.HasFatal);
+            Assert.DoesNotContain(
+                parseResult.Issues,
+                issue => issue.Kind == IssueKind.LoadFile && issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalCurrentDirectory);
+            Directory.Delete(tempDirectoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GenerateFromFile_MissingFile_ReturnsFatalIssue()
+    {
+        var missingFilePath = Path.Combine(
+            DslTestFixtures.FixtureDirectory,
+            $"missing-{Guid.NewGuid():N}.xml");
+        var generator = new ReportGenerator();
+
+        var result = generator.GenerateFromFile(
+            missingFilePath,
+            DslTestFixtures.CreateFullTemplateData(),
+            CreateOptions());
+
+        Assert.Null(result.Output);
+        Assert.True(result.AbortedByFatal);
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Kind == IssueKind.LoadFile && issue.Severity == IssueSeverity.Fatal);
+    }
+
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
