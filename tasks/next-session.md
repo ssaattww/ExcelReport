@@ -71,27 +71,9 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 
 ---
 
-## Active Feedback Points
+## Feedback Points
 
-**File**: `tasks/feedback-points.md`
-
-| FP | 内容 | 状態 |
-|----|------|------|
-| FP14 | 調査・レビューはCodexに委譲。write可能、エビデンスをreports/に | 対応中 |
-| FP15 | git add && git commit連結禁止。別Bash呼び出し | 対応中 |
-| FP16 | tasks-status.mdリアルタイム更新 | 対応中 |
-| FP17 | TDD: テスト先行で実装 | 対応中 |
-| FP19 | 全public/protected関数にXMLドキュメントコメント必須 | 対応中 |
-| FP20 | 調査もCodexに委譲。PMが自分でソースコードを読まない | 対応中 |
-| FP21 | 外部仕様変更以外はユーザーに確認取らず自律的に進める | 対応中 |
-| FP22 | Codexへの依頼は一括で大量に渡さず小分けに | 対応中 |
-| FP26 | TDDテスト重視 | 対応中 |
-| FP28 | codex execプロンプトに改行を含めない | 対応中 |
-| FP30 | コードレビューをおろそかにしない。各タスク完了後にレビュー | 対応中 |
-| FP31 | Codexバックグラウンドタスクを並行で大量に投げない。1つずつ順番に | 対応中 |
-| FP32 | Codex実行コスト意識。効率的に使う | 対応中 |
-| FP33 | レビューなしで完了はありえない | 対応中 |
-| FP34 | レビューはタスクごとに1つずつ出す | 対応中 |
+詳細は `tasks/feedback-points.md` を参照。
 
 ---
 
@@ -143,19 +125,7 @@ git merge feat/border-fix-and-tests
 
 ## Critical Reminders
 
-### Codex Delegation Protocol
-- Direct execution mode (not tmux)
-- TDD: テスト先行で実装
-- 調査・レビュー・動作確認もCodexに委譲（PMは自分でコードを読まない）
-- タスクは小分けに（一括で大量に渡さない）
-- レビューはタスクごとに1つずつ（まとめて出さない）
-- レビューなしで完了にしない
-- Codexを並行で大量に投げない（1つずつ順番に）
-- コスト効率意識（無駄な再実行を避ける）
-- DSL変更はテストのインラインDSLにも漏れなく反映
-- git add と git commit は別々のBash呼び出し
-- 全public/protected関数にXMLドキュメントコメント必須 (FP19)
-- 外部仕様変更以外はユーザー確認不要
+開発方法論は `tasks/feedback-points.md` を参照。以下はプロジェクト固有の注意点のみ。
 
 ### Project-Specific Notes
 - DSL仕様変更時はテストのインラインDSLにも漏れなく反映すること（rows/cols残留の前例あり）
