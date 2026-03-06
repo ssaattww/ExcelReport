@@ -92,7 +92,6 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 | FP32 | Codex実行コスト意識。効率的に使う | 対応中 |
 | FP33 | レビューなしで完了はありえない | 対応中 |
 | FP34 | レビューはタスクごとに1つずつ出す | 対応中 |
-| FP35 | DSL変更はテストのインラインDSLにも漏れなく反映 | 対応中 |
 
 ---
 
@@ -157,6 +156,9 @@ git merge feat/border-fix-and-tests
 - git add と git commit は別々のBash呼び出し
 - 全public/protected関数にXMLドキュメントコメント必須 (FP19)
 - 外部仕様変更以外はユーザー確認不要
+
+### Project-Specific Notes
+- DSL仕様変更時はテストのインラインDSLにも漏れなく反映すること（rows/cols残留の前例あり）
 
 ### Environment
 - .NET SDK: 8.0.416
