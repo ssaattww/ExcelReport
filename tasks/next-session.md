@@ -1,7 +1,7 @@
 # Next Session Resume Point
 
-**Session Date**: 2026-03-05
-**Last Updated**: 2026-03-05
+**Session Date**: 2026-03-06
+**Last Updated**: 2026-03-06
 
 ---
 
@@ -10,12 +10,13 @@
 ### Branch
 - **Active Branch**: `feat/border-fix-and-tests` (未push)
 - **Base Branch**: `master`
-- **Status**: Phase 8 (Border修正+テスト拡充) 完了。78テスト全通過。masterマージ待ち。
+- **Status**: Phase 9 (FullTemplate実行対応) 完了。99テスト全通過。レビュー指摘High修正済み。masterマージ待ち。
 
 ### Phase Progress
 - **Phase 1-7**: 全完了 (11タスク)
 - **Phase 8**: 完了 (Task 12-15, Border修正+テスト拡充)
-- **テスト**: 78件全通過
+- **Phase 9**: 完了 (Task 16-21, FullTemplate実行対応)
+- **テスト**: 99件全通過
 
 ### Pipeline
 ```
@@ -24,17 +25,25 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
                                                                           Logger (cross-cutting)
 ```
 
-### 今回の修正内容 (Phase 8)
-- CT_Border子要素順をOpenXMLスキーマ順(Left,Right,Top,Bottom,Diagonal)に修正
-- 複数BorderInfoのside単位後勝ちマージ（FirstOrDefault廃止）
-- Grid border展開: mode="outer"/"all"をcell borderに展開
-- StyleScopeViolation誤警告の抑制
-- Grid vs Cell border優先順位修正（cell borderが後勝ち）
-- FullTemplate E2Eテスト + borderテスト6件追加
+### 今回の修正内容 (Phase 9)
+- Task 16: GenerateFromFile（ファイルパスベース実行 + 相対import解決）
+- Task 17: 外部component展開 + 重複style import防止（HashSet）
+- Task 18: sheetOptions at="名前"→実座標マッピング（freeze, groups, autoFilter）
+- Task 19: formulaRef / #{...}プレースホルダ→セル参照置換
+- Task 20: FullTemplate E2Eテスト（xlsx生成 + 全機能検証）
+- Task 21: sheet/grid rows/cols省略→自動計算（XSD, Design XML, 全テスト統一）
+- レビュー指摘High修正: ComponentImport NullRef防止, component名解決順統一, grid auto-sizeオフセット反映
 
-### 環境変更
-- TargetFramework: net10.0 → **net8.0** (全3プロジェクト)
-- .gitignore: ExcelReportLib.Tests/bin,obj追加
+### レビュー残Medium指摘（未対応）
+- T16: GenerateFromFileの例外分類不十分（SecurityException等がFatalにならない）
+- T16: StyleImportAstのCWDフォールバック依存
+- T18+19: 同名NamedArea上書き検知なし
+- T18+19: formulaRef Endが不均一span時に範囲縮小
+- T18+19: 未解決プレースホルダ #{...} がIssueを出さない
+- T20: E2Eテストでresult.IssuesのError未検査
+- T20: Design/側XML直接参照のパス脆弱性（テストフィクスチャ経由に統一推奨）
+- T20: freeze/autoFilterの座標値未検証（存在確認のみ）
+- T21: rows/cols省略時にExcel上限チェックがスキップ
 
 ---
 
@@ -44,22 +53,21 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 - `feat/border-fix-and-tests` → `master`
 - pushしてからマージ
 
-### 2. 全パブリック関数・プロパティにXMLドキュメントコメント追加 (FP19)
+### 2. Medium レビュー指摘対応
+- 上記9件のMedium指摘を順次対応
+- タスクごとにCodexに1つずつ依頼、レビューも1つずつ
+
+### 3. 全パブリック関数・プロパティにXMLドキュメントコメント追加 (FP19)
 - 全モジュールのpublic/protectedメソッド・プロパティに `<summary>` コメント
 - Codexに委譲 (workspace-write, タスク小分けで)
 
-### 3. Program.cs更新
+### 4. Program.cs更新
 - ReportGenerator経由のE2Eサンプルに書き換え
 - ハードコードWindows絶対パスを修正
 
-### 4. ギャップ対応 (設計-実装57件)
+### 5. ギャップ対応 (設計-実装57件)
 - `reports/design-implementation-gap-analysis-2026-03-05-ja.md` のHigh項目から着手
 - 設計側の変更（仕様簡素化）とコード側の追加実装を判断
-
-### 5. 今後の拡張候補
-- ExpressionEngine: Roslyn式評価
-- Renderer: 数値書式、条件付き書式、印刷設定
-- ValidateDsl: 式構文検証、formulaRef系列検証
 
 ---
 
@@ -73,14 +81,18 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 | FP15 | git add && git commit連結禁止。別Bash呼び出し | 対応中 |
 | FP16 | tasks-status.mdリアルタイム更新 | 対応中 |
 | FP17 | TDD: テスト先行で実装 | 対応中 |
-| FP18 | Codex使用量上限の記録 | 記録 |
-| FP19 | 全public/protected関数・プロパティにXMLドキュメントコメント必須 | 対応中 |
+| FP19 | 全public/protected関数にXMLドキュメントコメント必須 | 対応中 |
 | FP20 | 調査もCodexに委譲。PMが自分でソースコードを読まない | 対応中 |
 | FP21 | 外部仕様変更以外はユーザーに確認取らず自律的に進める | 対応中 |
 | FP22 | Codexへの依頼は一括で大量に渡さず小分けに | 対応中 |
-| FP23 | レビューもCodexに委譲。PMが自分でdiffを読まない | 対応中 |
-| FP24 | Codexへの指示は丁寧に。ノイズ除外(obj等) | 対応中 |
-| FP25 | ビルド・テスト動作確認もCodexに委譲(sandbox制約時はPM直接) | 対応中 |
+| FP26 | TDDテスト重視 | 対応中 |
+| FP28 | codex execプロンプトに改行を含めない | 対応中 |
+| FP30 | コードレビューをおろそかにしない。各タスク完了後にレビュー | 対応中 |
+| FP31 | Codexバックグラウンドタスクを並行で大量に投げない。1つずつ順番に | 対応中 |
+| FP32 | Codex実行コスト意識。効率的に使う | 対応中 |
+| FP33 | レビューなしで完了はありえない | 対応中 |
+| FP34 | レビューはタスクごとに1つずつ出す | 対応中 |
+| FP35 | DSL変更はテストのインラインDSLにも漏れなく反映 | 対応中 |
 
 ---
 
@@ -88,14 +100,9 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 
 | Report | Content |
 |--------|---------|
-| reports/excel-report-project-survey-2026-03-03.md | プロジェクト全体調査 |
-| reports/task1〜task11-*-2026-03-03.md | 各タスク実装エビデンス (11件) |
-| reports/phase3-styles-expression-plan-2026-03-03.md | Phase 3実装計画 |
-| reports/design-implementation-gap-analysis-2026-03-05.md | 設計-実装ギャップ分析 (EN) |
-| reports/design-implementation-gap-analysis-2026-03-05-ja.md | 設計-実装ギャップ分析 (JA) |
-| reports/border-style-investigation-2026-03-05.md | Border問題根本原因調査 |
-| reports/border-fix-review-2026-03-05.md | Border修正コードレビュー |
-| reports/test-run-results-2026-03-05.md | テスト実行結果 |
+| reports/fulltemplate-executable-analysis.md | FullTemplate実行可能性調査 |
+| reports/phase9-code-review.md | Phase 9 初回コードレビュー (Task 16-19) |
+| reports/review-task16.md〜task21.md | 各タスク個別レビュー結果 (未保存、コンテキスト内のみ) |
 
 ---
 
@@ -104,9 +111,11 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 **Branch**: feat/border-fix-and-tests (未push)
 
 **Recent Commits**:
-- 8ed435d fix(renderer): Fix border style causing Excel repair prompt + add grid border expansion
-- 041c589 docs: Update next-session.md with gap analysis and latest state
-- 0e7e003 docs: Add design-implementation gap analysis (EN + JA)
+- 7880840 docs: Add FP31, FP32 to feedback points
+- 6d64aca fix(layout): Address 3 High review findings
+- 4a4c29a feat(phase9): Add FullTemplate E2E test + fix coordinate overlap (Task 20)
+- 6fd034d refactor: Remove rows/cols attributes from all test DSL strings
+- cf467e1 feat(phase9): Implement FullTemplate execution support (Tasks 16-19, 21)
 
 ---
 
@@ -115,19 +124,20 @@ DslParser → ExpressionEngine → StyleResolver → LayoutEngine → WorksheetS
 ```bash
 # 1. Verify branch
 git status
-git log --oneline -5
+git log --oneline -10
 
 # 2. Build and test
-dotnet build ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj
 dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj
 
-# 3. Merge to master (if ready)
+# 3. Push and merge to master
+git push origin feat/border-fix-and-tests
 git checkout master
 git merge feat/border-fix-and-tests
 
-# 4. Next: XML doc comments (delegate to Codex, task by task)
-# 5. Next: Program.cs update
-# 6. Next: Gap analysis high-priority items
+# 4. Next: Medium review findings (1 task at a time, with review)
+# 5. Next: XML doc comments (FP19)
+# 6. Next: Program.cs update
+# 7. Next: Gap analysis high-priority items
 ```
 
 ---
@@ -139,8 +149,11 @@ git merge feat/border-fix-and-tests
 - TDD: テスト先行で実装
 - 調査・レビュー・動作確認もCodexに委譲（PMは自分でコードを読まない）
 - タスクは小分けに（一括で大量に渡さない）
-- 指示は丁寧に（ノイズ除外、具体的なファイルパス指定）
-- Codex writes reports/, PM writes tasks/
+- レビューはタスクごとに1つずつ（まとめて出さない）
+- レビューなしで完了にしない
+- Codexを並行で大量に投げない（1つずつ順番に）
+- コスト効率意識（無駄な再実行を避ける）
+- DSL変更はテストのインラインDSLにも漏れなく反映
 - git add と git commit は別々のBash呼び出し
 - 全public/protected関数にXMLドキュメントコメント必須 (FP19)
 - 外部仕様変更以外はユーザー確認不要
