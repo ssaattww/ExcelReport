@@ -11,7 +11,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" value="Hello" />
               </sheet>
             </workbook>
@@ -34,7 +34,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <grid r="2" c="3">
                   <cell r="1" c="1" value="A" />
                   <cell r="2" c="2" value="B" />
@@ -77,7 +77,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <cell value="@(it.Name)" />
                 </repeat>
@@ -121,7 +121,7 @@ public sealed class LayoutEngineTests
                   <cell r="1" c="1" value="@(data.Name)" />
                 </grid>
               </component>
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <use component="PersonRow" r="2" c="3" with="@(root.Person)" />
               </sheet>
             </workbook>
@@ -165,7 +165,7 @@ public sealed class LayoutEngineTests
                   <cell r="1" c="3" value="C" />
                 </grid>
               </component>
-              <sheet name="Summary" rows="20" cols="10">
+              <sheet name="Summary">
                 <use component="DetailHeader" instance="DetailHeader" r="5" c="2" />
                 <repeat name="DetailRows" r="6" c="2" direction="down" from="@(root.Items)" var="it">
                   <use component="DetailRow" with="@(it)" />
@@ -218,7 +218,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" when="@(false)" value="Hidden" />
               </sheet>
             </workbook>
@@ -243,7 +243,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Rows)" var="row">
                   <grid>
                     <cell r="1" c="1" value="@(row.Left)" />
@@ -297,7 +297,7 @@ public sealed class LayoutEngineTests
                   <border mode="all" top="thin" bottom="thin" left="thin" right="thin" color="#123456" />
                 </style>
               </styles>
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <grid r="1" c="1">
                   <styleRef name="GridAll" />
                   <cell r="1" c="1" value="A" />
@@ -339,7 +339,7 @@ public sealed class LayoutEngineTests
                   <border mode="outer" top="thin" bottom="thin" left="thin" right="thin" color="#654321" />
                 </style>
               </styles>
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <grid r="1" c="1">
                   <styleRef name="GridOuter" />
                   <cell r="1" c="1" value="A" />
@@ -399,7 +399,7 @@ public sealed class LayoutEngineTests
                   <border mode="all" top="thin" color="#111111" />
                 </style>
               </styles>
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <grid r="1" c="1">
                   <styleRef name="GridAll" />
                   <cell r="1" c="1" value="A">
@@ -436,7 +436,7 @@ public sealed class LayoutEngineTests
         var plan = Expand(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="20" cols="10">
+              <sheet name="Summary">
                 <repeat r="6" c="2" direction="down" from="@(root.Values)" var="it">
                   <cell value="@(it)" formulaRef="Detail.Value" />
                 </repeat>
