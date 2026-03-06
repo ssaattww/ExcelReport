@@ -159,6 +159,8 @@ git merge feat/border-fix-and-tests
 
 ### Project-Specific Notes
 - DSL仕様変更時はテストのインラインDSLにも漏れなく反映すること（rows/cols残留の前例あり）
+- sheet/grid rows/colsは省略して自動計算。Design XMLも修正済み。互換性は気にしない（元FP29）
+- 全パスを通せることが目標。FullTemplate XMLが実行できるようにする（元FP27、Phase 9で達成済み）
 
 ### Environment
 - .NET SDK: 8.0.416
