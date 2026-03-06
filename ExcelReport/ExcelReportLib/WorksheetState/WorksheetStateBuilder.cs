@@ -4,12 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace ExcelReportLib.WorksheetState;
 
+/// <summary>
+/// Represents worksheet state builder.
+/// </summary>
 public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 {
     private static readonly Regex FormulaPlaceholderRegex = new(
         "#\\{(?<start>[^}:]+)(:(?<end>[^}]+))?\\}",
         RegexOptions.Compiled);
 
+    /// <summary>
+    /// Builds worksheet state models from an expanded layout plan.
+    /// </summary>
+    /// <param name="layoutPlan">The layout plan.</param>
+    /// <returns>A collection containing the result.</returns>
     public IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan)
     {
         ArgumentNullException.ThrowIfNull(layoutPlan);

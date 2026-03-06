@@ -7,13 +7,25 @@ using ExcelReportLib.DSL;
 
 namespace ExcelReportLib.ExpressionEngine;
 
+/// <summary>
+/// Represents expression engine.
+/// </summary>
 public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 {
     private readonly ConcurrentDictionary<string, Lazy<CompiledExpression>> _cache =
         new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets the cached expression count.
+    /// </summary>
     public int CachedExpressionCount => _cache.Count;
 
+    /// <summary>
+    /// Evaluates an expression against the provided context.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
+    /// <param name="context">The context.</param>
+    /// <returns>The resulting expression result.</returns>
     public ExpressionResult Evaluate(string expression, ExpressionContext context)
     {
         if (context is null)
@@ -241,6 +253,9 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             CompileIssue = compileIssue;
         }
 
+        /// <summary>
+        /// Gets the compiled accessor delegate when expression compilation succeeds.
+        /// </summary>
         public Func<ExpressionContext, object?>? Accessor { get; }
 
         public Issue? CompileIssue { get; }

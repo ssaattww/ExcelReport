@@ -1,12 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST.LayoutNode
 {
+    /// <summary>
+    /// Represents grid ast.
+    /// </summary>
     public sealed class GridAst : LayoutNodeAst, ICellAst
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "grid";
 
         /// <summary>
@@ -19,8 +25,16 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// </summary>
         public int Cols { get; init; }
 
+        /// <summary>
+        /// Gets or sets the children.
+        /// </summary>
         public IReadOnlyDictionary<Placement, LayoutNodeAst> Children { get; init; } = default!;
 
+        /// <summary>
+        /// Initializes a new instance of the grid ast type.
+        /// </summary>
+        /// <param name="elem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
         public GridAst(XElement elem, List<Issue> issues)
         {
             var layoutElems = elem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
@@ -10,9 +10,21 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// </summary>
     public sealed class UseAst : LayoutNodeAst
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "use";
+        /// <summary>
+        /// Gets or sets the component name.
+        /// </summary>
         public string ComponentName { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the instance name.
+        /// </summary>
         public string? InstanceName { get; init; }
+        /// <summary>
+        /// Gets or sets the with expr raw.
+        /// </summary>
         public string? WithExprRaw { get; init; }
 
         /// <summary>
@@ -21,6 +33,11 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public LayoutNodeAst ComponentRef { get; set; } = default!; 
 
 
+        /// <summary>
+        /// Initializes a new instance of the use ast type.
+        /// </summary>
+        /// <param name="elem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
         public UseAst(XElement elem, List<Issue> issues)
         {
             var nameAttr = elem.Attribute("component");

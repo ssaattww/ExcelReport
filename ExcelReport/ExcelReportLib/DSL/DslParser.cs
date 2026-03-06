@@ -6,6 +6,9 @@ using System.Xml.Schema;
 
 namespace ExcelReportLib.DSL
 {
+    /// <summary>
+    /// Represents dsl parser.
+    /// </summary>
     public static class DslParser
     {
         private const string SchemaResourceName = "ExcelReportLib.DSL.DslDefinition_v1.xsd";
@@ -13,6 +16,12 @@ namespace ExcelReportLib.DSL
         private const int MaxExcelRows = 1_048_576;
         private const int MaxExcelColumns = 16_384;
 
+        /// <summary>
+        /// Parses from file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <param name="parseOptions">The parse options.</param>
+        /// <returns>The resulting dsl parse result.</returns>
         public static DslParseResult ParseFromFile(string filePath, DslParserOptions? parseOptions = null)
         {
             parseOptions = parseOptions is null
@@ -28,6 +37,12 @@ namespace ExcelReportLib.DSL
             return ParseFromStream(stream, parseOptions);
         }
 
+        /// <summary>
+        /// Parses from text.
+        /// </summary>
+        /// <param name="xmlText">The xml text.</param>
+        /// <param name="parseOptions">The parse options.</param>
+        /// <returns>The resulting dsl parse result.</returns>
         public static DslParseResult ParseFromText(string xmlText, DslParserOptions? parseOptions = null)
         {
             parseOptions ??= new DslParserOptions();
@@ -35,6 +50,12 @@ namespace ExcelReportLib.DSL
             return ParseFromStream(stream, parseOptions);
         }
 
+        /// <summary>
+        /// Parses from stream.
+        /// </summary>
+        /// <param name="xmlStream">The xml stream.</param>
+        /// <param name="options">Options that control the operation.</param>
+        /// <returns>The resulting dsl parse result.</returns>
         public static DslParseResult ParseFromStream(Stream xmlStream, DslParserOptions? options = null)
         {
             options ??= new DslParserOptions();
@@ -804,6 +825,9 @@ namespace ExcelReportLib.DSL
         }
     }
 
+    /// <summary>
+    /// Represents dsl parser options.
+    /// </summary>
     public sealed class DslParserOptions
     {
         /// <summary>XML スキーマ検証を有効化するか。</summary>
@@ -812,66 +836,165 @@ namespace ExcelReportLib.DSL
         /// <summary>C# 式の構文エラーを Fatal として扱うか。</summary>
         public bool TreatExpressionSyntaxErrorAsFatal { get; init; } = true;
 
+        /// <summary>
+        /// Gets or sets the root file path.
+        /// </summary>
         public string? RootFilePath { get; init; }
     }
 
+    /// <summary>
+    /// Specifies issue severity values.
+    /// </summary>
     public enum IssueSeverity
     {
+        /// <summary>
+        /// Informational note that does not indicate an invalid DSL definition.
+        /// </summary>
         Info,
+        /// <summary>
+        /// Represents the warning option.
+        /// </summary>
         Warning,
+        /// <summary>
+        /// Represents the error option.
+        /// </summary>
         Error,
+        /// <summary>
+        /// Represents fatal.
+        /// </summary>
         Fatal
     }
 
+    /// <summary>
+    /// Specifies issue kind values.
+    /// </summary>
     public enum IssueKind
     {
         // XML レベル
+        /// <summary>
+        /// The input is not well-formed XML and cannot be parsed.
+        /// </summary>
         XmlMalformed,
+        /// <summary>
+        /// Represents the schema violation option.
+        /// </summary>
         SchemaViolation,
 
         // 定義・参照
+        /// <summary>
+        /// Represents the undefined required attribute option.
+        /// </summary>
         UndefinedRequiredAttribute,
+        /// <summary>
+        /// Represents the undefined required element option.
+        /// </summary>
         UndefinedRequiredElement,
+        /// <summary>
+        /// Represents the undefined component option.
+        /// </summary>
         UndefinedComponent,
+        /// <summary>
+        /// Represents the undefined style option.
+        /// </summary>
         UndefinedStyle,
 
         // ファイル以外から読み込んだ
+        /// <summary>
+        /// Represents the load file option.
+        /// </summary>
         LoadFile,
 
+        /// <summary>
+        /// Represents the invalid attribute value option.
+        /// </summary>
         InvalidAttributeValue,
 
+        /// <summary>
+        /// Represents the duplicate component name option.
+        /// </summary>
         DuplicateComponentName,
+        /// <summary>
+        /// Represents the duplicate style name option.
+        /// </summary>
         DuplicateStyleName,
+        /// <summary>
+        /// Represents the duplicate sheet name option.
+        /// </summary>
         DuplicateSheetName,
 
         // スタイル
+        /// <summary>
+        /// Represents the style scope violation option.
+        /// </summary>
         StyleScopeViolation,
 
         // repeat / layout
+        /// <summary>
+        /// Represents the repeat child count invalid option.
+        /// </summary>
         RepeatChildCountInvalid,
+        /// <summary>
+        /// Represents the coordinate out of range option.
+        /// </summary>
         CoordinateOutOfRange,
+        /// <summary>
+        /// A formula reference series must be a single continuous one-dimensional range.
+        /// </summary>
         FormulaRefSeriesNot1DContinuous,
 
         // sheetOptions
+        /// <summary>
+        /// Represents the sheet options target not found option.
+        /// </summary>
         SheetOptionsTargetNotFound,
 
         // 式
+        /// <summary>
+        /// Represents the expression syntax error option.
+        /// </summary>
         ExpressionSyntaxError,
     }
 
+    /// <summary>
+    /// Represents issue.
+    /// </summary>
     public sealed class Issue
     {
+        /// <summary>
+        /// Gets or sets the severity.
+        /// </summary>
         public IssueSeverity Severity { get; init; }
+        /// <summary>
+        /// Gets or sets the kind.
+        /// </summary>
         public IssueKind Kind { get; init; }
+        /// <summary>
+        /// Gets or sets the message.
+        /// </summary>
         public string Message { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
     }
 
+    /// <summary>
+    /// Represents dsl parse result.
+    /// </summary>
     public sealed class DslParseResult
     {
+        /// <summary>
+        /// Gets or sets the root.
+        /// </summary>
         public WorkbookAst? Root { get; init; }
+        /// <summary>
+        /// Gets or sets the issues.
+        /// </summary>
         public IReadOnlyList<Issue> Issues { get; init; } = Array.Empty<Issue>();
 
+        /// <summary>
+        /// Gets a value indicating whether fatal.
+        /// </summary>
         public bool HasFatal => Issues.Any(i => i.Severity == IssueSeverity.Fatal);
     }
 }

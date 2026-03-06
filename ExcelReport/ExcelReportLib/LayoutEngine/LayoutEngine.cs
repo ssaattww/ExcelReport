@@ -8,20 +8,36 @@ using ExcelReportLib.Styles;
 
 namespace ExcelReportLib.LayoutEngine;
 
+/// <summary>
+/// Represents layout engine.
+/// </summary>
 public sealed class LayoutEngine : ILayoutEngine
 {
     private readonly IExpressionEngine _expressionEngine;
 
+    /// <summary>
+    /// Initializes a new instance of the layout engine type.
+    /// </summary>
     public LayoutEngine()
         : this(new ExpressionEngine.ExpressionEngine())
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the layout engine type.
+    /// </summary>
+    /// <param name="expressionEngine">The expression engine.</param>
     public LayoutEngine(IExpressionEngine expressionEngine)
     {
         _expressionEngine = expressionEngine ?? throw new ArgumentNullException(nameof(expressionEngine));
     }
 
+    /// <summary>
+    /// Expands workbook layout nodes into concrete sheet plans.
+    /// </summary>
+    /// <param name="workbook">The workbook.</param>
+    /// <param name="rootData">The root data.</param>
+    /// <returns>The resulting layout plan.</returns>
     public LayoutPlan Expand(WorkbookAst workbook, object? rootData)
     {
         ArgumentNullException.ThrowIfNull(workbook);
@@ -1049,6 +1065,9 @@ public sealed class LayoutEngine : ILayoutEngine
         int Width,
         IReadOnlyList<LayoutNamedArea> NamedAreas)
     {
+        /// <summary>
+        /// Represents an empty expansion result with no cells, size, or named areas.
+        /// </summary>
         public static readonly ExpandResult Empty = new(
             Array.Empty<LayoutCell>(),
             0,

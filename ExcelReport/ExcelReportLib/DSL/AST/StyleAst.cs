@@ -1,14 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST
 {
+    /// <summary>
+    /// Specifies style scope values.
+    /// </summary>
     public enum StyleScope
     {
+        /// <summary>
+        /// Represents the cell option.
+        /// </summary>
         Cell,
+        /// <summary>
+        /// Represents the grid option.
+        /// </summary>
         Grid,
+        /// <summary>
+        /// Represents both.
+        /// </summary>
         Both
     }
 
@@ -17,13 +29,30 @@ namespace ExcelReportLib.DSL.AST
     /// </summary>
     public sealed class StyleAst : IAst<StyleAst>
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "style";
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
         public string Name { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the scope.
+        /// </summary>
         public StyleScope Scope { get; init; }
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
         private IReadOnlyDictionary<string, object?> _props { get; init; }
 
+        /// <summary>
+        /// Initializes a new instance of the style ast type.
+        /// </summary>
+        /// <param name="styleElem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
         public StyleAst(XElement styleElem, List<Issue> issues)
         {
             // <style> 要素から StyleAst を構築する。
@@ -104,23 +133,50 @@ namespace ExcelReportLib.DSL.AST
         }
 
         // Font 系アクセサ
+        /// <summary>
+        /// Gets the font name.
+        /// </summary>
         public string? FontName => Get<string>("font.name");
+        /// <summary>
+        /// Gets the font size.
+        /// </summary>
         public double? FontSize => Get<double>("font.size");
+        /// <summary>
+        /// Gets a value indicating whether font bold.
+        /// </summary>
         public bool? FontBold => Get<bool>("font.bold");
+        /// <summary>
+        /// Gets a value indicating whether font italic.
+        /// </summary>
         public bool? FontItalic => Get<bool>("font.italic");
+        /// <summary>
+        /// Gets a value indicating whether font underline.
+        /// </summary>
         public bool? FontUnderline => Get<bool>("font.underline");
 
         // Fill
+        /// <summary>
+        /// Gets the fill color.
+        /// </summary>
         public string? FillColor => Get<string>("fill.color");
 
         // NumberFormat
+        /// <summary>
+        /// Gets the number format code.
+        /// </summary>
         public string? NumberFormatCode => Get<string>("numberFormat.code");
 
         // Border 一覧
+        /// <summary>
+        /// Represents borders.
+        /// </summary>
         public IReadOnlyList<BorderInfo> Borders
             => Get<IReadOnlyList<BorderInfo>>("border") ?? Array.Empty<BorderInfo>();
 
         // デバッグ用途
+        /// <summary>
+        /// Gets the raw properties.
+        /// </summary>
         public IReadOnlyDictionary<string, object?> RawProperties => _props;
 
         private T? Get<T>(string key)
@@ -131,13 +187,34 @@ namespace ExcelReportLib.DSL.AST
         }
     }
 
+    /// <summary>
+    /// Represents border info.
+    /// </summary>
     public sealed class BorderInfo
     {
+        /// <summary>
+        /// Gets or sets the mode.
+        /// </summary>
         public string? Mode { get; init; }   // "cell" / "outer" / "all"
+        /// <summary>
+        /// Gets or sets the top.
+        /// </summary>
         public string? Top { get; init; }
+        /// <summary>
+        /// Gets or sets the bottom.
+        /// </summary>
         public string? Bottom { get; init; }
+        /// <summary>
+        /// Gets or sets the left.
+        /// </summary>
         public string? Left { get; init; }
+        /// <summary>
+        /// Gets or sets the right.
+        /// </summary>
         public string? Right { get; init; }
+        /// <summary>
+        /// Gets or sets the color.
+        /// </summary>
         public string? Color { get; init; }
     }
 }

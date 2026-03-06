@@ -1,10 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST.LayoutNode
 {
+    /// <summary>
+    /// Represents layout node ast.
+    /// </summary>
     public abstract class LayoutNodeAst : ICellAst
     {
         /// <summary>
@@ -17,8 +20,14 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// </summary>
         public SourceSpan? Span { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the style refs.
+        /// </summary>
         public IReadOnlyList<StyleRefAst> StyleRefs { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the style.
+        /// </summary>
         public IReadOnlyList<StyleAst> Style { get; private set; }
 
         private static readonly IReadOnlyDictionary<string, Func<XElement, List<Issue>, LayoutNodeAst>>LayoutNodeFactories =
@@ -29,9 +38,18 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             [RepeatAst.TagName] = (elem, issues) => new RepeatAst(elem, issues),
             [CellAst.TagName] = (elem, issues) => new CellAst(elem, issues),
         };
+        /// <summary>
+        /// Represents allowed layout node names.
+        /// </summary>
         public static readonly ISet<string> AllowedLayoutNodeNames = new HashSet<string>(LayoutNodeFactories.Keys, StringComparer.Ordinal);
 
 
+        /// <summary>
+        /// Creates a layout node AST instance from an XML element.
+        /// </summary>
+        /// <param name="elem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
+        /// <returns>The resulting layout node ast.</returns>
         public static LayoutNodeAst LayoutNodeAstFactory(XElement elem, List<Issue> issues)
         {
             if (!LayoutNodeFactories.TryGetValue(elem.Name.LocalName, out var factory))
