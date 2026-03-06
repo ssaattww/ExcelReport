@@ -16,7 +16,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" value="@(root.Title)" />
               </sheet>
             </workbook>
@@ -39,7 +39,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Broken" rows="10" cols="10">
+              <sheet name="Broken">
                 <cell r="1" c="1" value="Oops" />
             </workbook>
             """;
@@ -58,7 +58,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" value="Ready" />
               </sheet>
             </workbook>
@@ -90,7 +90,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <cell value="@(it.Name)" />
                 </repeat>
@@ -116,10 +116,10 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" value="Summary" />
               </sheet>
-              <sheet name="Detail" rows="10" cols="10">
+              <sheet name="Detail">
                 <cell r="1" c="1" value="Detail" />
               </sheet>
             </workbook>
@@ -143,7 +143,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" styleRef="MissingStyle" value="Value" />
               </sheet>
             </workbook>
@@ -243,7 +243,7 @@ public sealed class ReportGeneratorTests
                 </grid>
               </component>
 
-              <sheet name="Summary" rows="40" cols="4">
+              <sheet name="Summary">
                 <use component="Title" instance="HeaderTitle" r="1" c="1" with="@(root)"/>
                 <use component="KPI" instance="KPI" r="2" c="1" with="@(root.Summary)"/>
                 <cell r="4" c="1" value="=TODAY()">
@@ -299,7 +299,7 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <cell r="1" c="1" value="Bordered">
                   <style>
                     <border mode="cell" top="thin" bottom="thin" left="thin" right="thin" color="#000000" />
@@ -398,6 +398,75 @@ public sealed class ReportGeneratorTests
         Assert.Contains(
             result.Issues,
             issue => issue.Kind == IssueKind.LoadFile && issue.Severity == IssueSeverity.Fatal);
+    }
+
+    [Fact]
+    public void GenerateFromFile_FullTemplate_ProducesValidXlsxWithAllFeatures()
+    {
+        var filePath = Path.GetFullPath(
+            Path.Combine(
+                DslTestFixtures.FixtureDirectory,
+                "..",
+                "..",
+                "..",
+                "Design",
+                "DslDefinition",
+                DslTestFixtures.FullTemplateFile));
+        var generator = new ReportGenerator();
+
+        var result = generator.GenerateFromFile(
+            filePath,
+            DslTestFixtures.CreateFullTemplateData(),
+            CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+
+        using var document = OpenWorkbook(result);
+        var sheetNames = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
+            .Select(sheet => sheet.Name!.Value)
+            .ToArray();
+
+        Assert.Contains("Summary", sheetNames);
+        Assert.Equal("Test Report", ReadCellValue(document, GetCell(document, "Summary", "A1")));
+        Assert.Equal("TestUser", ReadCellValue(document, GetCell(document, "Summary", "B2")));
+        Assert.Equal("Item1", ReadCellValue(document, GetCell(document, "Summary", "A7")));
+        Assert.Equal("A02", ReadCellValue(document, GetCell(document, "Summary", "C8")));
+
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var pane = worksheetPart.Worksheet
+            .GetFirstChild<SheetViews>()?
+            .GetFirstChild<SheetView>()?
+            .GetFirstChild<Pane>();
+        var autoFilter = worksheetPart.Worksheet.GetFirstChild<AutoFilter>();
+
+        Assert.NotNull(pane);
+        Assert.Equal(PaneStateValues.Frozen, pane!.State!.Value);
+        Assert.NotNull(autoFilter);
+        Assert.Contains(
+            worksheetPart.Worksheet.Descendants<Row>(),
+            row => row.OutlineLevel?.Value == 1);
+
+        var borderCell = GetCell(document, "Summary", "C8");
+        var borderId = document.WorkbookPart!
+            .WorkbookStylesPart!
+            .Stylesheet
+            .CellFormats!
+            .Elements<CellFormat>()
+            .ElementAt((int)borderCell.StyleIndex!.Value)
+            .BorderId!;
+        var border = document.WorkbookPart!
+            .WorkbookStylesPart!
+            .Stylesheet
+            .Borders!
+            .Elements<Border>()
+            .ElementAt((int)borderId.Value);
+
+        Assert.True(
+            border.LeftBorder?.Style?.Value is not null
+            || border.RightBorder?.Style?.Value is not null
+            || border.TopBorder?.Style?.Value is not null
+            || border.BottomBorder?.Style?.Value is not null);
     }
 
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>

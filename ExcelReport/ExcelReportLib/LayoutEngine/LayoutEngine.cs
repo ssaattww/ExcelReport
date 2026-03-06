@@ -65,8 +65,8 @@ public sealed class LayoutEngine : ILayoutEngine
 
             var maxUsedRow = GetMaxUsedRow(cells);
             var maxUsedCol = GetMaxUsedCol(cells);
-            var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 0);
-            var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 0);
+            var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 1);
+            var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
 
             ValidateCoordinates(sheet.Name, resolvedSheetRows, resolvedSheetCols, cells, issues);
             sheets.Add(new LayoutSheet(sheet.Name, cells, resolvedSheetRows, resolvedSheetCols, namedAreas, sheet.Options));

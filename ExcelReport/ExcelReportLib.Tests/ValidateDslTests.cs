@@ -10,8 +10,8 @@ public sealed class ValidateDslTests
         var result = ParseDsl(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="1" cols="1" />
-              <sheet name="Summary" rows="1" cols="1" />
+              <sheet name="Summary" />
+              <sheet name="Summary" />
             </workbook>
             """);
 
@@ -27,7 +27,7 @@ public sealed class ValidateDslTests
         var result = ParseDsl(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="1" cols="1">
+              <sheet name="Summary">
                 <styleRef name="MissingStyle" />
               </sheet>
             </workbook>
@@ -45,7 +45,7 @@ public sealed class ValidateDslTests
         var result = ParseDsl(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <use component="MissingComponent" r="1" c="1" />
               </sheet>
             </workbook>
@@ -71,7 +71,7 @@ public sealed class ValidateDslTests
                   <cell r="1" c="1" value="@(root)" />
                 </grid>
               </component>
-              <sheet name="Summary" rows="10" cols="10">
+              <sheet name="Summary">
                 <styleRef name="Base" />
                 <use component="Title" instance="Header" r="1" c="1" />
                 <sheetOptions>

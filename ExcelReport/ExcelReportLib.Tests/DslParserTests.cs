@@ -94,7 +94,7 @@ public sealed class DslParserTests
                 <style name="Base" scope="cell" />
                 <style name="Base" scope="cell" />
               </styles>
-              <sheet name="Summary" rows="1" cols="1" />
+              <sheet name="Summary" />
             </workbook>
             """);
 
