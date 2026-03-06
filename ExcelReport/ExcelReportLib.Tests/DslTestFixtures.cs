@@ -39,6 +39,22 @@ internal static class DslTestFixtures
             $"Descendant element '{localName}' was not found in fixture: {fileName}");
     }
 
+    internal static object CreateFullTemplateData() =>
+        new
+        {
+            JobName = "Test Report",
+            Summary = new
+            {
+                Owner = "TestUser",
+                SuccessRate = 0.95,
+            },
+            Lines = new[]
+            {
+                new { Name = "Item1", Value = 100, Code = "A01" },
+                new { Name = "Item2", Value = 200, Code = "A02" },
+            },
+        };
+
     private static string ResolveProjectDirectory([CallerFilePath] string callerFilePath = "") =>
         Path.GetDirectoryName(callerFilePath)
         ?? throw new InvalidOperationException("Unable to determine the test project directory.");

@@ -57,7 +57,7 @@ namespace ExcelReportLib.DSL.AST
                     {
                         Kind = IssueKind.LoadFile,
                         Severity = IssueSeverity.Error,
-                        Message = $"componentImport で指定されたファイルが見つかりません: {PathStr} filePathでDSL Parserを呼び出すことを検討してください",
+                        Message = $"styleImport で指定されたファイルが見つかりません: {PathStr} filePathでDSL Parserを呼び出すことを検討してください",
                         Span = Span,
                     });
                 return;
@@ -68,7 +68,8 @@ namespace ExcelReportLib.DSL.AST
             try
             {
                 doc = XDocument.Load(stream, LoadOptions.SetLineInfo);
-                StylesAst = new StylesAst(doc.Root!, issues);
+                var importDir = Path.GetDirectoryName(PathStr) ?? string.Empty;
+                StylesAst = new StylesAst(doc.Root!, issues, importDir);
             }
             catch (XmlException ex)
             {

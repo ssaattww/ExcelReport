@@ -232,6 +232,30 @@ namespace ExcelReportLib.DSL
         private static Dictionary<string, StyleAst> BuildStyleIndex(WorkbookAst root, List<Issue>? issues = null)
         {
             var styleIndex = new Dictionary<string, StyleAst>(StringComparer.Ordinal);
+            var scannedImportSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            static string? GetImportSourceKey(StyleImportAst importAst)
+            {
+                var source = importAst.PathStr;
+                if (string.IsNullOrWhiteSpace(source))
+                {
+                    source = importAst.HrefRaw;
+                }
+
+                if (string.IsNullOrWhiteSpace(source))
+                {
+                    return null;
+                }
+
+                try
+                {
+                    return Path.GetFullPath(source);
+                }
+                catch (Exception)
+                {
+                    return source;
+                }
+            }
 
             void IndexStyles(StylesAst? styles)
             {
@@ -264,10 +288,18 @@ namespace ExcelReportLib.DSL
 
                 foreach (var import in styles.StyleImportAsts)
                 {
-                    if (import?.StylesAst != null)
+                    if (import?.StylesAst == null)
                     {
-                        IndexStyles(import.StylesAst);
+                        continue;
                     }
+
+                    var importSourceKey = GetImportSourceKey(import);
+                    if (importSourceKey != null && !scannedImportSources.Add(importSourceKey))
+                    {
+                        continue;
+                    }
+
+                    IndexStyles(import.StylesAst);
                 }
             }
 

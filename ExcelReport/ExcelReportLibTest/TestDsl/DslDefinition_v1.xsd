@@ -23,6 +23,13 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- 非負整数（>=0） -->
+  <xs:simpleType name="NonNegativeInt0">
+    <xs:restriction base="xs:nonNegativeInteger">
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <!-- 罫線種別 -->
   <xs:simpleType name="BorderStyleEnum">
     <xs:restriction base="xs:string">
@@ -173,8 +180,8 @@
       <xs:element name="sheetOptions" type="SheetOptionsType" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string"    use="required"/>
-    <xs:attribute name="rows" type="PositiveInt1" use="required"/>
-    <xs:attribute name="cols" type="PositiveInt1" use="required"/>
+    <xs:attribute name="rows" type="NonNegativeInt0" use="optional" default="0"/>
+    <xs:attribute name="cols" type="NonNegativeInt0" use="optional" default="0"/>
   </xs:complexType>
 
   <!-- component -->
@@ -201,6 +208,8 @@
         <xs:element name="repeat"   type="RepeatType"/>
       </xs:choice>
     </xs:sequence>
+    <xs:attribute name="rows" type="NonNegativeInt0" use="optional" default="0"/>
+    <xs:attribute name="cols" type="NonNegativeInt0" use="optional" default="0"/>
   </xs:complexType>
 
   <!-- 共通配置属性 -->

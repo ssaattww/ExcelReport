@@ -28,13 +28,14 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var issues = new List<Issue>();
         var styleResolver = new StyleResolver(workbook.Styles);
-        var componentIndex = BuildComponentIndex(workbook.Components);
+        var componentIndex = BuildComponentIndex(workbook);
         var sheets = new List<LayoutSheet>(workbook.Sheets.Count);
         var rootVars = new Dictionary<string, object?>(StringComparer.Ordinal);
 
         foreach (var sheet in workbook.Sheets)
         {
             var cells = new List<LayoutCell>();
+            var namedAreas = new List<LayoutNamedArea>();
             var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
 
             foreach (var child in sheet.Children.Values)
@@ -51,16 +52,24 @@ public sealed class LayoutEngine : ILayoutEngine
                     styleResolver,
                     issues);
 
-                if (result.Cells.Count == 0)
+                if (result.Cells.Count > 0)
                 {
-                    continue;
+                    cells.AddRange(result.Cells);
                 }
 
-                cells.AddRange(result.Cells);
+                if (result.NamedAreas.Count > 0)
+                {
+                    namedAreas.AddRange(result.NamedAreas);
+                }
             }
 
-            ValidateCoordinates(sheet, cells, issues);
-            sheets.Add(new LayoutSheet(sheet.Name, cells, sheet.Rows, sheet.Cols));
+            var maxUsedRow = GetMaxUsedRow(cells);
+            var maxUsedCol = GetMaxUsedCol(cells);
+            var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 0);
+            var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 0);
+
+            ValidateCoordinates(sheet.Name, resolvedSheetRows, resolvedSheetCols, cells, issues);
+            sheets.Add(new LayoutSheet(sheet.Name, cells, resolvedSheetRows, resolvedSheetCols, namedAreas, sheet.Options));
         }
 
         return new LayoutPlan(sheets, issues);
@@ -176,7 +185,8 @@ public sealed class LayoutEngine : ILayoutEngine
         return new ExpandResult(
             [layoutCell],
             cell.Placement.RowSpan,
-            cell.Placement.ColSpan);
+            cell.Placement.ColSpan,
+            Array.Empty<LayoutNamedArea>());
     }
 
     private ExpandResult ExpandGrid(
@@ -193,6 +203,7 @@ public sealed class LayoutEngine : ILayoutEngine
     {
         var styleScope = inheritedStyles.Append(grid.StyleRefs, grid.Style);
         var cells = new List<LayoutCell>();
+        var namedAreas = new List<LayoutNamedArea>();
         var maxHeight = 0;
         var maxWidth = 0;
 
@@ -210,6 +221,11 @@ public sealed class LayoutEngine : ILayoutEngine
                 styleResolver,
                 issues);
 
+            if (childResult.NamedAreas.Count > 0)
+            {
+                namedAreas.AddRange(childResult.NamedAreas);
+            }
+
             if (childResult.Cells.Count == 0)
             {
                 continue;
@@ -222,8 +238,9 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var result = new ExpandResult(
             cells,
-            Math.Max(maxHeight, grid.Placement.RowSpan),
-            Math.Max(maxWidth, grid.Placement.ColSpan));
+            ResolveContainerSize(grid.Rows, maxHeight, grid.Placement.RowSpan),
+            ResolveContainerSize(grid.Cols, maxWidth, grid.Placement.ColSpan),
+            namedAreas);
 
         return ApplyGridBorders(result, styleScope, styleResolver);
     }
@@ -253,6 +270,7 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var styleScope = inheritedStyles.Append(repeat.StyleRefs, repeat.Style);
         var cells = new List<LayoutCell>();
+        var namedAreas = new List<LayoutNamedArea>();
         var nextRow = baseRow;
         var nextCol = baseCol;
         var totalHeight = 0;
@@ -282,6 +300,11 @@ public sealed class LayoutEngine : ILayoutEngine
                 cells.AddRange(result.Cells);
             }
 
+            if (result.NamedAreas.Count > 0)
+            {
+                namedAreas.AddRange(result.NamedAreas);
+            }
+
             if (repeat.Direction == RepeatDirection.Down)
             {
                 nextRow += result.Height;
@@ -300,12 +323,14 @@ public sealed class LayoutEngine : ILayoutEngine
         {
             totalHeight = Math.Max(totalHeight, repeat.Placement.RowSpan);
             maxWidth = Math.Max(maxWidth, repeat.Placement.ColSpan);
-            return new ExpandResult(cells, totalHeight, maxWidth);
+            TryAddNamedArea(namedAreas, repeat.Name, cells);
+            return new ExpandResult(cells, totalHeight, maxWidth, namedAreas);
         }
 
         totalWidth = Math.Max(totalWidth, repeat.Placement.ColSpan);
         maxHeight = Math.Max(maxHeight, repeat.Placement.RowSpan);
-        return new ExpandResult(cells, maxHeight, totalWidth);
+        TryAddNamedArea(namedAreas, repeat.Name, cells);
+        return new ExpandResult(cells, maxHeight, totalWidth, namedAreas);
     }
 
     private ExpandResult ExpandUse(
@@ -363,11 +388,14 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var heightOffset = ResolveOffset(component.Placement.Row);
         var widthOffset = ResolveOffset(component.Placement.Col);
+        var namedAreas = new List<LayoutNamedArea>(result.NamedAreas);
+        TryAddNamedArea(namedAreas, use.InstanceName, result.Cells);
 
         return new ExpandResult(
             result.Cells,
             Math.Max(result.Height + heightOffset, use.Placement.RowSpan),
-            Math.Max(result.Width + widthOffset, use.Placement.ColSpan));
+            Math.Max(result.Width + widthOffset, use.Placement.ColSpan),
+            namedAreas);
     }
 
     private object? EvaluateExpressionValue(
@@ -491,13 +519,29 @@ public sealed class LayoutEngine : ILayoutEngine
         return null;
     }
 
-    private static IReadOnlyDictionary<string, ComponentAst> BuildComponentIndex(
-        IReadOnlyList<ComponentAst>? components)
+    private static IReadOnlyDictionary<string, ComponentAst> BuildComponentIndex(WorkbookAst workbook)
     {
         var index = new Dictionary<string, ComponentAst>(StringComparer.Ordinal);
+        IndexComponents(workbook.Components, index);
+
+        if (workbook.ComponentInports != null)
+        {
+            foreach (var componentImport in workbook.ComponentInports)
+            {
+                IndexComponents(componentImport.Components.ComponentList, index);
+            }
+        }
+
+        return index;
+    }
+
+    private static void IndexComponents(
+        IReadOnlyList<ComponentAst>? components,
+        IDictionary<string, ComponentAst> index)
+    {
         if (components is null)
         {
-            return index;
+            return;
         }
 
         foreach (var component in components)
@@ -507,27 +551,66 @@ public sealed class LayoutEngine : ILayoutEngine
                 index[component.Name] = component;
             }
         }
-
-        return index;
     }
 
-    private static void ValidateCoordinates(SheetAst sheet, IEnumerable<LayoutCell> cells, IList<Issue> issues)
+    private static void ValidateCoordinates(
+        string sheetName,
+        int sheetRows,
+        int sheetCols,
+        IEnumerable<LayoutCell> cells,
+        IList<Issue> issues)
     {
         foreach (var cell in cells)
         {
             var endRow = cell.Row + cell.RowSpan - 1;
             var endCol = cell.Col + cell.ColSpan - 1;
-            if (cell.Row < 1 || cell.Col < 1 || endRow > sheet.Rows || endCol > sheet.Cols)
+            if (cell.Row < 1 || cell.Col < 1 || endRow > sheetRows || endCol > sheetCols)
             {
                 issues.Add(new Issue
                 {
                     Severity = IssueSeverity.Error,
                     Kind = IssueKind.CoordinateOutOfRange,
-                    Message = $"セル配置がシート範囲外です: sheet={sheet.Name}, r={cell.Row}, c={cell.Col}, rowSpan={cell.RowSpan}, colSpan={cell.ColSpan}",
+                    Message = $"セル配置がシート範囲外です: sheet={sheetName}, r={cell.Row}, c={cell.Col}, rowSpan={cell.RowSpan}, colSpan={cell.ColSpan}",
                     Span = null,
                 });
             }
         }
+    }
+
+    private static int GetMaxUsedRow(IReadOnlyCollection<LayoutCell> cells) =>
+        cells.Count == 0
+            ? 0
+            : cells.Max(cell => cell.Row + cell.RowSpan - 1);
+
+    private static int GetMaxUsedCol(IReadOnlyCollection<LayoutCell> cells) =>
+        cells.Count == 0
+            ? 0
+            : cells.Max(cell => cell.Col + cell.ColSpan - 1);
+
+    private static int ResolveContainerSize(int declaredSize, int contentSize, int minimumSize) =>
+        Math.Max(declaredSize > 0 ? declaredSize : contentSize, minimumSize);
+
+    private static void TryAddNamedArea(
+        ICollection<LayoutNamedArea> areas,
+        string? name,
+        IReadOnlyList<LayoutCell> cells)
+    {
+        if (string.IsNullOrWhiteSpace(name) || cells.Count == 0)
+        {
+            return;
+        }
+
+        areas.Add(CreateBoundingNamedArea(name, cells));
+    }
+
+    private static LayoutNamedArea CreateBoundingNamedArea(string name, IReadOnlyList<LayoutCell> cells)
+    {
+        var topRow = cells.Min(cell => cell.Row);
+        var leftColumn = cells.Min(cell => cell.Col);
+        var bottomRow = cells.Max(cell => cell.Row + cell.RowSpan - 1);
+        var rightColumn = cells.Max(cell => cell.Col + cell.ColSpan - 1);
+
+        return new LayoutNamedArea(name, topRow, leftColumn, bottomRow, rightColumn);
     }
 
     private static StyleRefAst CreateStyleRef(string name, IList<Issue> issues)
@@ -703,7 +786,7 @@ public sealed class LayoutEngine : ILayoutEngine
             expandedCells.Add(expandedBorders.Count == 0 ? cell : AppendBordersToCell(cell, expandedBorders));
         }
 
-        return new ExpandResult(expandedCells, result.Height, result.Width);
+        return new ExpandResult(expandedCells, result.Height, result.Width, result.NamedAreas);
     }
 
     /// <summary>
@@ -958,9 +1041,17 @@ public sealed class LayoutEngine : ILayoutEngine
             Color = border.Color,
         };
 
-    private sealed record ExpandResult(IReadOnlyList<LayoutCell> Cells, int Height, int Width)
+    private sealed record ExpandResult(
+        IReadOnlyList<LayoutCell> Cells,
+        int Height,
+        int Width,
+        IReadOnlyList<LayoutNamedArea> NamedAreas)
     {
-        public static readonly ExpandResult Empty = new(Array.Empty<LayoutCell>(), 0, 0);
+        public static readonly ExpandResult Empty = new(
+            Array.Empty<LayoutCell>(),
+            0,
+            0,
+            Array.Empty<LayoutNamedArea>());
     }
 
     private sealed record RenderedValue(object? Value, string? Formula)

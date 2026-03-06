@@ -1,10 +1,15 @@
 using ExcelReportLib.DSL.AST;
 using ExcelReportLib.LayoutEngine;
+using System.Text.RegularExpressions;
 
 namespace ExcelReportLib.WorksheetState;
 
 public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 {
+    private static readonly Regex FormulaPlaceholderRegex = new(
+        "#\\{(?<start>[^}:]+)(:(?<end>[^}]+))?\\}",
+        RegexOptions.Compiled);
+
     public IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan)
     {
         ArgumentNullException.ThrowIfNull(layoutPlan);
@@ -79,13 +84,14 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         var namedAreas = BuildNamedAreas(layoutSheet);
-        var options = BuildOptions(layoutSheet.Options);
+        var resolvedCells = ResolveFormulaPlaceholders(cells, namedAreas);
+        var options = BuildOptions(layoutSheet.Options, namedAreas);
 
         return new WorksheetState(
             layoutSheet.Name,
             layoutSheet.Rows,
             layoutSheet.Cols,
-            cells,
+            resolvedCells,
             mergedRanges,
             namedAreas,
             options);
@@ -107,10 +113,136 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 area.RightColumn);
         }
 
+        AddFormulaReferenceNamedAreas(layoutSheet, namedAreas);
         return namedAreas;
     }
 
-    private static WorksheetOptionsState BuildOptions(SheetOptionsAst? options)
+    private static IReadOnlyDictionary<(int Row, int Column), CellState> ResolveFormulaPlaceholders(
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        var resolvedCells = new Dictionary<(int Row, int Column), CellState>(cells.Count);
+
+        foreach (var (coordinate, cell) in cells)
+        {
+            if (!cell.IsFormula || cell.Formula is null)
+            {
+                resolvedCells[coordinate] = cell;
+                continue;
+            }
+
+            var resolvedFormula = ReplaceFormulaPlaceholders(cell.Formula, namedAreas);
+            if (string.Equals(resolvedFormula, cell.Formula, StringComparison.Ordinal))
+            {
+                resolvedCells[coordinate] = cell;
+                continue;
+            }
+
+            resolvedCells[coordinate] = new CellState(
+                cell.Row,
+                cell.Column,
+                cell.Value,
+                resolvedFormula,
+                cell.FormulaReference,
+                cell.Style,
+                cell.IsMergedHead);
+        }
+
+        return resolvedCells;
+    }
+
+    private static string ReplaceFormulaPlaceholders(
+        string formula,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas) =>
+        FormulaPlaceholderRegex.Replace(
+            formula,
+            match =>
+            {
+                var startName = match.Groups["start"].Value.Trim();
+                if (startName.Length == 0 || !namedAreas.TryGetValue(startName, out var startArea))
+                {
+                    return match.Value;
+                }
+
+                var startReference = ToCellReference(startArea.TopRow, startArea.LeftColumn);
+                var endGroup = match.Groups["end"];
+                if (!endGroup.Success)
+                {
+                    return startReference;
+                }
+
+                var endName = endGroup.Value.Trim();
+                if (endName.Length == 0 || !namedAreas.TryGetValue(endName, out var endArea))
+                {
+                    return match.Value;
+                }
+
+                var endReference = ToCellReference(endArea.BottomRow, endArea.RightColumn);
+                return $"{startReference}:{endReference}";
+            });
+
+    private static void AddFormulaReferenceNamedAreas(
+        LayoutSheet layoutSheet,
+        IDictionary<string, NamedAreaState> namedAreas)
+    {
+        var seriesByName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
+
+        foreach (var cell in layoutSheet.Cells)
+        {
+            var formulaRefName = cell.FormulaRef?.Trim();
+            if (string.IsNullOrWhiteSpace(formulaRefName))
+            {
+                continue;
+            }
+
+            if (!seriesByName.TryGetValue(formulaRefName, out var seriesCells))
+            {
+                seriesCells = [];
+                seriesByName[formulaRefName] = seriesCells;
+            }
+
+            seriesCells.Add(cell);
+        }
+
+        foreach (var (name, seriesCells) in seriesByName)
+        {
+            var orderedCells = seriesCells
+                .OrderBy(cell => cell.Row)
+                .ThenBy(cell => cell.Col)
+                .ToArray();
+            var firstCell = orderedCells[0];
+            var lastCell = orderedCells[^1];
+
+            TryAddFormulaReferenceNamedArea(namedAreas, name, firstCell);
+            TryAddFormulaReferenceNamedArea(namedAreas, $"{name}End", lastCell);
+        }
+    }
+
+    private static void TryAddFormulaReferenceNamedArea(
+        IDictionary<string, NamedAreaState> namedAreas,
+        string name,
+        LayoutCell cell)
+    {
+        if (namedAreas.ContainsKey(name))
+        {
+            namedAreas.TryAdd(name, CreateCellNamedArea(name, cell));
+            return;
+        }
+
+        namedAreas[name] = CreateCellNamedArea(name, cell);
+    }
+
+    private static NamedAreaState CreateCellNamedArea(string name, LayoutCell cell) =>
+        new(
+            name,
+            cell.Row,
+            cell.Col,
+            cell.Row + cell.RowSpan - 1,
+            cell.Col + cell.ColSpan - 1);
+
+    private static WorksheetOptionsState BuildOptions(
+        SheetOptionsAst? options,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
     {
         if (options is null)
         {
@@ -118,14 +250,88 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         return new WorksheetOptionsState(
-            options.Freeze is null ? null : new FreezePaneState(options.Freeze.At),
+            options.Freeze is null
+                ? null
+                : new FreezePaneState(ResolveFreezeTarget(options.Freeze.At, namedAreas)),
             options.GroupRows
-                .Select(group => new WorksheetGroupState(group.At, group.Collapsed))
+                .Select(group => new WorksheetGroupState(ResolveRowGroupTarget(group.At, namedAreas), group.Collapsed))
                 .ToArray(),
             options.GroupCols
-                .Select(group => new WorksheetGroupState(group.At, group.Collapsed))
+                .Select(group => new WorksheetGroupState(ResolveColumnGroupTarget(group.At, namedAreas), group.Collapsed))
                 .ToArray(),
-            options.AutoFilter is null ? null : new AutoFilterState(options.AutoFilter.At));
+            options.AutoFilter is null
+                ? null
+                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)));
+    }
+
+    private static string ResolveFreezeTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        if (!namedAreas.TryGetValue(target, out var area))
+        {
+            return target;
+        }
+
+        return ToCellReference(area.TopRow, area.LeftColumn);
+    }
+
+    private static string ResolveRowGroupTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        if (!namedAreas.TryGetValue(target, out var area))
+        {
+            return target;
+        }
+
+        return $"{area.TopRow}:{area.BottomRow}";
+    }
+
+    private static string ResolveColumnGroupTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        if (!namedAreas.TryGetValue(target, out var area))
+        {
+            return target;
+        }
+
+        return $"{ColumnIndexToName(area.LeftColumn)}:{ColumnIndexToName(area.RightColumn)}";
+    }
+
+    private static string ResolveAutoFilterTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        if (!namedAreas.TryGetValue(target, out var area))
+        {
+            return target;
+        }
+
+        return $"{ToCellReference(area.TopRow, area.LeftColumn)}:{ToCellReference(area.BottomRow, area.RightColumn)}";
+    }
+
+    private static string ToCellReference(int row, int column) =>
+        $"{ColumnIndexToName(column)}{row}";
+
+    private static string ColumnIndexToName(int columnIndex)
+    {
+        if (columnIndex <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(columnIndex));
+        }
+
+        var value = columnIndex;
+        var buffer = new Stack<char>();
+        while (value > 0)
+        {
+            value--;
+            buffer.Push((char)('A' + (value % 26)));
+            value /= 26;
+        }
+
+        return new string(buffer.ToArray());
     }
 
     private static void ValidateSheetBounds(int rowCount, int columnCount, string sheetName)

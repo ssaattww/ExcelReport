@@ -91,7 +91,7 @@ public sealed class ValidateDslTests
         var result = DslParser.ParseFromText(
             """
             <workbook xmlns="urn:excelreport:v1">
-              <sheet name="Summary" rows="0" cols="1" />
+              <sheet name="Summary" rows="-1" cols="1" />
             </workbook>
             """,
             new DslParserOptions

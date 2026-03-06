@@ -1,7 +1,9 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using System.Xml.Linq;
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
+using ExcelReportLib.LayoutEngine;
 using ExcelReportLib.Renderer;
 using ExcelReportLib.Styles;
 using ExcelReportLib.WorksheetState;
@@ -273,6 +275,94 @@ public sealed class RendererTests
     }
 
     [Fact]
+    public void Render_SheetOptionsWithNamedTargets_AppliedAfterStateBuild()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCellState(5, 1, "Header"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("DetailHeader", topRow: 5, leftColumn: 1, bottomRow: 5, rightColumn: 3),
+                        new LayoutNamedArea("DetailRows", topRow: 6, leftColumn: 1, bottomRow: 8, rightColumn: 3),
+                    ],
+                    options: CreateSheetOptions(
+                        """
+                        <freeze at="DetailHeader" />
+                        <groups>
+                          <groupRows at="DetailRows" collapsed="true" />
+                        </groups>
+                        <autoFilter at="DetailHeader" />
+                        """)),
+            ]);
+        var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
+        var renderer = CreateRenderer();
+
+        var result = renderer.Render([worksheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+
+        var pane = worksheetPart.Worksheet
+            .GetFirstChild<SheetViews>()!
+            .GetFirstChild<SheetView>()!
+            .GetFirstChild<Pane>();
+        Assert.NotNull(pane);
+        Assert.Equal("A5", pane!.TopLeftCell!.Value);
+        Assert.Equal(4D, pane.VerticalSplit!.Value);
+
+        var autoFilter = worksheetPart.Worksheet.GetFirstChild<AutoFilter>();
+        Assert.NotNull(autoFilter);
+        Assert.Equal("$A$5:$C$5", autoFilter!.Reference!.Value);
+
+        var rows = worksheetPart.Worksheet.Descendants<Row>()
+            .Where(row => row.RowIndex is not null)
+            .ToDictionary(row => row.RowIndex!.Value);
+
+        Assert.Contains(6U, rows.Keys);
+        Assert.Contains(7U, rows.Keys);
+        Assert.Contains(8U, rows.Keys);
+        Assert.Equal((byte)1, rows[6U].OutlineLevel!.Value);
+        Assert.Equal((byte)1, rows[7U].OutlineLevel!.Value);
+        Assert.Equal((byte)1, rows[8U].OutlineLevel!.Value);
+        Assert.True(rows[6U].Hidden!.Value);
+        Assert.True(rows[7U].Hidden!.Value);
+        Assert.True(rows[8U].Hidden!.Value);
+        Assert.True(rows[8U].Collapsed!.Value);
+    }
+
+    [Fact]
+    public void Render_FormulaRefPlaceholders_AreResolvedBeforeWritingFormula()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCellState(6, 2, 100, formulaRef: "Detail.Value"),
+                        CreateCellState(7, 2, 200, formulaRef: "Detail.Value"),
+                        CreateCellState(8, 2, value: null, formula: "=SUM(#{Detail.Value:Detail.ValueEnd})+#{Detail.Value}"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+        var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
+        var renderer = CreateRenderer();
+
+        var result = renderer.Render([worksheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+
+        Assert.Equal("SUM(B6:B7)+B6", GetCell(worksheetPart, "B8").CellFormula!.Text);
+    }
+
+    [Fact]
     public void Render_IssuesSheet_Generated()
     {
         var sheet = CreateWorksheet(
@@ -374,6 +464,20 @@ public sealed class RendererTests
             GeneratedAt = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero),
         };
 
+    private static SheetOptionsAst CreateSheetOptions(string innerXml)
+    {
+        var issues = new List<Issue>();
+        var element = XElement.Parse(
+            "<sheetOptions xmlns=\"urn:excelreport:v1\">" +
+            innerXml +
+            "</sheetOptions>");
+
+        var options = new SheetOptionsAst(element, issues);
+
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        return options;
+    }
+
     private static ExcelReportLib.WorksheetState.WorksheetState CreateWorksheet(
         string name,
         IReadOnlyList<CellState> cells,
@@ -391,6 +495,36 @@ public sealed class RendererTests
             namedAreas: new Dictionary<string, NamedAreaState>(StringComparer.Ordinal),
             options: options ?? WorksheetOptionsState.Empty);
     }
+
+    private static LayoutCell CreateCellState(
+        int row,
+        int col,
+        object? value,
+        string? formula = null,
+        string? formulaRef = null) =>
+        new(
+            row,
+            col,
+            rowSpan: 1,
+            colSpan: 1,
+            value,
+            formula,
+            formulaRef,
+            new StylePlan(
+                CreateStyle(),
+                appliedStyles: [],
+                workbookDefault: null,
+                sheetDefault: null,
+                referenceStyles: [],
+                inlineStyles: [],
+                fontNameTrace: null,
+                fontSizeTrace: null,
+                fontBoldTrace: null,
+                fontItalicTrace: null,
+                fontUnderlineTrace: null,
+                fillColorTrace: null,
+                numberFormatCodeTrace: null,
+                borderTraces: []));
 
     private static CellState CreateCell(
         int row,

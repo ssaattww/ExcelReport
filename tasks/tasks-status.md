@@ -1,14 +1,14 @@
 # Tasks Status
 
 Last Updated: 2026-03-05
-Scope: ExcelReport開発 - Border修正+テスト完了
+Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
 
 ## Progress Summary
 
-- Completed: 15 / 15
-- In Progress: 0 / 15
-- Not Started: 0 / 15
-- Completion Rate: 100%
+- Completed: 20 / 21
+- In Progress: 0 / 21
+- Not Started: 1 / 21
+- Completion Rate: 95%
 
 ## Task List
 
@@ -29,6 +29,12 @@ Scope: ExcelReport開発 - Border修正+テスト完了
 | 13 | Fix 複数BorderInfo統合 (StyleKey.FromCell) | Done | Codex + PM | 12 | 8 |
 | 14 | Grid border展開 (mode="outer"/"all") | Done | Codex + PM | 13 | 8 |
 | 15 | FullTemplate E2Eテスト + borderテスト追加 | Done | Codex + PM | 12 | 8 |
+| 16 | ReportGeneratorにファイルパスベース実行追加 | Done | Codex + PM | 15 | 9 |
+| 17 | LayoutEngine外部component展開 + 重複style import対応 | Done | Codex + PM | 16 | 9 |
+| 18 | sheetOptions at="名前"→実座標マッピング実装 | Done | Codex + PM | 17 | 9 |
+| 19 | formulaRef / #{...}プレースホルダ置換実装 | Done | Codex + PM | 17 | 9 |
+| 20 | FullTemplate E2Eテスト（実xlsx生成検証） | Not Started | Codex + PM | 18, 19, 21 | 9 |
+| 21 | sheet/gridのrows/cols省略→自動計算 + Design XML修正 | Done | Codex + PM | 17 | 9 |
 
 ## Status Definitions
 
