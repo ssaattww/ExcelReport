@@ -865,15 +865,6 @@ public sealed class XlsxRenderer : IRenderer
         public Font ToFont()
         {
             var font = new Font();
-            if (!string.IsNullOrWhiteSpace(FontName))
-            {
-                font.Append(new FontName { Val = FontName });
-            }
-
-            if (FontSize.HasValue)
-            {
-                font.Append(new FontSize { Val = FontSize.Value });
-            }
 
             if (FontBold == true)
             {
@@ -888,6 +879,16 @@ public sealed class XlsxRenderer : IRenderer
             if (FontUnderline == true)
             {
                 font.Append(new Underline());
+            }
+
+            if (FontSize.HasValue)
+            {
+                font.Append(new FontSize { Val = FontSize.Value });
+            }
+
+            if (!string.IsNullOrWhiteSpace(FontName))
+            {
+                font.Append(new FontName { Val = FontName });
             }
 
             return font;

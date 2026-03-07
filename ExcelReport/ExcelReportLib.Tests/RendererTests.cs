@@ -1,5 +1,6 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Validation;
 using System.Xml.Linq;
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
@@ -203,6 +204,37 @@ public sealed class RendererTests
         Assert.Equal(
             ["left", "right", "top", "bottom", "diagonal"],
             border.ChildElements.Select(child => child.LocalName));
+    }
+
+    /// <summary>
+    /// Verifies that render font element order is schema valid.
+    /// </summary>
+    [Fact]
+    public void Render_FontElementOrder_IsSchemaValid()
+    {
+        var style = CreateStyle(
+            fontName: "Meiryo",
+            fontSize: 11,
+            fontBold: true);
+
+        var sheet = CreateWorksheet(
+            "Styles",
+            cells:
+            [
+                CreateCell(1, 1, "Styled", style),
+            ]);
+
+        var renderer = CreateRenderer();
+
+        var result = renderer.Render([sheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description} ({error.Path?.XPath ?? string.Empty})")
+            .ToArray();
+
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
     }
 
     /// <summary>
