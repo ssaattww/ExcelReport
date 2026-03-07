@@ -4,8 +4,14 @@ using ExcelReportLib.DSL.AST.LayoutNode;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>SheetAst</c> feature.
+/// </summary>
 public sealed class SheetAstTests
 {
+    /// <summary>
+    /// Verifies that parse sheet has rows and cols.
+    /// </summary>
     [Fact]
     public void Parse_Sheet_HasRowsAndCols()
     {
@@ -16,6 +22,9 @@ public sealed class SheetAstTests
         Assert.Equal(0, sheet.Cols);
     }
 
+    /// <summary>
+    /// Verifies that parse sheet has layout nodes.
+    /// </summary>
     [Fact]
     public void Parse_Sheet_HasLayoutNodes()
     {
@@ -26,6 +35,9 @@ public sealed class SheetAstTests
         Assert.Contains(sheet.Children.Values, node => node is CellAst);
     }
 
+    /// <summary>
+    /// Verifies that parse sheet has sheet options.
+    /// </summary>
     [Fact]
     public void Parse_Sheet_HasSheetOptions()
     {

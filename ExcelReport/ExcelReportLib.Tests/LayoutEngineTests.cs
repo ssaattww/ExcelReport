@@ -3,8 +3,14 @@ using ExcelReportLib.LayoutEngine;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>LayoutEngine</c> feature.
+/// </summary>
 public sealed class LayoutEngineTests
 {
+    /// <summary>
+    /// Verifies that expand single cell produces layout cell.
+    /// </summary>
     [Fact]
     public void Expand_SingleCell_ProducesLayoutCell()
     {
@@ -28,6 +34,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand grid children positioned.
+    /// </summary>
     [Fact]
     public void Expand_Grid_ChildrenPositioned()
     {
@@ -62,6 +71,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand repeat expands collection.
+    /// </summary>
     [Fact]
     public void Expand_Repeat_ExpandsCollection()
     {
@@ -105,6 +117,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand use resolves component.
+    /// </summary>
     [Fact]
     public void Expand_Use_ResolvesComponent()
     {
@@ -136,6 +151,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand use instance and repeat name generates named areas.
+    /// </summary>
     [Fact]
     public void Expand_UseInstanceAndRepeatName_GeneratesNamedAreas()
     {
@@ -193,6 +211,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand with component import resolves imported component use.
+    /// </summary>
     [Fact]
     public void Expand_WithComponentImport_ResolvesImportedComponentUse()
     {
@@ -212,6 +233,9 @@ public sealed class LayoutEngineTests
             cell => cell.Row == 1 && cell.Col == 1 && cell.Value?.ToString() == "Test Report");
     }
 
+    /// <summary>
+    /// Verifies that expand when component import load fails does not throw null reference.
+    /// </summary>
     [Fact]
     public void Expand_WhenComponentImportLoadFails_DoesNotThrowNullReference()
     {
@@ -245,6 +269,9 @@ public sealed class LayoutEngineTests
         Assert.Equal("Safe", cell.Value);
     }
 
+    /// <summary>
+    /// Verifies that expand when local and imported components share name local component wins.
+    /// </summary>
     [Fact]
     public void Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins()
     {
@@ -297,6 +324,9 @@ public sealed class LayoutEngineTests
         }
     }
 
+    /// <summary>
+    /// Verifies that expand when false skips node.
+    /// </summary>
     [Fact]
     public void Expand_WhenFalse_SkipsNode()
     {
@@ -313,6 +343,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand nested repeat grid correct positions.
+    /// </summary>
     [Fact]
     public void Expand_NestedRepeatGrid_CorrectPositions()
     {
@@ -371,6 +404,9 @@ public sealed class LayoutEngineTests
         Assert.Empty(plan.Issues);
     }
 
+    /// <summary>
+    /// Verifies that expand grid border mode all applied to all cells.
+    /// </summary>
     [Fact]
     public void Expand_GridBorderModeAll_AppliedToAllCells()
     {
@@ -413,6 +449,9 @@ public sealed class LayoutEngineTests
             issue => issue.Kind == IssueKind.StyleScopeViolation);
     }
 
+    /// <summary>
+    /// Verifies that expand grid border mode outer applied to edge cells.
+    /// </summary>
     [Fact]
     public void Expand_GridBorderModeOuter_AppliedToEdgeCells()
     {
@@ -473,6 +512,9 @@ public sealed class LayoutEngineTests
             issue => issue.Kind == IssueKind.StyleScopeViolation);
     }
 
+    /// <summary>
+    /// Verifies that expand grid border and cell inline border cell border wins by order.
+    /// </summary>
     [Fact]
     public void Expand_GridBorderAndCellInlineBorder_CellBorderWinsByOrder()
     {
@@ -515,6 +557,9 @@ public sealed class LayoutEngineTests
             issue => issue.Kind == IssueKind.StyleScopeViolation);
     }
 
+    /// <summary>
+    /// Verifies that expand formula ref and formula placeholder preserved for state build.
+    /// </summary>
     [Fact]
     public void Expand_FormulaRefAndFormulaPlaceholder_PreservedForStateBuild()
     {
@@ -547,6 +592,9 @@ public sealed class LayoutEngineTests
         Assert.Equal("=SUM(#{Detail.Value:Detail.ValueEnd})", totalsCell.Formula);
     }
 
+    /// <summary>
+    /// Verifies that expand omitted sheet rows cols auto calculates from cell placement.
+    /// </summary>
     [Fact]
     public void Expand_OmittedSheetRowsCols_AutoCalculatesFromCellPlacement()
     {
@@ -568,6 +616,9 @@ public sealed class LayoutEngineTests
         Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.CoordinateOutOfRange);
     }
 
+    /// <summary>
+    /// Verifies that expand grid auto size accounts for child offsets in repeat directions.
+    /// </summary>
     [Fact]
     public void Expand_GridAutoSize_AccountsForChildOffsetsInRepeatDirections()
     {

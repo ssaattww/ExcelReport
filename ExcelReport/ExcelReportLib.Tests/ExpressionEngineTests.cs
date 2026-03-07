@@ -3,8 +3,14 @@ using ExcelReportLib.ExpressionEngine;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>ExpressionEngine</c> feature.
+/// </summary>
 public sealed class ExpressionEngineTests
 {
+    /// <summary>
+    /// Verifies that evaluate simple property returns value.
+    /// </summary>
     [Fact]
     public void Evaluate_SimpleProperty_ReturnsValue()
     {
@@ -18,6 +24,9 @@ public sealed class ExpressionEngineTests
         Assert.False(result.UsedCache);
     }
 
+    /// <summary>
+    /// Verifies that evaluate nested property returns value.
+    /// </summary>
     [Fact]
     public void Evaluate_NestedProperty_ReturnsValue()
     {
@@ -33,6 +42,9 @@ public sealed class ExpressionEngineTests
         Assert.Equal(1250m, result.Value);
     }
 
+    /// <summary>
+    /// Verifies that evaluate collection access returns value.
+    /// </summary>
     [Fact]
     public void Evaluate_CollectionAccess_ReturnsValue()
     {
@@ -52,6 +64,9 @@ public sealed class ExpressionEngineTests
         Assert.Equal(100m, result.Value);
     }
 
+    /// <summary>
+    /// Verifies that evaluate invalid expression returns error.
+    /// </summary>
     [Fact]
     public void Evaluate_InvalidExpression_ReturnsError()
     {
@@ -66,6 +81,9 @@ public sealed class ExpressionEngineTests
         Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
     }
 
+    /// <summary>
+    /// Verifies that evaluate null property returns null.
+    /// </summary>
     [Fact]
     public void Evaluate_NullProperty_ReturnsNull()
     {
@@ -78,6 +96,9 @@ public sealed class ExpressionEngineTests
         Assert.Null(result.Value);
     }
 
+    /// <summary>
+    /// Verifies that cache same expression returns cached result.
+    /// </summary>
     [Fact]
     public void Cache_SameExpression_ReturnsCachedResult()
     {

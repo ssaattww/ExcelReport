@@ -3,8 +3,14 @@ using ExcelReportLib.DSL.AST;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>StyleAst</c> feature.
+/// </summary>
 public sealed class StyleAstTests
 {
+    /// <summary>
+    /// Verifies that parse style has borders.
+    /// </summary>
     [Fact]
     public void Parse_Style_HasBorders()
     {
@@ -16,6 +22,9 @@ public sealed class StyleAstTests
         Assert.Equal("#000000", border.Color);
     }
 
+    /// <summary>
+    /// Verifies that parse style has scope.
+    /// </summary>
     [Fact]
     public void Parse_Style_HasScope()
     {

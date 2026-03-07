@@ -5,8 +5,14 @@ using ExcelReportLib.Styles;
 
 namespace ExcelReportLib.Tests;
 
+/// <summary>
+/// Provides tests for the <c>StyleResolver</c> feature.
+/// </summary>
 public sealed class StyleResolverTests
 {
+    /// <summary>
+    /// Verifies that resolve by name returns style.
+    /// </summary>
     [Fact]
     public void Resolve_ByName_ReturnsStyle()
     {
@@ -23,6 +29,9 @@ public sealed class StyleResolverTests
         Assert.Equal(11d, style.FontSize);
     }
 
+    /// <summary>
+    /// Verifies that resolve unknown name returns error.
+    /// </summary>
     [Fact]
     public void Resolve_UnknownName_ReturnsError()
     {
@@ -37,6 +46,9 @@ public sealed class StyleResolverTests
         Assert.Equal(IssueKind.UndefinedStyle, issue.Kind);
     }
 
+    /// <summary>
+    /// Verifies that resolve grid scope for cell suppresses scope violation and drops borders.
+    /// </summary>
     [Fact]
     public void Resolve_GridScopeForCell_SuppressesScopeViolationAndDropsBorders()
     {
@@ -55,6 +67,9 @@ public sealed class StyleResolverTests
         Assert.Empty(resolved.Borders);
     }
 
+    /// <summary>
+    /// Verifies that resolve cell scope for grid returns scope violation warning.
+    /// </summary>
     [Fact]
     public void Resolve_CellScopeForGrid_ReturnsScopeViolationWarning()
     {
@@ -75,6 +90,9 @@ public sealed class StyleResolverTests
         Assert.Empty(resolved.Borders);
     }
 
+    /// <summary>
+    /// Verifies that build plan inline overrides ref correct priority.
+    /// </summary>
     [Fact]
     public void BuildPlan_InlineOverridesRef_CorrectPriority()
     {
@@ -126,6 +144,9 @@ public sealed class StyleResolverTests
             kind => Assert.Equal(StyleSourceKind.Inline, kind));
     }
 
+    /// <summary>
+    /// Verifies that build plan sheet default applied when no explicit.
+    /// </summary>
     [Fact]
     public void BuildPlan_SheetDefault_AppliedWhenNoExplicit()
     {
@@ -156,6 +177,9 @@ public sealed class StyleResolverTests
         Assert.Equal(2, plan.AppliedStyles.Count);
     }
 
+    /// <summary>
+    /// Verifies that build plan multiple borders all resolved.
+    /// </summary>
     [Fact]
     public void BuildPlan_MultipleBorders_AllResolved()
     {
