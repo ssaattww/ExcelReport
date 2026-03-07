@@ -49,7 +49,6 @@ public sealed class XlsxRenderer : IRenderer
             stylesPart.Stylesheet.Save();
 
             var sheets = workbookPart.Workbook.AppendChild(new Sheets());
-            var definedNames = new List<DefinedName>();
             uint nextSheetId = 1;
 
             foreach (var worksheet in worksheets)
@@ -67,8 +66,6 @@ public sealed class XlsxRenderer : IRenderer
                         SheetId = nextSheetId++,
                         Name = worksheet.Name,
                     });
-
-                AppendDefinedNames(definedNames, worksheet);
             }
 
             if (effectiveIssues.Count > 0)
@@ -90,11 +87,6 @@ public sealed class XlsxRenderer : IRenderer
                 "_Audit",
                 BuildAuditWorksheet(effectiveOptions),
                 SheetStateValues.Hidden);
-
-            if (definedNames.Count > 0)
-            {
-                workbookPart.Workbook.DefinedNames = new DefinedNames(definedNames);
-            }
 
             workbookPart.Workbook.Save();
         }
@@ -349,21 +341,6 @@ public sealed class XlsxRenderer : IRenderer
 
         var reference = TryResolveRangeReference(sheetState, autoFilterTarget);
         return reference is null ? null : new AutoFilter { Reference = reference };
-    }
-
-    private static void AppendDefinedNames(
-        ICollection<DefinedName> definedNames,
-        WorksheetStateModel sheetState)
-    {
-        foreach (var namedArea in sheetState.NamedAreas.Values)
-        {
-            definedNames.Add(
-                new DefinedName
-                {
-                    Name = namedArea.Name,
-                    Text = $"{QuoteSheetName(sheetState.Name)}!{ToAbsoluteCellReference(namedArea.TopRow, namedArea.LeftColumn)}:{ToAbsoluteCellReference(namedArea.BottomRow, namedArea.RightColumn)}",
-                });
-        }
     }
 
     private static void AddSpecialSheet(
@@ -631,9 +608,6 @@ public sealed class XlsxRenderer : IRenderer
 
     private static bool IsColumnToken(string token) =>
         token.Length > 0 && token.All(char.IsLetter);
-
-    private static string QuoteSheetName(string sheetName) =>
-        $"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'";
 
     private static string ToCellReference(int row, int column) =>
         $"{ColumnIndexToName(column)}{row}";

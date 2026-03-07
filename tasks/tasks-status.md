@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
 
 ## Progress Summary
 
+- 2026-03-07 追加対応: RendererでWorkbookの名前定義(DefinedNames)を非出力化
+- 2026-03-07 実装対応: formula placeholder を直接セルアドレス化し、formulaRef由来の名前定義増加を停止
 
 - 2026-03-07 運用対応: sample.xlsx のスタイル検証で OpenXML font順序不整合を修正し、再検証で0エラーを確認
 - Completed: 21 / 21

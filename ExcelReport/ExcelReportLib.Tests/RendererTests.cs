@@ -393,6 +393,7 @@ public sealed class RendererTests
         Assert.True(rows[7U].Hidden!.Value);
         Assert.True(rows[8U].Hidden!.Value);
         Assert.True(rows[8U].Collapsed!.Value);
+        Assert.Null(document.WorkbookPart!.Workbook.DefinedNames);
     }
 
     /// <summary>
@@ -422,6 +423,7 @@ public sealed class RendererTests
         var worksheetPart = GetWorksheetPart(document, "Summary");
 
         Assert.Equal("SUM(B6:B7)+B6", GetCell(worksheetPart, "B8").CellFormula!.Text);
+        Assert.Null(document.WorkbookPart!.Workbook.DefinedNames);
     }
 
     /// <summary>

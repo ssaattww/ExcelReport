@@ -4,6 +4,8 @@ Last Updated: 2026-03-07
 
 ## Overall Progress
 
+- 2026-03-07: DefinedNames 非出力化（名前定義を出力しない方針へ変更）を実施
+- 2026-03-07: formula placeholder 直接アドレス化（formulaRef由来 DefinedName 非出力化）を実施
 - 2026-03-07: sample.xlsx スタイル修正（font要素順序のOpenXMLスキーマ適合化）を実施
 - Completed Phases: 8 / 9
 - In Progress Phases: 1 / 9

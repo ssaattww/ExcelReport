@@ -305,10 +305,10 @@ public sealed class WorksheetStateTests
     }
 
     /// <summary>
-    /// Verifies that build formula ref placeholders resolved to cell references.
+    /// Verifies that build formula ref placeholders resolved to cell references without registering formula ref named areas.
     /// </summary>
     [Fact]
-    public void Build_FormulaRefPlaceholders_ResolvedToCellReferences()
+    public void Build_FormulaRefPlaceholders_ResolvedToCellReferences_WithoutRegisteringNamedAreas()
     {
         var plan = new LayoutPlan(
             [
@@ -327,14 +327,10 @@ public sealed class WorksheetStateTests
 
         var sheet = Assert.Single(builder.Build(plan));
         var formulaCell = sheet.Cells[(8, 2)];
-        var start = sheet.NamedAreas["Detail.Value"];
-        var end = sheet.NamedAreas["Detail.ValueEnd"];
 
-        Assert.Equal(6, start.TopRow);
-        Assert.Equal(2, start.LeftColumn);
-        Assert.Equal(7, end.TopRow);
-        Assert.Equal(2, end.LeftColumn);
         Assert.Equal("=SUM(B6:B7)+B6", formulaCell.Formula);
+        Assert.DoesNotContain("Detail.Value", sheet.NamedAreas.Keys);
+        Assert.DoesNotContain("Detail.ValueEnd", sheet.NamedAreas.Keys);
     }
 
     /// <summary>
