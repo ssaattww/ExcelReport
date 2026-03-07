@@ -315,6 +315,7 @@ public sealed class ReportGeneratorTests
         Assert.Equal("TestUser", ReadCellValue(document, GetCell(document, "Summary", "B2")));
         Assert.Equal("Item1", ReadCellValue(document, GetCell(document, "Summary", "A7")));
         Assert.Equal("A02", ReadCellValue(document, GetCell(document, "Summary", "C8")));
+        Assert.Null(document.WorkbookPart!.Workbook.DefinedNames);
     }
 
     /// <summary>
@@ -471,6 +472,7 @@ public sealed class ReportGeneratorTests
         Assert.Equal("TestUser", ReadCellValue(document, GetCell(document, "Summary", "B2")));
         Assert.Equal("Item1", ReadCellValue(document, GetCell(document, "Summary", "A7")));
         Assert.Equal("A02", ReadCellValue(document, GetCell(document, "Summary", "C8")));
+        Assert.Null(document.WorkbookPart!.Workbook.DefinedNames);
 
         var worksheetPart = GetWorksheetPart(document, "Summary");
         var pane = worksheetPart.Worksheet

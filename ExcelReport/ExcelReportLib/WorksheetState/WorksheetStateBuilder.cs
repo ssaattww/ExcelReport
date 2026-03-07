@@ -92,7 +92,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         var namedAreas = BuildNamedAreas(layoutSheet);
-        var resolvedCells = ResolveFormulaPlaceholders(cells, namedAreas);
+        var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
+        var resolvedCells = ResolveFormulaPlaceholders(cells, formulaPlaceholderAreas);
         var options = BuildOptions(layoutSheet.Options, namedAreas);
 
         return new WorksheetState(
@@ -121,8 +122,16 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 area.RightColumn);
         }
 
-        AddFormulaReferenceNamedAreas(layoutSheet, namedAreas);
         return namedAreas;
+    }
+
+    private static IReadOnlyDictionary<string, NamedAreaState> BuildFormulaPlaceholderAreas(
+        LayoutSheet layoutSheet,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+    {
+        var placeholderAreas = new Dictionary<string, NamedAreaState>(namedAreas, StringComparer.Ordinal);
+        AddFormulaReferenceNamedAreas(layoutSheet, placeholderAreas);
+        return placeholderAreas;
     }
 
     private static IReadOnlyDictionary<(int Row, int Column), CellState> ResolveFormulaPlaceholders(
@@ -233,7 +242,6 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     {
         if (namedAreas.ContainsKey(name))
         {
-            namedAreas.TryAdd(name, CreateCellNamedArea(name, cell));
             return;
         }
 
