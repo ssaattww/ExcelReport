@@ -14,6 +14,9 @@ using WorksheetStateModel = ExcelReportLib.WorksheetState.WorksheetState;
 
 namespace ExcelReportLib;
 
+/// <summary>
+/// Represents report generator.
+/// </summary>
 public sealed class ReportGenerator
 {
     private readonly IExpressionEngine _expressionEngine;

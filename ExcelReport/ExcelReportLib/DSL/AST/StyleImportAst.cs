@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml;
@@ -6,15 +6,39 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST
 {
+    /// <summary>
+    /// Represents style import ast.
+    /// </summary>
     public class StyleImportAst : IAst<StyleImportAst>
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "styleImport";
+        /// <summary>
+        /// Gets or sets the path str.
+        /// </summary>
         public string PathStr { get; init; }
 
+        /// <summary>
+        /// Gets or sets the href raw.
+        /// </summary>
         public string HrefRaw { get; init; }
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
+        /// <summary>
+        /// Gets or sets the styles ast.
+        /// </summary>
         public StylesAst StylesAst { get; init; }
+        /// <summary>
+        /// Initializes a new instance of the style import ast type.
+        /// </summary>
+        /// <param name="elem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
+        /// <param name="dslDir">The base directory used to resolve relative imports.</param>
         public StyleImportAst(XElement elem, List<Issue> issues, string dslDir = "")
         {
             Span = SourceSpan.CreateSpanAttributes(elem);

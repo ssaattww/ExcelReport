@@ -11,10 +11,21 @@ using WorksheetStateModel = ExcelReportLib.WorksheetState.WorksheetState;
 
 namespace ExcelReportLib.Renderer;
 
+/// <summary>
+/// Represents xlsx renderer.
+/// </summary>
 public sealed class XlsxRenderer : IRenderer
 {
     private const string DefaultDateFormatCode = "yyyy-mm-dd";
 
+    /// <summary>
+    /// Renders worksheet state into an XLSX workbook stream.
+    /// </summary>
+    /// <param name="worksheets">The worksheets.</param>
+    /// <param name="options">Options that control the operation.</param>
+    /// <param name="issues">The collection used to collect discovered issues.</param>
+    /// <param name="cancellationToken">The cancellation token to observe.</param>
+    /// <returns>The resulting render result.</returns>
     public RenderResult Render(
         IReadOnlyList<WorksheetStateModel> worksheets,
         RenderOptions? options = null,
@@ -668,6 +679,9 @@ public sealed class XlsxRenderer : IRenderer
             Stylesheet = stylesheet;
         }
 
+        /// <summary>
+        /// Gets the generated workbook stylesheet containing all registered formats.
+        /// </summary>
         public Stylesheet Stylesheet { get; }
 
         public static StyleCatalog Create(IReadOnlyList<WorksheetStateModel> worksheets)

@@ -1,4 +1,4 @@
-﻿using ExcelReportLib.DSL.AST.LayoutNode;
+using ExcelReportLib.DSL.AST.LayoutNode;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,8 +6,14 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST
 {
+    /// <summary>
+    /// Represents sheet ast.
+    /// </summary>
     public sealed class SheetAst : IAst<SheetAst>
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "sheet";
 
         /// <summary>
@@ -25,12 +31,29 @@ namespace ExcelReportLib.DSL.AST
         /// </summary>
         public int Cols { get; init; }
 
+        /// <summary>
+        /// Gets or sets the style refs.
+        /// </summary>
         public IReadOnlyList<StyleRefAst> StyleRefs { get; init; } = Array.Empty<StyleRefAst>();
+        /// <summary>
+        /// Gets or sets the children.
+        /// </summary>
         public IReadOnlyDictionary<Placement,LayoutNodeAst> Children { get; init; }
+        /// <summary>
+        /// Gets or sets the options.
+        /// </summary>
         public SheetOptionsAst? Options { get; init; }
 
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
+        /// <summary>
+        /// Initializes a new instance of the sheet ast type.
+        /// </summary>
+        /// <param name="sheetElem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
         public SheetAst(XElement sheetElem, List<Issue> issues)
         {
             // <sheet> 要素から SheetAst を構築する。

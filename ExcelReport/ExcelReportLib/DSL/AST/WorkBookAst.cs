@@ -1,24 +1,51 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST
 {
+    /// <summary>
+    /// Represents workbook ast.
+    /// </summary>
     public sealed class WorkbookAst
     {
+        /// <summary>
+        /// Gets or sets the styles.
+        /// </summary>
         public StylesAst? Styles { get; init; }         // <styles>（任意）
         
+        /// <summary>
+        /// Gets or sets the components.
+        /// </summary>
         public IReadOnlyList<ComponentAst>? Components { get; init; } // <component>*
+        /// <summary>
+        /// Gets or sets the component inports.
+        /// </summary>
         public IReadOnlyList<ComponentImportAst>? ComponentInports { get; init; } // <componentImport>*
+        /// <summary>
+        /// Gets or sets the sheets.
+        /// </summary>
         public IReadOnlyList<SheetAst> Sheets { get; init; } =default!; // <sheet>+
 
 
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
+        /// <summary>
+        /// Gets or sets the file path.
+        /// </summary>
         public string FilePath { get; init; } = string.Empty; // この AST が生成されたファイルのパス
 
 
+        /// <summary>
+        /// Initializes a new instance of the workbook ast type.
+        /// </summary>
+        /// <param name="workbookElem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
+        /// <param name="filePath">The file path.</param>
         public WorkbookAst(XElement workbookElem, List<Issue> issues, string? filePath = null)
         {
             // ルート <workbook> 要素から各子要素を AST に変換する。

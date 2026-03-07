@@ -16,6 +16,9 @@ namespace ExcelReportLib.DSL.AST
         /// </summary>
         public IReadOnlyList<StyleAst> Style{ get; }
 
+        /// <summary>
+        /// セルの配置情報
+        /// </summary>
         public Placement Placement { get; }
     }
 }

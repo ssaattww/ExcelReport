@@ -1,4 +1,4 @@
-﻿using ExcelReportLib.DSL.AST.LayoutNode;
+using ExcelReportLib.DSL.AST.LayoutNode;
 using System;
 using System.Collections.Generic;
 using System.Net.Security;
@@ -8,18 +8,45 @@ using System.Xml.Linq;
 
 namespace ExcelReportLib.DSL.AST
 {
+    /// <summary>
+    /// Represents component import ast.
+    /// </summary>
     public sealed class ComponentImportAst : IAst<ComponentImportAst>
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "componentImport";
+        /// <summary>
+        /// Gets or sets the href raw.
+        /// </summary>
         public string HrefRaw { get; private set; }
+        /// <summary>
+        /// Gets or sets the path str.
+        /// </summary>
         public string PathStr { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the components.
+        /// </summary>
         public ComponentsAst Components { get; init;}
 
+        /// <summary>
+        /// Gets or sets the styles.
+        /// </summary>
         public StylesAst? Styles { get; init; }         // <styles>（任意）
 
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
+        /// <summary>
+        /// Initializes a new instance of the component import ast type.
+        /// </summary>
+        /// <param name="elem">The source XML element.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
+        /// <param name="dslDir">The base directory used to resolve relative imports.</param>
         public ComponentImportAst(XElement elem, List<Issue> issues, string dslDir = "")
         {
             Span = SourceSpan.CreateSpanAttributes(elem);

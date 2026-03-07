@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
@@ -10,8 +10,17 @@ namespace ExcelReportLib.DSL.AST
     /// </summary>
     public sealed class StyleRefAst : IAst<StyleRefAst>
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "styleRef";
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
         public string Name { get; init; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the span.
+        /// </summary>
         public SourceSpan? Span { get; init; }
 
         /// <summary>
@@ -24,6 +33,11 @@ namespace ExcelReportLib.DSL.AST
         /// </summary>
         public StyleAst? StyleRef { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the style ref ast type.
+        /// </summary>
+        /// <param name="styleRefElem">The style ref elem.</param>
+        /// <param name="issues">The collection used to collect discovered issues.</param>
         public StyleRefAst(XElement styleRefElem, List<Issue> issues)
         {
             // <styleRef> 要素から StyleRefAst を構築する。

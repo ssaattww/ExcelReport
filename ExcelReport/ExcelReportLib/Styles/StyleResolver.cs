@@ -3,16 +3,27 @@ using ExcelReportLib.DSL.AST;
 
 namespace ExcelReportLib.Styles;
 
+/// <summary>
+/// Represents style resolver.
+/// </summary>
 public sealed class StyleResolver : IStyleResolver
 {
     private static readonly IReadOnlyDictionary<string, StyleAst> EmptyGlobalStyles =
         new Dictionary<string, StyleAst>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Initializes a new instance of the style resolver type.
+    /// </summary>
+    /// <param name="styles">The styles.</param>
     public StyleResolver(StylesAst? styles)
         : this(BuildGlobalStyles(styles))
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the style resolver type.
+    /// </summary>
+    /// <param name="globalStyles">The global styles.</param>
     public StyleResolver(IReadOnlyDictionary<string, StyleAst>? globalStyles)
     {
         GlobalStyles = globalStyles is null
@@ -20,8 +31,16 @@ public sealed class StyleResolver : IStyleResolver
             : new Dictionary<string, StyleAst>(globalStyles, StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// Gets the global styles.
+    /// </summary>
     public IReadOnlyDictionary<string, StyleAst> GlobalStyles { get; }
 
+    /// <summary>
+    /// Builds global styles.
+    /// </summary>
+    /// <param name="styles">The styles.</param>
+    /// <returns>The resulting style ast.</returns>
     public static IReadOnlyDictionary<string, StyleAst> BuildGlobalStyles(StylesAst? styles)
     {
         var globalStyles = new Dictionary<string, StyleAst>(StringComparer.Ordinal);
@@ -29,6 +48,11 @@ public sealed class StyleResolver : IStyleResolver
         return globalStyles;
     }
 
+    /// <summary>
+    /// Resolves by name.
+    /// </summary>
+    /// <param name="name">The target name.</param>
+    /// <returns>The resulting style ast.</returns>
     public StyleAst? ResolveByName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -41,6 +65,14 @@ public sealed class StyleResolver : IStyleResolver
             : null;
     }
 
+    /// <summary>
+    /// Resolves a named style for the specified target scope.
+    /// </summary>
+    /// <param name="styleName">The style name.</param>
+    /// <param name="target">The target.</param>
+    /// <param name="issues">The collection used to collect discovered issues.</param>
+    /// <param name="span">The span.</param>
+    /// <returns>The resulting resolved style.</returns>
     public ResolvedStyle? Resolve(
         string styleName,
         StyleTarget target,
@@ -62,6 +94,16 @@ public sealed class StyleResolver : IStyleResolver
         return ResolveStyleCore(style, styleName, StyleSourceKind.Reference, target, issues, span);
     }
 
+    /// <summary>
+    /// Builds plan.
+    /// </summary>
+    /// <param name="styleRefs">The style refs.</param>
+    /// <param name="inlineStyles">The inline styles.</param>
+    /// <param name="sheetDefault">The sheet default.</param>
+    /// <param name="workbookDefault">The workbook default.</param>
+    /// <param name="target">The target.</param>
+    /// <param name="issues">The collection used to collect discovered issues.</param>
+    /// <returns>The resulting style plan.</returns>
     public StylePlan BuildPlan(
         IEnumerable<StyleRefAst>? styleRefs,
         IEnumerable<StyleAst>? inlineStyles,

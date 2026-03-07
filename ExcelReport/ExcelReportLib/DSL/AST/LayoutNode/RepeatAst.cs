@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
@@ -10,6 +10,9 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// </summary>
     public sealed class RepeatAst : LayoutNodeAst
     {
+        /// <summary>
+        /// Gets the DSL element tag name.
+        /// </summary>
         public static string TagName => "repeat";
         /// <summary>
         /// ノードの定義名
@@ -96,10 +99,22 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             Body = body;
         }
     }
+    /// <summary>
+    /// Specifies repeat direction values.
+    /// </summary>
     public enum RepeatDirection
     {
+        /// <summary>
+        /// Represents the down option.
+        /// </summary>
         Down,
+        /// <summary>
+        /// Represents the right option.
+        /// </summary>
         Right,
+        /// <summary>
+        /// Represents err.
+        /// </summary>
         Err
     }
 }
