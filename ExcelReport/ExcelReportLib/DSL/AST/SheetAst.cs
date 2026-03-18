@@ -27,6 +27,21 @@ namespace ExcelReportLib.DSL.AST
         public int Rows { get; init; }
 
         /// <summary>
+        /// シート反復元の式。未指定時は空。
+        /// </summary>
+        public string FromExprRaw { get; init; } = string.Empty;
+
+        /// <summary>
+        /// シート反復時の変数名。省略時は item。
+        /// </summary>
+        public string VarName { get; init; } = "item";
+
+        /// <summary>
+        /// var 属性が明示指定されたかを取得します。
+        /// </summary>
+        public bool HasVarAttribute { get; init; }
+
+        /// <summary>
         /// シート列数。省略時は 0。
         /// </summary>
         public int Cols { get; init; }
@@ -91,9 +106,15 @@ namespace ExcelReportLib.DSL.AST
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
+            var fromExprRaw = sheetElem.Attribute("from")?.Value ?? string.Empty;
+            var varAttr = sheetElem.Attribute("var");
+            var varName = string.IsNullOrWhiteSpace(varAttr?.Value) ? "item" : varAttr!.Value;
 
             Name = name;
             Rows = ParseOptionalNonNegativeIntAttribute(sheetElem, "rows", issues);
+            FromExprRaw = fromExprRaw;
+            VarName = varName;
+            HasVarAttribute = varAttr is not null;
             Cols = ParseOptionalNonNegativeIntAttribute(sheetElem, "cols", issues);
             StyleRefs = styles;
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);

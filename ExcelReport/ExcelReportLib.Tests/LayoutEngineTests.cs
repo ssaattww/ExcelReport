@@ -659,6 +659,72 @@ public sealed class LayoutEngineTests
         Assert.Equal(15, cellsByValue["R2"].Col);
     }
 
+    /// <summary>
+    /// Verifies that expand sheet from expression expands multiple sheets.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetRepeat_ExpandsMultipleSheets()
+    {
+        var root = new RepeatRoot
+        {
+            Items =
+            [
+                new RepeatItem { Name = "North" },
+                new RepeatItem { Name = "South" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="@(it.Name)" from="@(root.Items)" var="it">
+                <cell r="1" c="1" value="@(it.Name)" />
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        Assert.Equal(2, plan.Sheets.Count);
+        var first = plan.Sheets[0];
+        var second = plan.Sheets[1];
+
+        Assert.Equal("North", first.Name);
+        Assert.Equal("South", second.Name);
+        Assert.Equal("North", Assert.Single(first.Cells).Value);
+        Assert.Equal("South", Assert.Single(second.Cells).Value);
+        Assert.DoesNotContain(plan.Issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
+    /// Verifies that expand sheet repeat duplicate names emits duplicate sheet issue.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetRepeat_DuplicateNames_EmitsDuplicateSheetIssue()
+    {
+        var root = new RepeatRoot
+        {
+            Items =
+            [
+                new RepeatItem { Name = "Same" },
+                new RepeatItem { Name = "Same" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="@(it.Name)" from="@(root.Items)" var="it">
+                <cell r="1" c="1" value="Value" />
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        Assert.Contains(
+            plan.Issues,
+            issue => issue.Severity == IssueSeverity.Error && issue.Kind == IssueKind.DuplicateSheetName);
+    }
+
     private static LayoutPlan Expand(string workbookXml, object? rootData = null)
     {
         var parseResult = DslParser.ParseFromText(
@@ -704,3 +770,5 @@ public sealed class LayoutEngineTests
         public string Right { get; init; } = string.Empty;
     }
 }
+
+

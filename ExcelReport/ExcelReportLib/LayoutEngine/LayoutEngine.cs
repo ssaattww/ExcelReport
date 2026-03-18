@@ -47,48 +47,143 @@ public sealed class LayoutEngine : ILayoutEngine
         var componentIndex = BuildComponentIndex(workbook);
         var sheets = new List<LayoutSheet>(workbook.Sheets.Count);
         var rootVars = new Dictionary<string, object?>(StringComparer.Ordinal);
+        var expandedSheetNames = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var sheet in workbook.Sheets)
         {
-            var cells = new List<LayoutCell>();
-            var namedAreas = new List<LayoutNamedArea>();
-            var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
-
-            foreach (var child in sheet.Children.Values)
+            if (string.IsNullOrWhiteSpace(sheet.FromExprRaw))
             {
-                var result = ExpandNode(
-                    child,
-                    baseRow: 1,
-                    baseCol: 1,
+                var resolvedName = ResolveSheetName(sheet, rootData, rootData, rootVars, issues);
+                ExpandSheet(
+                    sheet,
+                    resolvedName,
                     rootData,
                     rootData,
                     rootVars,
-                    inheritedStyles,
                     componentIndex,
                     styleResolver,
+                    sheets,
+                    expandedSheetNames,
                     issues);
-
-                if (result.Cells.Count > 0)
-                {
-                    cells.AddRange(result.Cells);
-                }
-
-                if (result.NamedAreas.Count > 0)
-                {
-                    namedAreas.AddRange(result.NamedAreas);
-                }
+                continue;
             }
 
-            var maxUsedRow = GetMaxUsedRow(cells);
-            var maxUsedCol = GetMaxUsedCol(cells);
-            var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 1);
-            var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
+            var sequence = EvaluateSequence(sheet.FromExprRaw, rootData, rootData, rootVars, issues, owner: "sheet");
+            if (sequence is null)
+            {
+                continue;
+            }
 
-            ValidateCoordinates(sheet.Name, resolvedSheetRows, resolvedSheetCols, cells, issues);
-            sheets.Add(new LayoutSheet(sheet.Name, cells, resolvedSheetRows, resolvedSheetCols, namedAreas, sheet.Options));
+            foreach (var item in sequence)
+            {
+                var sheetVars = CloneVars(rootVars);
+                sheetVars[sheet.VarName] = item;
+
+                var resolvedName = ResolveSheetName(sheet, rootData, item, sheetVars, issues);
+                ExpandSheet(
+                    sheet,
+                    resolvedName,
+                    rootData,
+                    item,
+                    sheetVars,
+                    componentIndex,
+                    styleResolver,
+                    sheets,
+                    expandedSheetNames,
+                    issues);
+            }
         }
 
         return new LayoutPlan(sheets, issues);
+    }
+
+    private void ExpandSheet(
+        SheetAst sheet,
+        string sheetName,
+        object? rootData,
+        object? dataContext,
+        IReadOnlyDictionary<string, object?> vars,
+        IReadOnlyDictionary<string, ComponentAst> componentIndex,
+        IStyleResolver styleResolver,
+        ICollection<LayoutSheet> sheets,
+        ISet<string> expandedSheetNames,
+        IList<Issue> issues)
+    {
+        if (string.IsNullOrWhiteSpace(sheetName))
+        {
+            issues.Add(new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = IssueKind.InvalidAttributeValue,
+                Message = "sheet 名が空です。",
+                Span = sheet.Span,
+            });
+            return;
+        }
+
+        if (!expandedSheetNames.Add(sheetName))
+        {
+            issues.Add(new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = IssueKind.DuplicateSheetName,
+                Message = $"Sheet 名が重複しています: {sheetName}",
+                Span = sheet.Span,
+            });
+        }
+
+        var cells = new List<LayoutCell>();
+        var namedAreas = new List<LayoutNamedArea>();
+        var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
+
+        foreach (var child in sheet.Children.Values)
+        {
+            var result = ExpandNode(
+                child,
+                baseRow: 1,
+                baseCol: 1,
+                rootData,
+                dataContext,
+                vars,
+                inheritedStyles,
+                componentIndex,
+                styleResolver,
+                issues);
+
+            if (result.Cells.Count > 0)
+            {
+                cells.AddRange(result.Cells);
+            }
+
+            if (result.NamedAreas.Count > 0)
+            {
+                namedAreas.AddRange(result.NamedAreas);
+            }
+        }
+
+        var maxUsedRow = GetMaxUsedRow(cells);
+        var maxUsedCol = GetMaxUsedCol(cells);
+        var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 1);
+        var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
+
+        ValidateCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, cells, issues);
+        sheets.Add(new LayoutSheet(sheetName, cells, resolvedSheetRows, resolvedSheetCols, namedAreas, sheet.Options));
+    }
+
+    private string ResolveSheetName(
+        SheetAst sheet,
+        object? rootData,
+        object? dataContext,
+        IReadOnlyDictionary<string, object?> vars,
+        IList<Issue> issues)
+    {
+        if (!LooksLikeExpression(sheet.Name))
+        {
+            return sheet.Name;
+        }
+
+        var value = EvaluateExpressionValue(sheet.Name, rootData, dataContext, vars, issues);
+        return value?.ToString() ?? string.Empty;
     }
 
     private ExpandResult ExpandNode(
@@ -504,7 +599,8 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
-        IList<Issue> issues)
+        IList<Issue> issues,
+        string owner = "repeat")
     {
         var value = EvaluateExpressionValue(expression, rootData, dataContext, vars, issues);
         if (value is null)
@@ -518,7 +614,7 @@ public sealed class LayoutEngine : ILayoutEngine
             {
                 Severity = IssueSeverity.Error,
                 Kind = IssueKind.InvalidAttributeValue,
-                Message = $"repeat from はコレクションである必要があります: {expression}",
+                Message = $"{owner} from はコレクションである必要があります: {expression}",
             });
             return null;
         }
@@ -532,7 +628,7 @@ public sealed class LayoutEngine : ILayoutEngine
         {
             Severity = IssueSeverity.Error,
             Kind = IssueKind.InvalidAttributeValue,
-            Message = $"repeat from はコレクションである必要があります: {expression}",
+            Message = $"{owner} from はコレクションである必要があります: {expression}",
         });
         return null;
     }
