@@ -397,6 +397,68 @@ public sealed class RendererTests
     }
 
     /// <summary>
+    /// Verifies that render nested row and column groups produce calculated outline levels.
+    /// </summary>
+    [Fact]
+    public void Render_NestedGroups_OutlineLevelsAreAutoCalculated()
+    {
+        var sheet = CreateWorksheet(
+            "Grouped",
+            cells:
+            [
+                CreateCell(1, 1, "Header"),
+            ],
+            options: new WorksheetOptionsState(
+                freezePanes: null,
+                rowGroups:
+                [
+                    new WorksheetGroupState("2:9", collapsed: false),
+                    new WorksheetGroupState("4:7", collapsed: true),
+                    new WorksheetGroupState("5:6", collapsed: false),
+                ],
+                columnGroups:
+                [
+                    new WorksheetGroupState("A:F", collapsed: false),
+                    new WorksheetGroupState("B:E", collapsed: true),
+                    new WorksheetGroupState("C:D", collapsed: false),
+                ],
+                autoFilter: null));
+
+        var renderer = CreateRenderer();
+        var result = renderer.Render([sheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Grouped");
+
+        var rows = worksheetPart.Worksheet.Descendants<Row>()
+            .Where(row => row.RowIndex is not null)
+            .ToDictionary(row => row.RowIndex!.Value);
+
+        Assert.Equal((byte)1, rows[2U].OutlineLevel!.Value);
+        Assert.Equal((byte)2, rows[4U].OutlineLevel!.Value);
+        Assert.Equal((byte)3, rows[5U].OutlineLevel!.Value);
+        Assert.Equal((byte)3, rows[6U].OutlineLevel!.Value);
+        Assert.Equal((byte)2, rows[7U].OutlineLevel!.Value);
+        Assert.Equal((byte)1, rows[9U].OutlineLevel!.Value);
+
+        Assert.Null(rows[2U].Hidden);
+        Assert.True(rows[4U].Hidden!.Value);
+        Assert.True(rows[5U].Hidden!.Value);
+        Assert.True(rows[6U].Hidden!.Value);
+        Assert.True(rows[7U].Hidden!.Value);
+
+        Assert.Null(rows[6U].Collapsed);
+        Assert.True(rows[7U].Collapsed!.Value);
+
+        AssertColumnState(worksheetPart.Worksheet, index: 1, level: 1, hidden: false, collapsed: false);
+        AssertColumnState(worksheetPart.Worksheet, index: 2, level: 2, hidden: true, collapsed: false);
+        AssertColumnState(worksheetPart.Worksheet, index: 3, level: 3, hidden: true, collapsed: false);
+        AssertColumnState(worksheetPart.Worksheet, index: 4, level: 3, hidden: true, collapsed: false);
+        AssertColumnState(worksheetPart.Worksheet, index: 5, level: 2, hidden: true, collapsed: true);
+        AssertColumnState(worksheetPart.Worksheet, index: 6, level: 1, hidden: false, collapsed: false);
+    }
+
+    /// <summary>
     /// Verifies that render formula ref placeholders are resolved before writing formula.
     /// </summary>
     [Fact]
@@ -525,6 +587,29 @@ public sealed class RendererTests
         Assert.Contains(sheets, sheet => sheet.Name == "Detail");
         Assert.Equal(2, result.SheetCount);
         Assert.Equal(3, result.CellCount);
+    }
+
+    private static void AssertColumnState(
+        Worksheet worksheet,
+        uint index,
+        byte level,
+        bool hidden,
+        bool collapsed)
+    {
+        var columns = worksheet.GetFirstChild<Columns>();
+        Assert.NotNull(columns);
+
+        var column = columns!
+            .Elements<Column>()
+            .Single(current =>
+                current.Min is not null &&
+                current.Max is not null &&
+                current.Min.Value <= index &&
+                current.Max.Value >= index);
+
+        Assert.Equal(level, column.OutlineLevel!.Value);
+        Assert.Equal(hidden, column.Hidden?.Value ?? false);
+        Assert.Equal(collapsed, column.Collapsed?.Value ?? false);
     }
 
     private static IRenderer CreateRenderer() => new XlsxRenderer();
@@ -681,3 +766,4 @@ public sealed class RendererTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 }
+

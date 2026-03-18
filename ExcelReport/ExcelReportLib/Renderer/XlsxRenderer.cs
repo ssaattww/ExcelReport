@@ -204,8 +204,7 @@ public sealed class XlsxRenderer : IRenderer
             return null;
         }
 
-        var columns = new Columns();
-
+        var ranges = new List<GroupRangeState>();
         foreach (var group in sheetState.Options.ColumnGroups)
         {
             if (!TryResolveColumnRange(sheetState, group.Target, out var start, out var end))
@@ -213,24 +212,57 @@ public sealed class XlsxRenderer : IRenderer
                 continue;
             }
 
-            columns.Append(
-                new Column
-                {
-                    Min = start,
-                    Max = end,
-                    OutlineLevel = 1,
-                    Hidden = group.Collapsed,
-                    Collapsed = group.Collapsed,
-                });
+            ranges.Add(new GroupRangeState(start, end, group.Collapsed));
         }
 
-        return columns.ChildElements.Count == 0 ? null : columns;
+        var outlineStates = BuildOutlineStates(ranges);
+        if (outlineStates.Count == 0)
+        {
+            return null;
+        }
+
+        var columns = new Columns();
+        var orderedStates = outlineStates
+            .OrderBy(entry => entry.Key)
+            .ToArray();
+
+        var segmentStart = orderedStates[0].Key;
+        var segmentEnd = orderedStates[0].Key;
+        var segmentState = orderedStates[0].Value;
+
+        for (var index = 1; index < orderedStates.Length; index++)
+        {
+            var current = orderedStates[index];
+            if (current.Key != segmentEnd + 1 || current.Value != segmentState)
+            {
+                columns.Append(CreateGroupedColumn(segmentStart, segmentEnd, segmentState));
+                segmentStart = current.Key;
+                segmentState = current.Value;
+            }
+
+            segmentEnd = current.Key;
+        }
+
+        columns.Append(CreateGroupedColumn(segmentStart, segmentEnd, segmentState));
+        return columns;
     }
+
+    private static Column CreateGroupedColumn(uint start, uint end, OutlineState state) =>
+        new()
+        {
+            Min = start,
+            Max = end,
+            OutlineLevel = state.OutlineLevel,
+            Hidden = state.Hidden ? true : null,
+            Collapsed = state.Collapsed ? true : null,
+        };
 
     private static void ApplyRowGroups(
         IDictionary<uint, Row> rowMap,
         IReadOnlyList<WorksheetGroupState> rowGroups)
     {
+        var ranges = new List<GroupRangeState>();
+
         foreach (var group in rowGroups)
         {
             if (!TryParseRowRange(group.Target, out var start, out var end))
@@ -238,22 +270,71 @@ public sealed class XlsxRenderer : IRenderer
                 continue;
             }
 
-            for (var rowIndex = start; rowIndex <= end; rowIndex++)
+            ranges.Add(new GroupRangeState(start, end, group.Collapsed));
+        }
+
+        var outlineStates = BuildOutlineStates(ranges);
+        foreach (var (rowIndex, state) in outlineStates.OrderBy(entry => entry.Key))
+        {
+            if (!rowMap.TryGetValue(rowIndex, out var row))
             {
-                if (!rowMap.TryGetValue(rowIndex, out var row))
+                row = new Row { RowIndex = rowIndex };
+                rowMap[rowIndex] = row;
+            }
+
+            row.OutlineLevel = state.OutlineLevel;
+            row.Hidden = state.Hidden ? true : null;
+            row.Collapsed = state.Collapsed ? true : null;
+        }
+    }
+
+    private static IReadOnlyDictionary<uint, OutlineState> BuildOutlineStates(
+        IReadOnlyList<GroupRangeState> groups)
+    {
+        if (groups.Count == 0)
+        {
+            return new Dictionary<uint, OutlineState>();
+        }
+
+        var depths = new Dictionary<uint, int>();
+        var hiddenIndexes = new HashSet<uint>();
+        var collapsedIndexes = new HashSet<uint>();
+
+        foreach (var group in groups)
+        {
+            for (var index = group.Start; index <= group.End; index++)
+            {
+                depths[index] = depths.TryGetValue(index, out var depth)
+                    ? depth + 1
+                    : 1;
+
+                if (group.Collapsed)
                 {
-                    row = new Row { RowIndex = rowIndex };
-                    rowMap[rowIndex] = row;
+                    hiddenIndexes.Add(index);
                 }
 
-                row.OutlineLevel = 1;
-                row.Hidden = group.Collapsed;
-                if (rowIndex == end)
+                if (index == group.End)
                 {
-                    row.Collapsed = group.Collapsed;
+                    break;
                 }
             }
+
+            if (group.Collapsed)
+            {
+                collapsedIndexes.Add(group.End);
+            }
         }
+
+        var states = new Dictionary<uint, OutlineState>(depths.Count);
+        foreach (var (index, depth) in depths)
+        {
+            states[index] = new OutlineState(
+                OutlineLevel: (byte)Math.Clamp(depth, 1, 8),
+                Hidden: hiddenIndexes.Contains(index),
+                Collapsed: collapsedIndexes.Contains(index));
+        }
+
+        return states;
     }
 
     private static Cell CreateCell(CellState cellState, StyleCatalog styleCatalog)
@@ -643,6 +724,10 @@ public sealed class XlsxRenderer : IRenderer
         return value;
     }
 
+    private readonly record struct GroupRangeState(uint Start, uint End, bool Collapsed);
+
+    private readonly record struct OutlineState(byte OutlineLevel, bool Hidden, bool Collapsed);
+
     private sealed class StyleCatalog
     {
         private readonly IReadOnlyDictionary<StyleKey, uint> _styleIndexes;
@@ -995,3 +1080,4 @@ public sealed class XlsxRenderer : IRenderer
             string? Color);
     }
 }
+
