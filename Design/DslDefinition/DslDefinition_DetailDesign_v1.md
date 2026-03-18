@@ -384,14 +384,18 @@ Area(name) = { topRow, bottomRow, leftCol, rightCol }
 
 ```xml
 <groups>
-  <groupRows at="DetailRows" collapsed="false"/>
-  <groupCols at="SomeCols"   collapsed="true"/>
+  <groupRows at="DetailRowsOuter" collapsed="false"/>
+  <groupRows at="DetailRowsInner" collapsed="true"/>
+  <groupCols at="SomeColsOuter"   collapsed="false"/>
+  <groupCols at="SomeColsInner"   collapsed="true"/>
 </groups>
 ```
 
 - 行グループ: `Area(name).topRow .. bottomRow` を対象。
 - 列グループ: `Area(name).leftCol .. rightCol` を対象。
-- `collapsed` が true の場合は Excel 側で折りたたんだ状態を指定。
+- ネストレベルは `groupRows/groupCols` の重なりから自動計算する（同じ行または列を覆うグループ数 = OutlineLevel）。
+- OutlineLevel は Excel 上限に合わせて `1..8` に丸める。
+- `collapsed` が true のグループに含まれる行/列は非表示にし、当該グループ終端に折りたたみマーカーを設定する。
 
 ### 7.4. autoFilter
 
@@ -635,3 +639,4 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
+
