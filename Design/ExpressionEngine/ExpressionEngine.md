@@ -4,7 +4,7 @@
 - As-Is: `ExpressionEngine` は Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) ベースで実装済み。
 - As-Is: API は `IExpressionEngine.Evaluate(string, ExpressionContext): ExpressionResult` を公開している。
 - As-Is: `Compilation Error` / `Runtime Error` を `IssueKind.ExpressionSyntaxError` / `IssueKind.ExpressionRuntimeError` で分類して返却する。
-- To-Be: 非公開型コンテキストに対するLINQ式サポートは制約があるため、必要に応じて公開DTO化または式側の明示キャスト運用を検討する。
+- As-Is: 非公開型/匿名型コンテキストでも `DynamicLinqRewriteMap` フォールバックにより主要LINQ式（`Where/Select/Sum/Count/Any/All/First/FirstOrDefault`）を評価できる。
 
 ## 1. 概要
 ExpressionEngine は、DSL 内の C# 式（`@(...)`）を評価し、`ExpressionResult` を返す。
@@ -92,10 +92,12 @@ public sealed class ScriptGlobals
 7. 失敗時は `ExpressionResult.Failure*` を返す。
 
 ### 4.2 LINQ式対応方針
-- `root/data` が公開型として強型付けできる場合、`Where/Sum/Select` など通常のLINQラムダ式を評価可能。
-- `root/data` が非公開型や匿名型で強型付けできない場合は `dynamic` フォールバック。
-  - この経路では「単純なメンバー/インデクサ参照」は互換維持する。
-  - ただし `dynamic` 呼び出し制約により、自然記法のLINQラムダ（例: `root.Items.Where(x => ...)`）は失敗し得る。
+- `root/data` が公開型として強型付けできる場合、`Where/Sum/Select` など通常のLINQラムダ式をそのまま評価する。
+- `root/data` が非公開型や匿名型で強型付けできず一次コンパイルが失敗した場合、`DynamicLinqRewriteMap` を使って式を再書き換えし、ヘルパー関数付きで再コンパイルする。
+  - マップ対象: `Where` / `Select` / `Sum` / `Count` / `Any` / `All` / `First` / `FirstOrDefault`。
+  - 例: `root.Lines.Where(x => x.Amount >= 150m)` → `__dynWhere((object)(root.Lines), x => x.Amount >= 150m)`。
+  - ヘルパー関数は `IEnumerable` を前提に列挙し、各要素を `DynamicValue.Wrap` して動的メンバー参照を維持する。
+- `DynamicValue` 自体は「動的アクセス用ラッパー」として扱うため、強型付け候補から除外し常に dynamic 束縛にする（`it.Name` などの評価を保証）。
 
 ### 4.3 キャッシュ方針
 - スコープ: `ExpressionEngine` インスタンス単位。
@@ -131,7 +133,7 @@ public sealed class ScriptGlobals
 - null合体: `data.Address?.City ?? "不明"`
 - vars参照: `vars["Key"]`
 - キャッシュ再利用
-- E2E: テンプレート内LINQ式（`repeat@from` と `cell@value`）
+- E2E: テンプレート内LINQ式（`repeat@from` と `cell@value`、匿名型入力を含む）
 
 ### 7.2 異常系
 - 構文エラー: `@(root.)` -> `ExpressionSyntaxError`
@@ -141,6 +143,14 @@ public sealed class ScriptGlobals
 - 式の静的型検査結果を DslParser 段階へ昇格すること。
 - Roslyn 実行のセキュアサンドボックス化。
 
-## 9. 変更履歴
+## 9. 制限事項
+- `DynamicLinqRewriteMap` の対象メソッド以外（例: `OrderBy/ThenBy/GroupBy/Distinct/Join/Skip/Take`）は自動書き換えされない。
+- 動的LINQヘルパーは入力を `IEnumerable` 前提で扱う。列挙不能オブジェクトに対しては実行時エラーとなる。
+- `Sum` は dynamic 加算で評価するため、型混在や独自演算子型では実行時エラーになり得る。
+- より汎用な公開プロキシ方式（非公開型を公開DTOへ射影して静的LINQを維持）は未実装。
+
+## 10. 変更履歴
 - 2026-03-19: Roslyn ベース実装へ設計を更新。
 - 2026-03-19: `root/data` の強型付けコンパイル計画と LINQ E2E 対応方針を追記。
+- 2026-03-19: 非公開型/匿名型入力時のLINQ制限事項を明文化。
+- 2026-03-19: `DynamicLinqRewriteMap` フォールバック方式を設計へ反映。

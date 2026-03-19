@@ -34,6 +34,7 @@ Last Updated: 2026-03-19
 | FP40 | sheet repeatの設計は別紙新規作成ではなく、Design/DslDefinition/DslDefinition_DetailDesign_v1.md を更新する形に統一する | 対応済み | 2026-03-19 |
 | FP41 | NuGet関連フォルダ（.nuget）はGit追跡しない。.gitignore で除外する | 対応済み | 2026-03-19 |
 | FP42 | E2Eテストを追加し、templateでLINQ式が使用できることを確認する | 対応済み | 2026-03-19 |
+| FP43 | バックグラウンド実行の状況を監視し、並列ジョブ暴走や残留プロセスを避けて進める | 対応中 | 2026-03-19 |
 
 ---
 

@@ -6,8 +6,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using ExcelReportLib.DSL;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ExcelReportLib.ExpressionEngine;
 
@@ -17,6 +19,19 @@ namespace ExcelReportLib.ExpressionEngine;
 public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 {
     private static readonly ScriptOptions DefaultScriptOptions = CreateDefaultScriptOptions();
+
+    private static readonly IReadOnlyDictionary<string, string> DynamicLinqRewriteMap =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Where"] = "__dynWhere",
+            ["Select"] = "__dynSelect",
+            ["Sum"] = "__dynSum",
+            ["Count"] = "__dynCount",
+            ["Any"] = "__dynAny",
+            ["All"] = "__dynAll",
+            ["First"] = "__dynFirst",
+            ["FirstOrDefault"] = "__dynFirstOrDefault",
+        };
 
     private readonly ConcurrentDictionary<string, Lazy<CompiledExpression>> _cache =
         new(StringComparer.Ordinal);
@@ -407,23 +422,139 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         var additionalReferences = new HashSet<Assembly>();
         var rootBinding = BuildContextBinding("root", "rootObj", context.Root?.GetType(), additionalReferences);
         var dataBinding = BuildContextBinding("data", "dataObj", context.Data?.GetType(), additionalReferences);
-        var scriptText = BuildScriptText(expression, rootBinding, dataBinding);
         var scriptOptions = CreateScriptOptions(additionalReferences);
         var cacheKey = BuildCacheKey(expression, rootBinding.CacheToken, dataBinding.CacheToken);
 
         return new ScriptCompileContext(
             cacheKey,
-            scriptText,
+            expression,
+            rootBinding,
+            dataBinding,
             scriptOptions,
             rootBinding.UseDynamic,
             dataBinding.UseDynamic);
     }
 
-    private static string BuildScriptText(string expression, ContextBinding rootBinding, ContextBinding dataBinding) =>
-        rootBinding.Declaration + Environment.NewLine +
-        dataBinding.Declaration + Environment.NewLine +
-        "dynamic vars = varsObj;" + Environment.NewLine +
-        $"return (object?)({expression});";
+    private static string BuildScriptText(
+        string expression,
+        ContextBinding rootBinding,
+        ContextBinding dataBinding,
+        bool includeDynamicLinqHelpers = false)
+    {
+        var script =
+            rootBinding.Declaration + Environment.NewLine +
+            dataBinding.Declaration + Environment.NewLine +
+            "dynamic vars = varsObj;" + Environment.NewLine;
+
+        if (includeDynamicLinqHelpers)
+        {
+            script += BuildDynamicLinqHelperScript() + Environment.NewLine;
+        }
+
+        return script + $"return (object?)({expression});";
+    }
+
+    private static string BuildDynamicLinqHelperScript() =>
+        """
+        IEnumerable<dynamic?> __dynToSeq(object? source)
+        {
+            if (source is null)
+            {
+                return Array.Empty<dynamic?>();
+            }
+
+            if (source is string text)
+            {
+                return text.Cast<dynamic?>();
+            }
+
+            if (source is IEnumerable enumerable)
+            {
+                return enumerable.Cast<object?>()
+                    .Select(static item => (dynamic?)global::ExcelReportLib.ExpressionEngine.ExpressionEngine.DynamicValue.Wrap(item));
+            }
+
+            throw new InvalidOperationException("Dynamic LINQ source must be IEnumerable.");
+        }
+
+        IEnumerable<dynamic?> __dynWhere(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).Where(item => predicate(item));
+
+        IEnumerable<dynamic?> __dynSelect(object? source, Func<dynamic?, dynamic?> selector) =>
+            __dynToSeq(source).Select(item => (dynamic?)global::ExcelReportLib.ExpressionEngine.ExpressionEngine.DynamicValue.Wrap(selector(item)));
+
+        dynamic __dynSum(object? source)
+        {
+            dynamic total = 0;
+            var hasValue = false;
+            foreach (var item in __dynToSeq(source))
+            {
+                if (item is null)
+                {
+                    continue;
+                }
+
+                if (!hasValue)
+                {
+                    total = item;
+                    hasValue = true;
+                    continue;
+                }
+
+                total += item;
+            }
+
+            return hasValue ? total : 0;
+        }
+
+        dynamic __dynSum(object? source, Func<dynamic?, dynamic?> selector)
+        {
+            dynamic total = 0;
+            var hasValue = false;
+            foreach (var item in __dynToSeq(source))
+            {
+                var value = selector(item);
+                if (value is null)
+                {
+                    continue;
+                }
+
+                if (!hasValue)
+                {
+                    total = value;
+                    hasValue = true;
+                    continue;
+                }
+
+                total += value;
+            }
+
+            return hasValue ? total : 0;
+        }
+
+        int __dynCount(object? source) => __dynToSeq(source).Count();
+
+        int __dynCount(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).Count(item => predicate(item));
+
+        bool __dynAny(object? source) => __dynToSeq(source).Any();
+
+        bool __dynAny(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).Any(item => predicate(item));
+
+        bool __dynAll(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).All(item => predicate(item));
+
+        dynamic? __dynFirst(object? source) => __dynToSeq(source).First();
+
+        dynamic? __dynFirst(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).First(item => predicate(item));
+
+        dynamic? __dynFirstOrDefault(object? source) => __dynToSeq(source).FirstOrDefault();
+
+        dynamic? __dynFirstOrDefault(object? source, Func<dynamic?, bool> predicate) =>
+            __dynToSeq(source).FirstOrDefault(item => predicate(item));
+        """;
 
     private static ContextBinding BuildContextBinding(
         string variableName,
@@ -533,6 +664,11 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             return elementType is not null && IsScriptVisibleType(elementType);
         }
 
+        if (typeof(DynamicValue).IsAssignableFrom(type))
+        {
+            return false;
+        }
+
         if (IsAnonymousType(type) || !IsPubliclyAccessible(type))
         {
             return false;
@@ -623,11 +759,46 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
     private static CompiledExpression Compile(ScriptCompileContext compileContext)
     {
+        var primaryScriptText = BuildScriptText(
+            compileContext.Expression,
+            compileContext.RootBinding,
+            compileContext.DataBinding,
+            includeDynamicLinqHelpers: false);
+
+        var primaryCompiled = CompileCore(primaryScriptText, compileContext.ScriptOptions);
+        if (primaryCompiled.CompileIssue is null)
+        {
+            return primaryCompiled;
+        }
+
+        if (!compileContext.UseDynamicRoot && !compileContext.UseDynamicData)
+        {
+            return primaryCompiled;
+        }
+
+        var rewrittenExpression = RewriteDynamicLinqExpression(compileContext.Expression);
+        if (string.Equals(rewrittenExpression, compileContext.Expression, StringComparison.Ordinal))
+        {
+            return primaryCompiled;
+        }
+
+        var fallbackScriptText = BuildScriptText(
+            rewrittenExpression,
+            compileContext.RootBinding,
+            compileContext.DataBinding,
+            includeDynamicLinqHelpers: true);
+
+        var fallbackCompiled = CompileCore(fallbackScriptText, compileContext.ScriptOptions);
+        return fallbackCompiled.CompileIssue is null ? fallbackCompiled : primaryCompiled;
+    }
+
+    private static CompiledExpression CompileCore(string scriptText, ScriptOptions scriptOptions)
+    {
         try
         {
             var script = CSharpScript.Create<object?>(
-                compileContext.ScriptText,
-                compileContext.ScriptOptions,
+                scriptText,
+                scriptOptions,
                 typeof(ScriptGlobals));
 
             var diagnostics = script.Compile();
@@ -652,6 +823,28 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         {
             return CompiledExpression.FailureCompilation(ex.Message);
         }
+    }
+
+
+    private static string RewriteDynamicLinqExpression(string expression)
+    {
+        ExpressionSyntax syntax;
+        try
+        {
+            syntax = SyntaxFactory.ParseExpression(expression);
+        }
+        catch
+        {
+            return expression;
+        }
+
+        if (syntax.ContainsDiagnostics)
+        {
+            return expression;
+        }
+
+        var rewrittenSyntax = (ExpressionSyntax)new DynamicLinqInvocationRewriter().Visit(syntax)!;
+        return rewrittenSyntax.ToFullString();
     }
     private static ScriptOptions CreateDefaultScriptOptions()
     {
@@ -750,10 +943,61 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
     private sealed record ScriptCompileContext(
         string CacheKey,
-        string ScriptText,
+        string Expression,
+        ContextBinding RootBinding,
+        ContextBinding DataBinding,
         ScriptOptions ScriptOptions,
         bool UseDynamicRoot,
         bool UseDynamicData);
+
+    private sealed class DynamicLinqInvocationRewriter : CSharpSyntaxRewriter
+    {
+        public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            var visitedNode = (InvocationExpressionSyntax)base.VisitInvocationExpression(node)!;
+
+            if (visitedNode.Expression is not MemberAccessExpressionSyntax memberAccess)
+            {
+                return visitedNode;
+            }
+
+            var methodName = memberAccess.Name.Identifier.ValueText;
+            if (!DynamicLinqRewriteMap.TryGetValue(methodName, out var helperName))
+            {
+                return visitedNode;
+            }
+
+            if (IsStaticLinqTarget(memberAccess.Expression))
+            {
+                return visitedNode;
+            }
+
+            var sourceArgument = SyntaxFactory.Argument(
+                SyntaxFactory.CastExpression(
+                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
+                    SyntaxFactory.ParenthesizedExpression(memberAccess.Expression.WithoutTrivia())));
+
+            var rewrittenArguments = visitedNode.ArgumentList.Arguments
+                .Insert(0, sourceArgument);
+            var rewrittenNode = SyntaxFactory.InvocationExpression(
+                SyntaxFactory.IdentifierName(helperName),
+                SyntaxFactory.ArgumentList(rewrittenArguments));
+
+            return rewrittenNode.WithTriviaFrom(visitedNode);
+        }
+
+        private static bool IsStaticLinqTarget(ExpressionSyntax expression)
+        {
+            if (expression is IdentifierNameSyntax identifier)
+            {
+                return identifier.Identifier.ValueText is "Enumerable" or "Queryable";
+            }
+
+            var text = expression.ToString();
+            return text.EndsWith(".Enumerable", StringComparison.Ordinal)
+                || text.EndsWith(".Queryable", StringComparison.Ordinal);
+        }
+    }
     private sealed class CompiledExpression
     {
         private CompiledExpression(ScriptRunner<object?>? runner, Issue? compileIssue)
@@ -786,5 +1030,4 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 });
     }
 }
-
 

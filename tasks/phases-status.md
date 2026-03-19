@@ -11,6 +11,7 @@ Last Updated: 2026-03-19
 - 2026-03-19: `ExcelReportLib.Tests` 105件全通過を確認
 - 2026-03-19: RoslynベースのC#式評価へ移行し、ExpressionEngineテスト拡張 + 全110件テスト通過を確認
 - 2026-03-19: テンプレート内LINQ式（repeat@from + cell@value）のE2Eテスト追加と、ExpressionEngineの強型付けコンパイル対応を反映
+- 2026-03-19: DynamicLinqRewriteMap フォールバックを導入し、匿名型入力の template LINQ E2E をGreen化
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%
