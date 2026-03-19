@@ -13,6 +13,7 @@ Last Updated: 2026-03-19
 - 2026-03-19: テンプレート内LINQ式（repeat@from + cell@value）のE2Eテスト追加と、ExpressionEngineの強型付けコンパイル対応を反映
 - 2026-03-19: DynamicLinqRewriteMap フォールバックを導入し、匿名型入力の template LINQ E2E をGreen化
 - 2026-03-19: GitHub Release の pre-release/release と NuGet publish 版種の同期ロジックを publish-nuget.yml に追加
+- 2026-03-19: READMEからNuGet公開手順を削除し、運用情報をreportsへ移管
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%

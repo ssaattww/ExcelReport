@@ -58,8 +58,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - 2026-03-19 設計反映: `Design/ExpressionEngine/ExpressionEngine.md` を実装内容に同期更新
 - 2026-03-19 検証: `ExcelReportLib.Tests` 111件全通過
 - 2026-03-19 記録: `reports/linq-template-e2e-roslyn-note-2026-03-19.md` を作成
-- 2026-03-19 レビュー: eports/linq-template-e2e-implementation-review-2026-03-19.md を作成
+- 2026-03-19 レビュー: `reports/linq-template-e2e-implementation-review-2026-03-19.md` を作成
 - 2026-03-19 CI/CD: GitHub Releaseのpre-release/release種別に連動してNuGet版種を同期するよう `publish-nuget.yml` を更新
+
+- 2026-03-19 ドキュメント運用: READMEからNuGet公開手順を削除し、`reports/nuget-publish-process-2026-03-19.md` に移管
 
 ## Status Definitions
 

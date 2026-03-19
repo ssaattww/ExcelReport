@@ -1,7 +1,8 @@
 # ExcelReportLib
 
 [![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
-[![NuGet](https://img.shields.io/badge/nuget-placeholder-lightgrey)](#)
+[![NuGet Version](https://img.shields.io/nuget/v/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A .NET 8 library for generating `.xlsx` workbooks from a custom XML DSL (`urn:excelreport:v1`) and runtime data.
@@ -212,19 +213,6 @@ Run with coverage collector:
 ```bash
 dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --collect:"XPlat Code Coverage"
 ```
-
-## NuGet Publishing (GitHub Actions)
-
-When changes are pushed to `master`, GitHub Actions runs `.github/workflows/publish-nuget.yml` and publishes a NuGet package automatically.
-
-- Package version format: `<VersionPrefix>-ci.<GitHub Run Number>`
-- Source: `https://api.nuget.org/v3/index.json`
-- Duplicate packages are skipped with `--skip-duplicate`
-- Add `[skip nuget]` to the commit message to skip publishing
-
-Required repository secret:
-
-- `NUGET_API_KEY` (NuGet.org API key)
 
 ## License
 

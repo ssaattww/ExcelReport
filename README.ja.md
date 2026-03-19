@@ -1,7 +1,8 @@
 # ExcelReportLib
 
 [![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
-[![NuGet](https://img.shields.io/badge/nuget-placeholder-lightgrey)](#)
+[![NuGet Version](https://img.shields.io/nuget/v/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 カスタム XML DSL（`urn:excelreport:v1`）と実行時データから `.xlsx` ワークブックを生成する .NET 8 ライブラリです。
@@ -212,19 +213,6 @@ dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj
 ```bash
 dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --collect:"XPlat Code Coverage"
 ```
-
-## NuGet 自動公開 (GitHub Actions)
-
-`master` に変更が push されると、GitHub Actions の `.github/workflows/publish-nuget.yml` が実行され、NuGet パッケージを自動公開します。
-
-- パッケージバージョン形式: `<VersionPrefix>-ci.<GitHub Run Number>`
-- 公開先: `https://api.nuget.org/v3/index.json`
-- 既存バージョンは `--skip-duplicate` でスキップ
-- commit メッセージに `[skip nuget]` を含めると公開をスキップ
-
-必要なリポジトリシークレット:
-
-- `NUGET_API_KEY`（NuGet.org APIキー）
 
 ## ライセンス
 

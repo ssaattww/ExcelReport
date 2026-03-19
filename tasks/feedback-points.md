@@ -36,6 +36,7 @@ Last Updated: 2026-03-19
 | FP42 | E2Eテストを追加し、templateでLINQ式が使用できることを確認する | 対応済み | 2026-03-19 |
 | FP43 | バックグラウンド実行の状況を監視し、並列ジョブ暴走や残留プロセスを避けて進める | 対応中 | 2026-03-19 |
 | FP44 | GitHub Release の pre-release/release 種別と NuGet publish の版種を同期させる（`publish-nuget.yml` で判定） | 対応済み | 2026-03-19 |
+| FP45 | READMEには公開運用手順を置かず、NuGet公開手順はreportsで管理する | 対応済み | 2026-03-19 |
 ---
 
 ## 対応履歴
