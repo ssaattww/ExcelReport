@@ -2,7 +2,7 @@
 
 [![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
 [![NuGet](https://img.shields.io/badge/nuget-placeholder-lightgrey)](#)
-[![License](https://img.shields.io/badge/license-placeholder-lightgrey)](#)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A .NET 8 library for generating `.xlsx` workbooks from a custom XML DSL (`urn:excelreport:v1`) and runtime data.
 
@@ -215,8 +215,6 @@ dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --colle
 
 ## License
 
-License information placeholder. Replace this section with your project’s official license statement.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
-Example:
 
-- This project is licensed under the terms described in [LICENSE](LICENSE).
