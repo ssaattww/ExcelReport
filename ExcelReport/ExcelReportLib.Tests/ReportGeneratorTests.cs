@@ -551,6 +551,97 @@ public sealed class ReportGeneratorTests
         Assert.Equal("South", ReadCellValue(document, GetCell(document, "South", "A1")));
     }
 
+    /// <summary>
+    /// Verifies that LINQ expressions are usable in template repeat and cell value.
+    /// </summary>
+    [Fact]
+    public void Generate_TemplateWithLinqExpressions_ProducesExpectedCells()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Lines.Where(x => x.Amount >= 150m))" var="it">
+                  <grid>
+                    <cell value="@(it.Name)" />
+                    <cell c="2" value="@(it.Amount)" />
+                  </grid>
+                </repeat>
+                <cell r="10" c="1" value="@(root.Lines.Where(x => x.Amount >= 150m).Sum(x => x.Amount))" />
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new LinqTemplateRoot
+        {
+            Lines =
+            [
+                new LinqTemplateLine { Name = "Low", Amount = 100m },
+                new LinqTemplateLine { Name = "Mid", Amount = 150m },
+                new LinqTemplateLine { Name = "High", Amount = 300m },
+            ],
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+        Assert.DoesNotContain(result.Issues, issue => issue.Kind is IssueKind.ExpressionSyntaxError or IssueKind.ExpressionRuntimeError);
+
+        using var document = OpenWorkbook(result);
+        Assert.Equal("Mid", ReadCellValue(document, GetCell(document, "Summary", "A1")));
+        Assert.Equal("150", ReadCellValue(document, GetCell(document, "Summary", "B1")));
+        Assert.Equal("High", ReadCellValue(document, GetCell(document, "Summary", "A2")));
+        Assert.Equal("300", ReadCellValue(document, GetCell(document, "Summary", "B2")));
+        Assert.Equal("450", ReadCellValue(document, GetCell(document, "Summary", "A10")));
+    }
+
+    /// <summary>
+    /// Verifies that LINQ expressions in template also work with anonymous root data.
+    /// </summary>
+    [Fact]
+    public void Generate_TemplateWithLinqExpressions_AnonymousRoot_ProducesExpectedCells()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Lines.Where(x => x.Amount >= 150m))" var="it">
+                  <grid>
+                    <cell value="@(it.Name)" />
+                    <cell c="2" value="@(it.Amount)" />
+                  </grid>
+                </repeat>
+                <cell r="10" c="1" value="@(root.Lines.Where(x => x.Amount >= 150m).Sum(x => x.Amount))" />
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Lines = new[]
+            {
+                new { Name = "Low", Amount = 100m },
+                new { Name = "Mid", Amount = 150m },
+                new { Name = "High", Amount = 300m },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+        Assert.DoesNotContain(result.Issues, issue => issue.Kind is IssueKind.ExpressionSyntaxError or IssueKind.ExpressionRuntimeError);
+
+        using var document = OpenWorkbook(result);
+        Assert.Equal("Mid", ReadCellValue(document, GetCell(document, "Summary", "A1")));
+        Assert.Equal("150", ReadCellValue(document, GetCell(document, "Summary", "B1")));
+        Assert.Equal("High", ReadCellValue(document, GetCell(document, "Summary", "A2")));
+        Assert.Equal("300", ReadCellValue(document, GetCell(document, "Summary", "B2")));
+        Assert.Equal("450", ReadCellValue(document, GetCell(document, "Summary", "A10")));
+    }
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -600,6 +691,17 @@ public sealed class ReportGeneratorTests
 
         return cell.CellValue?.Text ?? string.Empty;
     }
-}
 
+    public sealed class LinqTemplateRoot
+    {
+        public IReadOnlyList<LinqTemplateLine> Lines { get; init; } = [];
+    }
+
+    public sealed class LinqTemplateLine
+    {
+        public string Name { get; init; } = string.Empty;
+
+        public decimal Amount { get; init; }
+    }
+}
 

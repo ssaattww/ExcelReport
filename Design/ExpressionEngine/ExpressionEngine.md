@@ -1,198 +1,156 @@
 # ExpressionEngine 詳細設計
 
 ## Status
-- As-Is (Planned): 実装クラス/IF は未実装（証跡: `reports/implementation-inventory-2026-02-13.md:30`）。
-- To-Be (Planned): 本文仕様を実装し、`DslParser` 後段で式評価を担当する（依存順序の証跡: `reports/issues-and-improvements-2026-02-13.md:98`）。
+- As-Is: `ExpressionEngine` は Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) ベースで実装済み。
+- As-Is: API は `IExpressionEngine.Evaluate(string, ExpressionContext): ExpressionResult` を公開している。
+- As-Is: `Compilation Error` / `Runtime Error` を `IssueKind.ExpressionSyntaxError` / `IssueKind.ExpressionRuntimeError` で分類して返却する。
+- As-Is: 非公開型/匿名型コンテキストでも `DynamicLinqRewriteMap` フォールバックにより主要LINQ式（`Where/Select/Sum/Count/Any/All/First/FirstOrDefault`）を評価できる。
 
 ## 1. 概要
-ExpressionEngine は、DSL 内に記述された C# 式（`@(...)`）を評価し、結果を返すモジュールである。
-Roslyn (Microsoft.CodeAnalysis.CSharp.Scripting) を利用して動的にコードをコンパイル・実行する。
-パフォーマンスを確保するため、コンパイルされたデリゲートのキャッシュ機構を提供する。
+ExpressionEngine は、DSL 内の C# 式（`@(...)`）を評価し、`ExpressionResult` を返す。
+Roslyn Script を使用し、式文字列だけでなく `root/data` の型バインディング条件を含めてコンパイル結果をキャッシュする。
 
 ## 2. API (Public Interfaces)
 
-### 2.1 IExpressionEvaluator
+### 2.1 IExpressionEngine
 ```csharp
-public interface IExpressionEvaluator
+public interface IExpressionEngine
 {
-    /// <summary>
-    /// 指定された式を評価する。
-    /// </summary>
-    /// <param name="expression">評価対象のC#式（@は含まない）</param>
-    /// <param name="context">評価時のコンテキスト（変数等）</param>
-    /// <returns>評価結果。エラー時は ErrorValue オブジェクトまたはエラー文字列を返す。</returns>
-    object Evaluate(string expression, EvaluationContext context);
+    ExpressionResult Evaluate(string expression, ExpressionContext context);
 }
 ```
 
-### 2.2 EvaluationContext
-式評価時にグローバル変数としてアクセス可能なオブジェクトを保持する。
-
+### 2.2 IExpressionEvaluator
 ```csharp
-public class EvaluationContext
+public interface IExpressionEvaluator : IExpressionEngine
 {
-    /// <summary>
-    /// レポート全体のルートオブジェクト (Global.root)
-    /// </summary>
-    public object Root { get; }
+}
+```
 
-    /// <summary>
-    /// 現在のデータコンテキスト (Global.data)
-    /// - Repeat 内部では現在の要素
-    /// - それ以外では Root と同じ、または親のデータ
-    /// </summary>
-    public object Data { get; }
+- `IExpressionEvaluator` は設計用語との互換エイリアス。
 
-    /// <summary>
-    /// ユーザー定義変数またはシステム変数 (Global.vars)
-    /// </summary>
-    public IReadOnlyDictionary<string, object> Vars { get; }
+### 2.3 ExpressionContext / EvaluationContext
+```csharp
+public class ExpressionContext
+{
+    public object? Root { get; }
+    public object? Data { get; }
+    public IReadOnlyDictionary<string, object?> Vars { get; }
+}
 
-    public EvaluationContext(object root, object data, IDictionary<string, object> vars = null)
-    {
-        Root = root;
-        Data = data;
-        Vars = vars != null ? new ReadOnlyDictionary<string, object>(vars) : _emptyVars;
-    }
+public sealed class EvaluationContext : ExpressionContext
+{
 }
 ```
 
 ## 3. データモデル
 
-### 3.1 Globals (スクリプト内グローバル)
-Roslyn スクリプト内で `Globals` クラスとして参照される型。
+### 3.1 Roslyn Globals
+Roslyn スクリプトへ渡す `globals` は次を保持する。
 
 ```csharp
-public class Globals
+public sealed class ScriptGlobals
 {
-    public object root { get; set; }
-    public object data { get; set; }
-    public IReadOnlyDictionary<string, object> vars { get; set; }
+    public object? rootObj { get; init; }
+    public object? dataObj { get; init; }
+    public object? varsObj { get; init; }
 }
 ```
 
+- `rootObj/dataObj` はコンパイル計画に応じて次を切り替える。
+  - 公開・参照可能な型: 生オブジェクトを渡し、スクリプト内で強型付けローカルに束縛。
+  - それ以外: `DynamicValue` ラッパーを渡し、従来互換の動的メンバー解決を使用。
+- `varsObj` は `DynamicVars` を渡し、`vars["key"]` 参照を提供。
+
 ### 3.2 参照設定 (References & Imports)
-以下の名前空間およびアセンブリをデフォルトで利用可能とする。
-*   **Namespaces**:
-    *   System
-    *   System.Text
-    *   System.Linq
-    *   System.Collections.Generic
-    *   System.Math
-    *   System.DateTime
-*   **Assemblies**:
-    *   System.Runtime
-    *   System.Collections
-    *   System.Linq
+既定 `ScriptOptions` は以下を設定する。
+- Imports:
+  - `System`
+  - `System.Linq`
+  - `System.Collections`
+  - `System.Collections.Generic`
+- References:
+  - `System.Private.CoreLib` (`typeof(object).Assembly`)
+  - `System.Linq` (`typeof(Enumerable).Assembly`)
+  - `System.Collections` (`typeof(IList).Assembly`)
+  - `Microsoft.CSharp` (`typeof(Microsoft.CSharp.RuntimeBinder.Binder).Assembly`)
+  - `ExcelReportLib` (`typeof(ExpressionContext).Assembly`)
+
+加えて、`root/data` を強型付けする場合は対象型のアセンブリ参照を動的追加する。
 
 ## 4. 処理フロー
 
 ### 4.1 Evaluate フロー
-1.  **キャッシュ確認**: `expression` をキーに、コンパイル済みデリゲートがキャッシュにあるか確認。
-2.  **コンパイル (キャッシュミス時)**:
-    *   `CSharpScript.Create<object>(expression, options, globalsType: typeof(Globals))` を呼び出し。
-    *   `CreateDelegate()` でデリゲートを生成。
-    *   キャッシュに保存。
-3.  **実行**:
-    *   `Globals` インスタンスを作成し、`context` の値をセット。
-    *   デリゲートを実行。
-4.  **エラーハンドリング**:
-    *   コンパイルエラーまたは実行時例外が発生した場合、例外を捕捉。
-    *   エラーログ (Issues) に記録。
-    *   戻り値として `#ERR(<Message>)` 形式の文字列、または専用のエラーオブジェクトを返す。
+1. 式を正規化する（`@(...)` を除去、trim）。
+2. `ExpressionContext` からコンパイル計画を構築する。
+   - `root/data` ごとに「強型付け束縛」または「dynamic束縛」を決定。
+3. キャッシュを確認する（キー: `正規化式 + rootバインディング + dataバインディング`）。
+4. キャッシュミス時:
+   - 生成済みスクリプト本文 + `ScriptOptions` で Roslyn コンパイル。
+5. `ScriptGlobals` を構築して実行。
+6. 成功時は `ExpressionResult.Success` を返す。
+7. 失敗時は `ExpressionResult.Failure*` を返す。
 
-## 5. エラー処理 (Error Handling)
+### 4.2 LINQ式対応方針
+- `root/data` が公開型として強型付けできる場合、`Where/Sum/Select` など通常のLINQラムダ式をそのまま評価する。
+- `root/data` が非公開型や匿名型で強型付けできず一次コンパイルが失敗した場合、`DynamicLinqRewriteMap` を使って式を再書き換えし、ヘルパー関数付きで再コンパイルする。
+  - マップ対象: `Where` / `Select` / `Sum` / `Count` / `Any` / `All` / `First` / `FirstOrDefault`。
+  - 例: `root.Lines.Where(x => x.Amount >= 150m)` → `__dynWhere((object)(root.Lines), x => x.Amount >= 150m)`。
+  - ヘルパー関数は `IEnumerable` を前提に列挙し、各要素を `DynamicValue.Wrap` して動的メンバー参照を維持する。
+- `DynamicValue` 自体は「動的アクセス用ラッパー」として扱うため、強型付け候補から除外し常に dynamic 束縛にする（`it.Name` などの評価を保証）。
+
+### 4.3 キャッシュ方針
+- スコープ: `ExpressionEngine` インスタンス単位。
+- 実装: `ConcurrentDictionary<string, Lazy<CompiledExpression>>`。
+- 目的: 同一式かつ同一バインディング条件の再コンパイル回避。
+
+## 5. エラー処理
 
 ### 5.1 エラーポリシー
-*   **例外の抑制**: 式評価中に例外が発生しても、レポート生成プロセス全体を停止させない。
-*   **エラー値の出力**: セルには `#ERR: <ExceptionMessage>` のような文字列を出力し、ユーザーが間違いに気付けるようにする。
-*   **Issue 記録**: 開発者/ログ用として、詳細な例外情報を `ReportGenerator` の Issue リストに追加する（`IExpressionEvaluator` は Issue 記録用のコールバックやインターフェースを持つ必要があるかもしれないが、単純化のため戻り値で表現するか、別途 `IIssueLogger` を依存させる）。
+- 評価中例外は外へ送出しない。
+- `ExpressionResult` に `Issue` を格納し、値は `#ERR(...)` とする。
+- Null参照相当の実行例外は既存互換で `Success(null)` を返す。
 
 ### 5.2 エラー分類
-*   **Compilation Error**: 構文ミス、存在しないプロパティへのアクセスなど。
-*   **Runtime Error**: NullReferenceException, DivideByZeroException, IndexOutOfRangeException など。
+- Compilation Error:
+  - Roslyn 診断 (`DiagnosticSeverity.Error`)。
+  - `IssueKind.ExpressionSyntaxError`。
+- Runtime Error:
+  - スクリプト実行例外。
+  - `IssueKind.ExpressionRuntimeError`。
 
-## 6. 性能方針 (Performance)
-
-### 6.1 キャッシング
-*   **キー**: 式の文字列そのもの。
-*   **スコープ**: `IExpressionEvaluator` のインスタンス寿命（通常はレポート生成のライフサイクル、またはアプリケーションライフサイクル）。
-*   **スレッドセーフ**: `ConcurrentDictionary` を使用し、並列実行時の競合を防ぐ。
+## 6. 既存互換と責務境界
+- LayoutEngine 側の `repeat.var` ショートカット/書き換えロジックは維持。
+- ExpressionEngine は「C#評価実行とエラー正規化」に責務を限定。
+- DslParser の `TreatExpressionSyntaxErrorAsFatal` 適用は別タスク。
 
 ## 7. テスト観点
 
 ### 7.1 正常系
-*   **基本演算**: 四則演算、文字列結合、論理演算。
-*   **プロパティアクセス**: `data.PropertyName`、`root.List[0]` など。
-*   **メソッド呼び出し**: `data.ToString()`、`Math.Max(...)`。
-*   **LINQ**: `root.Items.Where(x => x.Val > 10).Sum(x => x.Val)`。
-*   **変数アクセス**: `vars["Key"]`。
+- プロパティアクセス: `data.Name`
+- 演算: `data.Amount + 10`
+- 条件演算子: `data.Score >= 80 ? "合格" : "不合格"`
+- null合体: `data.Address?.City ?? "不明"`
+- vars参照: `vars["Key"]`
+- キャッシュ再利用
+- E2E: テンプレート内LINQ式（`repeat@from` と `cell@value`、匿名型入力を含む）
 
 ### 7.2 異常系
-*   **構文エラー**: 閉じ括弧忘れ、キーワードミス。 -> `#ERR` が返ること。
-*   **実行時エラー**: Null アクセス、ゼロ除算。 -> `#ERR` が返ること。
-*   **型不一致**: 期待する型と異なる操作。
+- 構文エラー: `@(root.)` -> `ExpressionSyntaxError`
+- 実行時エラー: `@(1 / data.Divisor)` -> `ExpressionRuntimeError`
 
-### 7.3 境界値
-*   **空文字**: 空の式。
-*   **Null データ**: `data` が null の場合の挙動。
+## 8. 非目標
+- 式の静的型検査結果を DslParser 段階へ昇格すること。
+- Roslyn 実行のセキュアサンドボックス化。
 
-## 8. スクリプト例 (Examples)
+## 9. 制限事項
+- `DynamicLinqRewriteMap` の対象メソッド以外（例: `OrderBy/ThenBy/GroupBy/Distinct/Join/Skip/Take`）は自動書き換えされない。
+- 動的LINQヘルパーは入力を `IEnumerable` 前提で扱う。列挙不能オブジェクトに対しては実行時エラーとなる。
+- `Sum` は dynamic 加算で評価するため、型混在や独自演算子型では実行時エラーになり得る。
+- より汎用な公開プロキシ方式（非公開型を公開DTOへ射影して静的LINQを維持）は未実装。
 
-DSL (XML) 内の属性値として記述される式の具体例。
-
-### 8.1 基本的なプロパティアクセス (`cell@value`)
-```xml
-<!-- data が Person クラス { Name = "Alice", Age = 30 } の場合 -->
-<cell r="1" c="1" value="@(data.Name)" />
-<!-- -> "Alice" -->
-
-<cell r="1" c="2" value="@(data.Age + 1)" />
-<!-- -> 31 -->
-```
-
-### 8.2 書式設定 (`cell@value`)
-```xml
-<!-- data.Price = 12345 -->
-<cell r="1" c="1" value="@(data.Price.ToString("C"))" />
-<!-- -> "¥12,345" (カルチャ依存) -->
-
-<cell r="1" c="2" value="@(string.Format("{0}様", data.Name))" />
-<!-- -> "Alice様" -->
-```
-
-### 8.3 LINQ の利用 (`repeat@from`, `cell@value`)
-```xml
-<!-- root.Orders が Order のリスト -->
-<repeat r="2" c="1" from="@(root.Orders.Where(x => x.Amount > 1000))">
-    <!-- 1000超の注文のみを反復 -->
-</repeat>
-
-<cell r="1" c="1" value="@(root.Orders.Sum(x => x.Amount))" />
-<!-- -> 合計金額 -->
-```
-
-### 8.4 条件分岐 (`cell@value`, `common@when`)
-```xml
-<!-- data.Score = 85 -->
-<cell r="1" c="1" value="@(data.Score >= 80 ? "合格" : "不合格")" />
-<!-- -> "合格" -->
-
-<!-- 条件によって表示/非表示を切り替え -->
-<cell r="1" c="2" value="合格" when="@(data.Score >= 80)" />
-<!-- -> Score < 80 の場合、このセルは出力されない -->
-```
-
-### 8.5 変数 (vars) の利用 (`cell@value`)
-```xml
-<!-- vars["ReportDate"] = DateTime.Now -->
-<cell r="1" c="1" value="@(((DateTime)vars["ReportDate"]).ToString("yyyy-MM-dd"))" />
-<!-- -> "2025-11-29" -->
-```
-
-### 8.6 Null 条件演算子 (`cell@value`)
-```xml
-<!-- data.Address が null の可能性がある場合 -->
-<cell r="1" c="1" value="@(data.Address?.City ?? "不明")" />
-<!-- -> Address が null なら "不明"、あれば City -->
-```
+## 10. 変更履歴
+- 2026-03-19: Roslyn ベース実装へ設計を更新。
+- 2026-03-19: `root/data` の強型付けコンパイル計画と LINQ E2E 対応方針を追記。
+- 2026-03-19: 非公開型/匿名型入力時のLINQ制限事項を明文化。
+- 2026-03-19: `DynamicLinqRewriteMap` フォールバック方式を設計へ反映。

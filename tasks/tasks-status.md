@@ -44,9 +44,25 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 | 22 | sheet repeat 対応の調査レポート + 設計書 + 先行テスト作成 | Done | Codex + PM | 21 | 10 |
 | 23 | sheet repeat 実装 (DSL/AST/ValidateDsl/LayoutEngine/Renderer互換確認) | Done | Codex + PM | 22 | 10 |
 
+
+## Additional Work (2026-03-19)
+
+- 2026-03-19 設計更新: `Design/ExpressionEngine/ExpressionEngine.md` を Roslyn実装前提に改訂
+- 2026-03-19 レビュー: `reports/roslyn-expression-design-review-2026-03-19.md` を作成
+- 2026-03-19 実装: `ExpressionEngine` を Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) ベースへ移行
+- 2026-03-19 レビュー: `reports/roslyn-expression-implementation-review-2026-03-19.md` を作成
+- 2026-03-19 検証: `ExcelReportLib.Tests` 110件全通過
+- 2026-03-19 運用: `.gitignore` に `/.nuget` を追加し NuGet フォルダを非追跡化
+- 2026-03-19 追加要件対応: テンプレート内LINQ式のE2Eテストを追加（`repeat@from` + `cell@value`）
+- 2026-03-19 実装改善: `ExpressionEngine` を `root/data` 強型付けコンパイル対応（公開型）へ拡張
+- 2026-03-19 設計反映: `Design/ExpressionEngine/ExpressionEngine.md` を実装内容に同期更新
+- 2026-03-19 検証: `ExcelReportLib.Tests` 111件全通過
+- 2026-03-19 記録: `reports/linq-template-e2e-roslyn-note-2026-03-19.md` を作成
+- 2026-03-19 レビュー: eports/linq-template-e2e-implementation-review-2026-03-19.md を作成
 ## Status Definitions
 
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
+
 

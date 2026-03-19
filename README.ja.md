@@ -2,7 +2,7 @@
 
 [![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
 [![NuGet](https://img.shields.io/badge/nuget-placeholder-lightgrey)](#)
-[![License](https://img.shields.io/badge/license-placeholder-lightgrey)](#)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 カスタム XML DSL（`urn:excelreport:v1`）と実行時データから `.xlsx` ワークブックを生成する .NET 8 ライブラリです。
 
@@ -215,8 +215,4 @@ dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --colle
 
 ## ライセンス
 
-ライセンス情報プレースホルダーです。正式なライセンス文に置き換えてください。
-
-例:
-
-- 本プロジェクトは [LICENSE](LICENSE) に記載された条件の下で提供されます。
+本プロジェクトは MIT ライセンスの下で提供されます。詳細は [LICENSE](LICENSE) を参照してください。

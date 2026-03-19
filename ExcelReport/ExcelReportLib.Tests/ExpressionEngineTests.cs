@@ -120,6 +120,94 @@ public sealed class ExpressionEngineTests
         Assert.Equal(1, engine.CachedExpressionCount);
     }
 
+    /// <summary>
+    /// Verifies that evaluate arithmetic expression returns computed value.
+    /// </summary>
+    [Fact]
+    public void Evaluate_ArithmeticExpression_ReturnsComputedValue()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var data = new MetricsRow { Amount = 90 };
+
+        var result = engine.Evaluate("@(data.Amount + 10)", new ExpressionContext(data, data));
+
+        Assert.False(result.HasError);
+        Assert.Equal(100, Convert.ToInt32(result.Value));
+    }
+
+    /// <summary>
+    /// Verifies that evaluate conditional expression returns expected label.
+    /// </summary>
+    [Fact]
+    public void Evaluate_ConditionalExpression_ReturnsExpectedLabel()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var data = new MetricsRow { Score = 85 };
+
+        var result = engine.Evaluate(
+            "@(data.Score >= 80 ? \"Pass\" : \"Fail\")",
+            new ExpressionContext(data, data));
+
+        Assert.False(result.HasError);
+        Assert.Equal("Pass", result.Value);
+    }
+
+    /// <summary>
+    /// Verifies that evaluate null coalescing expression returns fallback text.
+    /// </summary>
+    [Fact]
+    public void Evaluate_NullCoalescingExpression_ReturnsFallbackText()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var data = new MetricsRow { Address = null };
+
+        var result = engine.Evaluate(
+            "@(data.Address?.City ?? \"Unknown\")",
+            new ExpressionContext(data, data));
+
+        Assert.False(result.HasError);
+        Assert.Equal("Unknown", result.Value);
+    }
+
+    /// <summary>
+    /// Verifies that evaluate vars indexer with method call returns formatted value.
+    /// </summary>
+    [Fact]
+    public void Evaluate_VarsIndexerWithMethodCall_ReturnsFormattedValue()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var context = new ExpressionContext(
+            root: null,
+            data: null,
+            vars: new Dictionary<string, object?>
+            {
+                ["ReportDate"] = new DateTime(2026, 3, 19),
+            });
+
+        var result = engine.Evaluate(
+            "@(((DateTime)vars[\"ReportDate\"]).ToString(\"yyyy-MM-dd\"))",
+            context);
+
+        Assert.False(result.HasError);
+        Assert.Equal("2026-03-19", result.Value);
+    }
+
+
+    /// <summary>
+    /// Verifies that evaluate runtime error returns runtime issue.
+    /// </summary>
+    [Fact]
+    public void Evaluate_RuntimeError_ReturnsRuntimeIssue()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var data = new MetricsRow { Divisor = 0 };
+
+        var result = engine.Evaluate("@(10 / data.Divisor)", new ExpressionContext(data, data));
+
+        Assert.True(result.HasError);
+        Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
+        Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
+    }
     private sealed class PersonRow
     {
         public string Name { get; init; } = string.Empty;
@@ -141,4 +229,24 @@ public sealed class ExpressionEngineTests
     {
         public decimal Amount { get; init; }
     }
+
+    private sealed class MetricsRow
+    {
+        public int Amount { get; init; }
+        public int Score { get; init; }
+
+        public int Divisor { get; init; }
+
+        public AddressRow? Address { get; init; }
+    }
+
+    private sealed class AddressRow
+    {
+        public string City { get; init; } = string.Empty;
+    }
 }
+
+
+
+
+
