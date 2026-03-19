@@ -1,20 +1,14 @@
 name: Publish NuGet Package
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "ExcelReport/ExcelReportLib/**"
-      - "README.md"
-      - "README.ja.md"
-      - ".github/workflows/publish-nuget.yml"
+  release:
+    types:
+      - published
   workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip nuget]') }}
     permissions:
       contents: read
     env:
@@ -34,8 +28,36 @@ jobs:
         shell: bash
         run: |
           version_prefix=$(grep -oPm1 '(?<=<VersionPrefix>)[^<]+' ExcelReport/ExcelReportLib/ExcelReportLib.csproj || echo "0.1.0")
+
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag_name="${{ github.event.release.tag_name }}"
+            is_prerelease="${{ github.event.release.prerelease }}"
+            base_version="${tag_name#v}"
+
+            if [[ "$is_prerelease" == "true" ]]; then
+              if [[ "$base_version" == *-* ]]; then
+                package_version="$base_version"
+              else
+                package_version="${base_version}-pre.${GITHUB_RUN_NUMBER}"
+              fi
+            else
+              if [[ "$base_version" == *-* ]]; then
+                echo "Release is not pre-release, but tag contains a pre-release suffix: $tag_name"
+                exit 1
+              fi
+              package_version="$base_version"
+            fi
+          else
+            package_version="${version_prefix}-ci.${GITHUB_RUN_NUMBER}"
+          fi
+
+          if [[ -z "$package_version" ]]; then
+            echo "Failed to resolve package version."
+            exit 1
+          fi
+
           echo "version_prefix=${version_prefix}" >> "$GITHUB_OUTPUT"
-          echo "package_version=${version_prefix}-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore ExcelReport/ExcelReportLib/ExcelReportLib.csproj

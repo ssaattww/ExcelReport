@@ -59,10 +59,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - 2026-03-19 検証: `ExcelReportLib.Tests` 111件全通過
 - 2026-03-19 記録: `reports/linq-template-e2e-roslyn-note-2026-03-19.md` を作成
 - 2026-03-19 レビュー: eports/linq-template-e2e-implementation-review-2026-03-19.md を作成
+- 2026-03-19 CI/CD: GitHub Releaseのpre-release/release種別に連動してNuGet版種を同期するよう `publish-nuget.yml` を更新
+
 ## Status Definitions
 
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
-
-

@@ -35,7 +35,7 @@ Last Updated: 2026-03-19
 | FP41 | NuGet関連フォルダ（.nuget）はGit追跡しない。.gitignore で除外する | 対応済み | 2026-03-19 |
 | FP42 | E2Eテストを追加し、templateでLINQ式が使用できることを確認する | 対応済み | 2026-03-19 |
 | FP43 | バックグラウンド実行の状況を監視し、並列ジョブ暴走や残留プロセスを避けて進める | 対応中 | 2026-03-19 |
-
+| FP44 | GitHub Release の pre-release/release 種別と NuGet publish の版種を同期させる（`publish-nuget.yml` で判定） | 対応済み | 2026-03-19 |
 ---
 
 ## 対応履歴
@@ -57,4 +57,3 @@ Last Updated: 2026-03-19
 | FP11 | PM/Codex責任分担の明確化 | 2026-03-03 |
 | FP12 | git commit -a で許可削減 | 2026-03-03 |
 | FP13 | 毎回の許可確認を排除 | 2026-03-03 |
-
