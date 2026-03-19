@@ -14,9 +14,11 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '[skip nuget]') }}
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip nuget]') }}
     permissions:
       contents: read
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     steps:
       - name: Checkout
@@ -51,15 +53,15 @@ jobs:
             -p:PackageVersion=${{ steps.version.outputs.package_version }}
 
       - name: Validate NuGet API key
-        if: ${{ secrets.NUGET_API_KEY == '' }}
+        if: ${{ env.NUGET_API_KEY == '' }}
         run: |
           echo "NUGET_API_KEY secret is not set."
           exit 1
 
       - name: Publish to NuGet.org
-        if: ${{ secrets.NUGET_API_KEY != '' }}
+        if: ${{ env.NUGET_API_KEY != '' }}
         run: |
           dotnet nuget push "./artifacts/*.nupkg" \
-            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --api-key "${{ env.NUGET_API_KEY }}" \
             --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
