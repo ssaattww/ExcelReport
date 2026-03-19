@@ -510,6 +510,47 @@ public sealed class ReportGeneratorTests
             || border.BottomBorder?.Style?.Value is not null);
     }
 
+    /// <summary>
+    /// Verifies that generate sheet repeat produces multiple sheets.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetRepeat_ProducesMultipleSheets()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="@(it.Name)" from="@(root.Items)" var="it">
+                <cell r="1" c="1" value="@(it.Name)" />
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Name = "North" },
+                new { Name = "South" },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+
+        using var document = OpenWorkbook(result);
+        var sheetNames = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
+            .Select(sheet => sheet.Name!.Value)
+            .ToArray();
+
+        Assert.Contains("North", sheetNames);
+        Assert.Contains("South", sheetNames);
+        Assert.Equal("North", ReadCellValue(document, GetCell(document, "North", "A1")));
+        Assert.Equal("South", ReadCellValue(document, GetCell(document, "South", "A1")));
+    }
+
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -560,3 +601,5 @@ public sealed class ReportGeneratorTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 }
+
+

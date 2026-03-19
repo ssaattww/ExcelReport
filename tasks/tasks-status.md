@@ -1,17 +1,19 @@
 # Tasks Status
 
-Last Updated: 2026-03-07
-Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
+Last Updated: 2026-03-19
+Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
-- 2026-03-07 追加対応: RendererでWorkbookの名前定義(DefinedNames)を非出力化
-- 2026-03-07 実装対応: formula placeholder を直接セルアドレス化し、formulaRef由来の名前定義増加を停止
+- 2026-03-19 調査対応: `sheet repeat` 未対応範囲を調査し、`reports/sheet-repeat-investigation-2026-03-19.md` を作成
+- 2026-03-19 設計対応: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` にsheet repeat仕様を統合更新
+- 2026-03-19 テスト先行: `ValidateDsl` / `LayoutEngine` / `ReportGenerator` に sheet repeat の先行テストを追加（Red確認）
+- 2026-03-19 実装対応: `SheetAst` / `DslParser` / `LayoutEngine` / `DslDefinition_v1.xsd` を更新し sheet repeat を実装
+- 2026-03-19 検証: `ExcelReportLib.Tests` 105件全通過
 
-- 2026-03-07 運用対応: sample.xlsx のスタイル検証で OpenXML font順序不整合を修正し、再検証で0エラーを確認
-- Completed: 21 / 21
-- In Progress: 0 / 21
-- Not Started: 0 / 21
+- Completed: 23 / 23
+- In Progress: 0 / 23
+- Not Started: 0 / 23
 - Completion Rate: 100%
 
 ## Task List
@@ -39,9 +41,12 @@ Scope: ExcelReport開発 - Phase 9: FullTemplate実行対応
 | 19 | formulaRef / #{...}プレースホルダ置換実装 | Done | Codex + PM | 17 | 9 |
 | 20 | FullTemplate E2Eテスト（実xlsx生成検証） | Done | Codex + PM | 18, 19, 21 | 9 |
 | 21 | sheet/gridのrows/cols省略→自動計算 + Design XML修正 | Done | Codex + PM | 17 | 9 |
+| 22 | sheet repeat 対応の調査レポート + 設計書 + 先行テスト作成 | Done | Codex + PM | 21 | 10 |
+| 23 | sheet repeat 実装 (DSL/AST/ValidateDsl/LayoutEngine/Renderer互換確認) | Done | Codex + PM | 22 | 10 |
 
 ## Status Definitions
 
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
+

@@ -182,6 +182,8 @@
     <xs:attribute name="name" type="xs:string"    use="required"/>
     <xs:attribute name="rows" type="NonNegativeInt0" use="optional" default="0"/>
     <xs:attribute name="cols" type="NonNegativeInt0" use="optional" default="0"/>
+    <xs:attribute name="from" type="ExprString" use="optional"/>
+    <xs:attribute name="var" type="xs:string" use="optional" default="item"/>
   </xs:complexType>
 
   <!-- component -->

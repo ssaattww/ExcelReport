@@ -246,6 +246,7 @@ namespace ExcelReportLib.DSL
             ValidateStyleReferences(root, styleIndex, issues);
             ValidateComponentReferences(root, componentIndex, issues);
             ValidateRepeatConstraints(root, issues);
+            ValidateSheetConstraints(root, issues);
             ValidateSheetOptions(root, issues);
             ValidateStaticLayout(root, issues);
         }
@@ -448,7 +449,7 @@ namespace ExcelReportLib.DSL
 
             foreach (var sheet in root.Sheets)
             {
-                if (string.IsNullOrWhiteSpace(sheet.Name))
+                if (string.IsNullOrWhiteSpace(sheet.Name) || LooksLikeExpression(sheet.Name))
                 {
                     continue;
                 }
@@ -565,6 +566,7 @@ namespace ExcelReportLib.DSL
             }
         }
 
+
         private static void ValidateRepeatConstraints(WorkbookAst root, List<Issue> issues)
         {
             foreach (var repeat in EnumerateLayoutNodes(root).OfType<RepeatAst>())
@@ -577,6 +579,22 @@ namespace ExcelReportLib.DSL
                         Kind = IssueKind.UndefinedRequiredAttribute,
                         Message = "<repeat> 要素に from 属性がありません。",
                         Span = repeat.Span,
+                    });
+                }
+            }
+        }
+        private static void ValidateSheetConstraints(WorkbookAst root, List<Issue> issues)
+        {
+            foreach (var sheet in root.Sheets)
+            {
+                if (sheet.HasVarAttribute && string.IsNullOrWhiteSpace(sheet.FromExprRaw))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.UndefinedRequiredAttribute,
+                        Message = "<sheet> 要素で var 属性を指定する場合は from 属性が必要です。",
+                        Span = sheet.Span,
                     });
                 }
             }
@@ -805,6 +823,13 @@ namespace ExcelReportLib.DSL
             return roots;
         }
 
+
+        private static bool LooksLikeExpression(string value)
+        {
+            var trimmed = value.Trim();
+            return trimmed.StartsWith("@(", StringComparison.Ordinal)
+                && trimmed.EndsWith(')');
+        }
         private static SourceSpan? CreateSchemaViolationSpan(Exception? exception)
         {
             if (exception is not XmlSchemaValidationException validationException)

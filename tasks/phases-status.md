@@ -1,15 +1,17 @@
 # Phases Status
 
-Last Updated: 2026-03-07
+Last Updated: 2026-03-19
 
 ## Overall Progress
 
-- 2026-03-07: DefinedNames 非出力化（名前定義を出力しない方針へ変更）を実施
-- 2026-03-07: formula placeholder 直接アドレス化（formulaRef由来 DefinedName 非出力化）を実施
-- 2026-03-07: sample.xlsx スタイル修正（font要素順序のOpenXMLスキーマ適合化）を実施
-- Completed Phases: 8 / 9
-- In Progress Phases: 1 / 9
-- Overall Progress: 89%
+- 2026-03-19: `sheet repeat` 対応の調査レポートを作成
+- 2026-03-19: `sheet repeat` 詳細設計を Design/DslDefinition/DslDefinition_DetailDesign_v1.md に統合更新
+- 2026-03-19: 実装前の先行テスト (Red) を追加して未対応ギャップを可視化
+- 2026-03-19: `sheet repeat` 実装を反映し、関連テストをGreen化
+- 2026-03-19: `ExcelReportLib.Tests` 105件全通過を確認
+- Completed Phases: 10 / 10
+- In Progress Phases: 0 / 10
+- Overall Progress: 100%
 
 ## Phase Summary
 
@@ -22,11 +24,15 @@ Last Updated: 2026-03-07
 | Phase 5: WorksheetState | Completed | 100% | LayoutPlanから最終状態への固定化 | WorksheetState |
 | Phase 6: Renderer | Completed | 100% | .xlsx物理出力、Issuesシート、Auditシート | Renderer |
 | Phase 7: Logger + ReportGenerator | Completed | 100% | 横断ログ導入、全体統合ファサード、E2Eテスト | Logger、ReportGenerator |
-| Phase 8: Border修正+テスト拡充 | Completed | 100% | CT_Border順序修正、Grid border展開、FullTemplate E2E | Border順序修正、Grid border展開、テスト78件全通過 |
-| Phase 9: FullTemplate実行対応 | In Progress | 0% | FullTemplate XMLが実際に実行できるようにする | ファイルパスベース実行、外部component展開、sheetOptions名前解決、formulaRef実装、E2Eテスト |
+| Phase 8: Border修正+テスト拡充 | Completed | 100% | CT_Border順序修正、Grid border展開、FullTemplate E2E | Border順序修正、Grid border展開 |
+| Phase 9: FullTemplate実行対応 | Completed | 100% | FullTemplate XMLが実行できるようにする | ファイルパスベース実行、外部component展開、sheetOptions名前解決、formulaRef実装、E2Eテスト |
+| Phase 10: sheet repeat 対応 | Completed | 100% | sheetレベル反復のDSL拡張と実装 | 調査レポート、設計書、先行テスト、実装 |
 
 ## Status Definitions
 
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
+
+
+
