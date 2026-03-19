@@ -213,8 +213,19 @@ Run with coverage collector:
 dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --collect:"XPlat Code Coverage"
 ```
 
+## NuGet Publishing (GitHub Actions)
+
+When changes are pushed to `master`, GitHub Actions runs `.github/workflows/publish-nuget.yml` and publishes a NuGet package automatically.
+
+- Package version format: `<VersionPrefix>-ci.<GitHub Run Number>`
+- Source: `https://api.nuget.org/v3/index.json`
+- Duplicate packages are skipped with `--skip-duplicate`
+- Add `[skip nuget]` to the commit message to skip publishing
+
+Required repository secret:
+
+- `NUGET_API_KEY` (NuGet.org API key)
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
-
-

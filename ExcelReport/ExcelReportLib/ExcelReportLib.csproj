@@ -3,6 +3,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <PackageId>ExcelReportLib</PackageId>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Authors>ssaattww</Authors>
+    <Company>ssaattww</Company>
+    <Description>Generate .xlsx workbooks from XML DSL templates and runtime data.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>excel;openxml;report;dsl</PackageTags>
+    <RepositoryUrl>https://github.com/ssaattww/ExcelReport</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="LayoutEngine\" />

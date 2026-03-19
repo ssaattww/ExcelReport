@@ -1,0 +1,65 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "ExcelReport/ExcelReportLib/**"
+      - "README.md"
+      - "README.ja.md"
+      - ".github/workflows/publish-nuget.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip nuget]') }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Resolve package version
+        id: version
+        shell: bash
+        run: |
+          version_prefix=$(grep -oPm1 '(?<=<VersionPrefix>)[^<]+' ExcelReport/ExcelReportLib/ExcelReportLib.csproj || echo "0.1.0")
+          echo "version_prefix=${version_prefix}" >> "$GITHUB_OUTPUT"
+          echo "package_version=${version_prefix}-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore ExcelReport/ExcelReportLib/ExcelReportLib.csproj
+
+      - name: Build
+        run: dotnet build ExcelReport/ExcelReportLib/ExcelReportLib.csproj --configuration Release --no-restore
+
+      - name: Pack
+        run: |
+          dotnet pack ExcelReport/ExcelReportLib/ExcelReportLib.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            -p:ContinuousIntegrationBuild=true \
+            -p:PackageVersion=${{ steps.version.outputs.package_version }}
+
+      - name: Validate NuGet API key
+        if: ${{ secrets.NUGET_API_KEY == '' }}
+        run: |
+          echo "NUGET_API_KEY secret is not set."
+          exit 1
+
+      - name: Publish to NuGet.org
+        if: ${{ secrets.NUGET_API_KEY != '' }}
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
