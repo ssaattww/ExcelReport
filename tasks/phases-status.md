@@ -5,7 +5,7 @@ Last Updated: 2026-03-19
 ## Overall Progress
 
 - 2026-03-19: `sheet repeat` 対応の調査レポートを作成
-- 2026-03-19: `sheet repeat` 詳細設計書を新規作成
+- 2026-03-19: `sheet repeat` 詳細設計を Design/DslDefinition/DslDefinition_DetailDesign_v1.md に統合更新
 - 2026-03-19: 実装前の先行テスト (Red) を追加して未対応ギャップを可視化
 - 2026-03-19: `sheet repeat` 実装を反映し、関連テストをGreen化
 - 2026-03-19: `ExcelReportLib.Tests` 105件全通過を確認
@@ -33,3 +33,6 @@ Last Updated: 2026-03-19
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
+
+
+

@@ -109,14 +109,28 @@ XSD 上の型: `WorkbookType`。
 </sheet>
 ```
 
+```xml
+<sheet name="@(it.Name)" from="@(root.Items)" var="it">
+  <cell r="1" c="1" value="@(it.Name)" />
+</sheet>
+```
+
 - 属性:
-  - `name` : シート名。
+  - `name` : シート名。`@( ... )` 式を指定可能。
+  - `rows` / `cols` : シート行列サイズ。省略時は自動計算。
+  - `from` : シート反復元の C# 式。`IEnumerable` を返す必要がある。
+  - `var` : シート反復時の変数名。省略時は `item`。
 - 子要素:
   - 任意個の `styleRef` / `style`（シート全体スタイル）。
   - 任意個の `cell` / `use` / `grid` / `repeat`。
   - `sheetOptions`（任意）。
 - 特徴:
   - sheet 自身は「特殊な grid」であり、sheet 直下の要素が (r,c) を持つことでシート座標系に配置される。
+  - `from` 未指定時は単一シートを生成し、`from` 指定時は要素件数分のシートを生成する。
+  - 展開後のシート名重複は Error とする。
+- 制約:
+  - `var` を指定する場合、`from` は必須。
+  - `from` がコレクションでない場合は Error。
 
 ---
 
@@ -417,7 +431,7 @@ Area(name) = { topRow, bottomRow, leftCol, rightCol }
 - スコープ:
   - `root` : 入力の最上位オブジェクト。
   - `data` : `use.with` で渡されたオブジェクト。
-  - `var` : `repeat.var` で指定したループ変数名（既定 `item`）。
+  - `var` : `sheet.var` または `repeat.var` で指定したループ変数名（既定 `item`）。
 
 `repeat.index` のような専用構文は提供せず、ユーザーに LINQ を使わせる:
 
@@ -444,7 +458,7 @@ root.Lines.Select((value, index) => new { value, index });
 - As-Is: `EnableSchemaValidation` は存在するが XSD 検証は無効（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:318`）。
 - To-Be: XSD 検証をデフォルト有効化し、スキーマ違反は Fatal とする（実装変更タスクあり）。
 - As-Is: DSL 固有検証 `ValidateDsl` は未実装スタブ（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
-- To-Be: DSL 検証は段階実装（L1: 参照整合、L2: repeat/sheetOptions 制約、L3: 静的レイアウト制約）。
+- As-Is: `sheet@var` 指定時の `sheet@from` 必須検証を実装済み（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:586`）。`sheet@name` が式の場合の重複名検証はレイアウト展開時に実施（証跡: `ExcelReport/ExcelReportLib/LayoutEngine/LayoutEngine.cs:129`）。
 - To-Be: `cell@styleRef` ショートカット読込を実装する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
 - To-Be: `componentImport` 内 `<styles>` 取り込みを接続する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:19`, `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:76`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:169`）。
 
@@ -639,4 +653,5 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
+
 

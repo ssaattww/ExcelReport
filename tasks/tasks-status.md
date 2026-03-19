@@ -6,7 +6,7 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 ## Progress Summary
 
 - 2026-03-19 調査対応: `sheet repeat` 未対応範囲を調査し、`reports/sheet-repeat-investigation-2026-03-19.md` を作成
-- 2026-03-19 設計対応: `Design/SheetRepeat/SheetRepeat_DetailDesign.md` を新規作成
+- 2026-03-19 設計対応: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` にsheet repeat仕様を統合更新
 - 2026-03-19 テスト先行: `ValidateDsl` / `LayoutEngine` / `ReportGenerator` に sheet repeat の先行テストを追加（Red確認）
 - 2026-03-19 実装対応: `SheetAst` / `DslParser` / `LayoutEngine` / `DslDefinition_v1.xsd` を更新し sheet repeat を実装
 - 2026-03-19 検証: `ExcelReportLib.Tests` 105件全通過
@@ -49,3 +49,4 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
+
