@@ -55,12 +55,12 @@ public sealed class ExpressionResult
         new($"#ERR({issue.Message})", new[] { issue }, usedCache);
 
     /// <summary>
-    /// Creates a failed expression result from an error message.
+    /// Creates a failed expression result from a compilation error message.
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="usedCache">The used cache.</param>
     /// <returns>The resulting expression result.</returns>
-    public static ExpressionResult Failure(string message, bool usedCache) =>
+    public static ExpressionResult FailureCompilation(string message, bool usedCache) =>
         Failure(
             new Issue
             {
@@ -69,4 +69,29 @@ public sealed class ExpressionResult
                 Message = message,
             },
             usedCache);
+
+    /// <summary>
+    /// Creates a failed expression result from a runtime error message.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="usedCache">The used cache.</param>
+    /// <returns>The resulting expression result.</returns>
+    public static ExpressionResult FailureRuntime(string message, bool usedCache) =>
+        Failure(
+            new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = IssueKind.ExpressionRuntimeError,
+                Message = message,
+            },
+            usedCache);
+
+    /// <summary>
+    /// Creates a failed expression result from an error message.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="usedCache">The used cache.</param>
+    /// <returns>The resulting expression result.</returns>
+    public static ExpressionResult Failure(string message, bool usedCache) =>
+        FailureCompilation(message, usedCache);
 }

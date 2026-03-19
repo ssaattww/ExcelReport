@@ -9,6 +9,7 @@ Last Updated: 2026-03-19
 - 2026-03-19: 実装前の先行テスト (Red) を追加して未対応ギャップを可視化
 - 2026-03-19: `sheet repeat` 実装を反映し、関連テストをGreen化
 - 2026-03-19: `ExcelReportLib.Tests` 105件全通過を確認
+- 2026-03-19: RoslynベースのC#式評価へ移行し、ExpressionEngineテスト拡張 + 全110件テスト通過を確認
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%
@@ -33,6 +34,8 @@ Last Updated: 2026-03-19
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
+
+
 
 
 

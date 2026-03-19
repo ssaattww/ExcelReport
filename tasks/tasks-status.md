@@ -44,9 +44,19 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 | 22 | sheet repeat 対応の調査レポート + 設計書 + 先行テスト作成 | Done | Codex + PM | 21 | 10 |
 | 23 | sheet repeat 実装 (DSL/AST/ValidateDsl/LayoutEngine/Renderer互換確認) | Done | Codex + PM | 22 | 10 |
 
+
+## Additional Work (2026-03-19)
+
+- 2026-03-19 設計更新: `Design/ExpressionEngine/ExpressionEngine.md` を Roslyn実装前提に改訂
+- 2026-03-19 レビュー: `reports/roslyn-expression-design-review-2026-03-19.md` を作成
+- 2026-03-19 実装: `ExpressionEngine` を Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) ベースへ移行
+- 2026-03-19 レビュー: `reports/roslyn-expression-implementation-review-2026-03-19.md` を作成
+- 2026-03-19 検証: `ExcelReportLib.Tests` 110件全通過
+- 2026-03-19 運用: `.gitignore` に `/.nuget` を追加し NuGet フォルダを非追跡化
 ## Status Definitions
 
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
+
 

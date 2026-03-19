@@ -978,6 +978,10 @@ namespace ExcelReportLib.DSL
         /// Represents the expression syntax error option.
         /// </summary>
         ExpressionSyntaxError,
+        /// <summary>
+        /// Represents the expression runtime error option.
+        /// </summary>
+        ExpressionRuntimeError,
     }
 
     /// <summary>
@@ -1023,3 +1027,4 @@ namespace ExcelReportLib.DSL
         public bool HasFatal => Issues.Any(i => i.Severity == IssueSeverity.Fatal);
     }
 }
+

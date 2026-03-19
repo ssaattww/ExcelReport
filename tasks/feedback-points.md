@@ -32,6 +32,7 @@ Last Updated: 2026-03-19
 | FP38 | sheetOptions groups はDSL属性追加ではなく、範囲重なりからネストレベルを自動算出して対応する | 対応済み | 2026-03-07 |
 | FP39 | sheetのrepeat対応は、実装前に調査レポート・設計書・先行テストを先に作成して進める | 対応済み | 2026-03-19 |
 | FP40 | sheet repeatの設計は別紙新規作成ではなく、Design/DslDefinition/DslDefinition_DetailDesign_v1.md を更新する形に統一する | 対応済み | 2026-03-19 |
+| FP41 | NuGet関連フォルダ（.nuget）はGit追跡しない。.gitignore で除外する | 対応済み | 2026-03-19 |
 
 ---
 
@@ -54,6 +55,7 @@ Last Updated: 2026-03-19
 | FP11 | PM/Codex責任分担の明確化 | 2026-03-03 |
 | FP12 | git commit -a で許可削減 | 2026-03-03 |
 | FP13 | 毎回の許可確認を排除 | 2026-03-03 |
+
 
 
 

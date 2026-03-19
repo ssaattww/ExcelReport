@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Dynamic;
+using System.Globalization;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using ExcelReportLib.DSL;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 
 namespace ExcelReportLib.ExpressionEngine;
 
@@ -12,6 +15,8 @@ namespace ExcelReportLib.ExpressionEngine;
 /// </summary>
 public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 {
+    private static readonly ScriptOptions DefaultScriptOptions = CreateDefaultScriptOptions();
+
     private readonly ConcurrentDictionary<string, Lazy<CompiledExpression>> _cache =
         new(StringComparer.Ordinal);
 
@@ -30,13 +35,13 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
     {
         if (context is null)
         {
-            return ExpressionResult.Failure("Expression context is required.", usedCache: false);
+            return ExpressionResult.FailureCompilation("Expression context is required.", usedCache: false);
         }
 
         var normalizedExpression = NormalizeExpression(expression);
         if (normalizedExpression.Length == 0)
         {
-            return ExpressionResult.Failure("Expression is empty.", usedCache: false);
+            return ExpressionResult.FailureCompilation("Expression is empty.", usedCache: false);
         }
 
         var usedCache = _cache.TryGetValue(normalizedExpression, out var cached);
@@ -52,13 +57,332 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
         try
         {
-            var value = compiled.Accessor!(context);
+            var globals = new ScriptGlobals
+            {
+                rootObj = DynamicValue.Wrap(context.Root),
+                dataObj = DynamicValue.Wrap(context.Data),
+                varsObj = new DynamicVars(context.Vars),
+            };
+
+            var rawValue = compiled.Runner!(globals).GetAwaiter().GetResult();
+            var value = DynamicValue.Unwrap(rawValue);
             return ExpressionResult.Success(value, usedCache);
         }
         catch (Exception ex)
         {
-            return ExpressionResult.Failure($"Runtime error: {ex.Message}", usedCache);
+            if (IsNullAccessRuntimeError(ex))
+            {
+                return ExpressionResult.Success(null, usedCache);
+            }
+
+            return ExpressionResult.FailureRuntime($"Runtime error: {UnwrapExceptionMessage(ex)}", usedCache);
         }
+    }
+
+    /// <summary>
+    /// Globals object for Roslyn script execution.
+    /// </summary>
+    public sealed class ScriptGlobals
+    {
+        /// <summary>
+        /// Gets or sets wrapped root object.
+        /// </summary>
+        public object? rootObj { get; init; }
+
+        /// <summary>
+        /// Gets or sets wrapped data object.
+        /// </summary>
+        public object? dataObj { get; init; }
+
+        /// <summary>
+        /// Gets or sets wrapped vars object.
+        /// </summary>
+        public object? varsObj { get; init; }
+    }
+
+    /// <summary>
+    /// Dynamic vars wrapper for script indexer access.
+    /// </summary>
+    public sealed class DynamicVars
+    {
+        private readonly IReadOnlyDictionary<string, object?> _vars;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DynamicVars"/> class.
+        /// </summary>
+        /// <param name="vars">Variable dictionary.</param>
+        public DynamicVars(IReadOnlyDictionary<string, object?> vars)
+        {
+            _vars = vars ?? new Dictionary<string, object?>();
+        }
+
+        /// <summary>
+        /// Gets a wrapped value by key.
+        /// </summary>
+        /// <param name="key">Variable key.</param>
+        public dynamic this[string key] =>
+            _vars.TryGetValue(key, out var value)
+                ? DynamicValue.Wrap(value)
+                : null;
+    }
+
+    /// <summary>
+    /// Dynamic reflection wrapper used by Roslyn expressions.
+    /// </summary>
+    public sealed class DynamicValue : DynamicObject, IEnumerable
+    {
+        private readonly object _value;
+
+        private DynamicValue(object value)
+        {
+            _value = value;
+        }
+
+        /// <summary>
+        /// Wraps a value for dynamic member/index access when needed.
+        /// </summary>
+        /// <param name="value">The input value.</param>
+        /// <returns>Wrapped or original value.</returns>
+        public static object? Wrap(object? value)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (value is DynamicValue)
+            {
+                return value;
+            }
+
+            return IsSimpleType(value.GetType())
+                ? value
+                : new DynamicValue(value);
+        }
+
+        /// <summary>
+        /// Unwraps a value previously wrapped by <see cref="Wrap(object?)"/>.
+        /// </summary>
+        /// <param name="value">Wrapped or raw value.</param>
+        /// <returns>Unwrapped value.</returns>
+        public static object? Unwrap(object? value) =>
+            value is DynamicValue wrapped
+                ? wrapped._value
+                : value;
+
+        /// <inheritdoc/>
+        public override bool TryGetMember(GetMemberBinder binder, out object? result)
+        {
+            if (TryResolveDictionaryValue(_value, binder.Name, out var dictionaryValue))
+            {
+                result = Wrap(dictionaryValue);
+                return true;
+            }
+
+            var type = _value.GetType();
+            var property = type.GetProperty(binder.Name, BindingFlags.Instance | BindingFlags.Public);
+            if (property is not null && property.GetIndexParameters().Length == 0)
+            {
+                result = Wrap(property.GetValue(_value));
+                return true;
+            }
+
+            var field = type.GetField(binder.Name, BindingFlags.Instance | BindingFlags.Public);
+            if (field is not null)
+            {
+                result = Wrap(field.GetValue(_value));
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
+        {
+            if (indexes.Length == 1)
+            {
+                var key = Unwrap(indexes[0]);
+
+                if (key is string stringKey && TryResolveDictionaryValue(_value, stringKey, out var dictionaryValue))
+                {
+                    result = Wrap(dictionaryValue);
+                    return true;
+                }
+
+                if (key is int index)
+                {
+                    if (_value is IList list)
+                    {
+                        result = index >= 0 && index < list.Count
+                            ? Wrap(list[index])
+                            : null;
+                        return index >= 0 && index < list.Count;
+                    }
+
+                    if (_value is Array array)
+                    {
+                        result = index >= 0 && index < array.Length
+                            ? Wrap(array.GetValue(index))
+                            : null;
+                        return index >= 0 && index < array.Length;
+                    }
+
+                    if (_value is string text)
+                    {
+                        result = index >= 0 && index < text.Length
+                            ? text[index]
+                            : null;
+                        return index >= 0 && index < text.Length;
+                    }
+                }
+
+                if (TryResolveIndexer(_value, key, out var indexResult))
+                {
+                    result = Wrap(indexResult);
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
+        {
+            var inputArgs = args ?? Array.Empty<object?>();
+            var methods = _value.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Where(method => method.Name == binder.Name)
+                .ToArray();
+
+            foreach (var method in methods)
+            {
+                var parameters = method.GetParameters();
+                if (parameters.Length != inputArgs.Length)
+                {
+                    continue;
+                }
+
+                if (!TryConvertArguments(inputArgs, parameters, out var converted))
+                {
+                    continue;
+                }
+
+                result = Wrap(method.Invoke(_value, converted));
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public override string? ToString() => _value.ToString();
+
+        /// <inheritdoc/>
+        public IEnumerator GetEnumerator()
+        {
+            if (_value is IEnumerable enumerable)
+            {
+                foreach (var item in enumerable)
+                {
+                    yield return Wrap(item);
+                }
+
+                yield break;
+            }
+
+            throw new InvalidOperationException($"Type '{_value.GetType().Name}' is not enumerable.");
+        }
+
+        private static bool TryResolveIndexer(object target, object? key, out object? value)
+        {
+            value = null;
+
+            var defaultMember = target.GetType().GetCustomAttribute<DefaultMemberAttribute>();
+            if (defaultMember is null)
+            {
+                return false;
+            }
+
+            var indexer = target.GetType().GetProperty(defaultMember.MemberName, BindingFlags.Instance | BindingFlags.Public);
+            if (indexer is null)
+            {
+                return false;
+            }
+
+            var parameters = indexer.GetIndexParameters();
+            if (parameters.Length != 1)
+            {
+                return false;
+            }
+
+            if (!TryConvertArgument(key, parameters[0].ParameterType, out var converted))
+            {
+                return false;
+            }
+
+            value = indexer.GetValue(target, new[] { converted });
+            return true;
+        }
+
+        private static bool TryConvertArguments(object?[] args, ParameterInfo[] parameters, out object?[] converted)
+        {
+            converted = new object?[args.Length];
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (!TryConvertArgument(Unwrap(args[i]), parameters[i].ParameterType, out var convertedValue))
+                {
+                    return false;
+                }
+
+                converted[i] = convertedValue;
+            }
+
+            return true;
+        }
+
+        private static bool TryConvertArgument(object? value, Type targetType, out object? converted)
+        {
+            var nullableTarget = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            if (value is null)
+            {
+                converted = null;
+                return !nullableTarget.IsValueType || Nullable.GetUnderlyingType(targetType) is not null;
+            }
+
+            if (nullableTarget.IsInstanceOfType(value))
+            {
+                converted = value;
+                return true;
+            }
+
+            try
+            {
+                converted = Convert.ChangeType(value, nullableTarget, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch
+            {
+                converted = null;
+                return false;
+            }
+        }
+
+        private static bool IsSimpleType(Type type) =>
+            type.IsPrimitive ||
+            type.IsEnum ||
+            type == typeof(string) ||
+            type == typeof(decimal) ||
+            type == typeof(DateTime) ||
+            type == typeof(DateTimeOffset) ||
+            type == typeof(TimeSpan) ||
+            type == typeof(Guid);
     }
 
     private static string NormalizeExpression(string expression)
@@ -76,140 +400,91 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
     private static CompiledExpression Compile(string expression)
     {
-        var parser = new ExpressionParser(expression);
-        if (!parser.TryParse(out var parsedExpression, out var errorMessage))
-        {
-            return CompiledExpression.Failure(errorMessage);
-        }
+        var scriptText = BuildScriptText(expression);
 
-        if (!IsSupportedRoot(parsedExpression.RootName))
+        try
         {
-            return CompiledExpression.Failure(
-                $"Unsupported root '{parsedExpression.RootName}'. Use root, data, or vars.");
-        }
+            var script = CSharpScript.Create<object?>(
+                scriptText,
+                DefaultScriptOptions,
+                typeof(ScriptGlobals));
 
-        object? Accessor(ExpressionContext context)
-        {
-            var current = ResolveRoot(parsedExpression.RootName, context);
+            var diagnostics = script.Compile();
+            var errors = diagnostics
+                .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                .Select(static diagnostic => diagnostic.ToString())
+                .ToArray();
 
-            foreach (var segment in parsedExpression.Segments)
+            if (errors.Length > 0)
             {
-                if (current is null)
-                {
-                    return null;
-                }
-
-                current = segment switch
-                {
-                    MemberSegment member => ResolveMember(current, member.Name),
-                    IndexSegment index => ResolveIndex(current, index.Key),
-                    _ => throw new InvalidOperationException("Unknown expression segment."),
-                };
+                return CompiledExpression.FailureCompilation(string.Join(Environment.NewLine, errors));
             }
 
-            return current;
+            return CompiledExpression.Success(script.CreateDelegate());
         }
-
-        return CompiledExpression.Success(Accessor);
+        catch (CompilationErrorException ex)
+        {
+            var message = string.Join(Environment.NewLine, ex.Diagnostics.Select(static diagnostic => diagnostic.ToString()));
+            return CompiledExpression.FailureCompilation(message);
+        }
+        catch (Exception ex)
+        {
+            return CompiledExpression.FailureCompilation(ex.Message);
+        }
     }
 
-    private static bool IsSupportedRoot(string rootName) =>
-        rootName is "root" or "data" or "vars";
+    private static string BuildScriptText(string expression) =>
+        "dynamic root = rootObj;" + Environment.NewLine +
+        "dynamic data = dataObj;" + Environment.NewLine +
+        "dynamic vars = varsObj;" + Environment.NewLine +
+        $"return (object?)({expression});";
 
-    private static object? ResolveRoot(string rootName, ExpressionContext context) =>
-        rootName switch
+    private static ScriptOptions CreateDefaultScriptOptions()
+    {
+        var references = new HashSet<Assembly>
         {
-            "root" => context.Root,
-            "data" => context.Data,
-            "vars" => context.Vars,
-            _ => throw new InvalidOperationException(
-                $"Unsupported root '{rootName}'. Use root, data, or vars."),
+            typeof(object).Assembly,
+            typeof(Enumerable).Assembly,
+            typeof(IList).Assembly,
+            typeof(Microsoft.CSharp.RuntimeBinder.Binder).Assembly,
+            typeof(ExpressionContext).Assembly,
         };
 
-    private static object? ResolveMember(object current, string memberName)
-    {
-        if (TryResolveDictionaryValue(current, memberName, out var dictionaryValue))
-        {
-            return dictionaryValue;
-        }
-
-        var type = current.GetType();
-        var property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public);
-        if (property is not null && property.GetIndexParameters().Length == 0)
-        {
-            return property.GetValue(current);
-        }
-
-        var field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public);
-        if (field is not null)
-        {
-            return field.GetValue(current);
-        }
-
-        throw new InvalidOperationException(
-            $"Member '{memberName}' was not found on type '{type.Name}'.");
+        return ScriptOptions.Default
+            .WithReferences(references)
+            .WithImports(
+                "System",
+                "System.Linq",
+                "System.Collections",
+                "System.Collections.Generic");
     }
 
-    private static object? ResolveIndex(object current, object key)
+    private static bool IsNullAccessRuntimeError(Exception ex)
     {
-        if (key is string stringKey && TryResolveDictionaryValue(current, stringKey, out var dictionaryValue))
+        var current = ex;
+        while (current is TargetInvocationException invocationException && invocationException.InnerException is not null)
         {
-            return dictionaryValue;
+            current = invocationException.InnerException;
         }
 
-        if (key is int index)
+        if (current is NullReferenceException)
         {
-            if (current is IList list)
-            {
-                if (index < 0 || index >= list.Count)
-                {
-                    throw new InvalidOperationException(
-                        $"Index {index} is out of range for a collection with {list.Count} items.");
-                }
-
-                return list[index];
-            }
-
-            if (current is Array array)
-            {
-                if (index < 0 || index >= array.Length)
-                {
-                    throw new InvalidOperationException(
-                        $"Index {index} is out of range for an array with {array.Length} items.");
-                }
-
-                return array.GetValue(index);
-            }
-
-            if (current is string text)
-            {
-                if (index < 0 || index >= text.Length)
-                {
-                    throw new InvalidOperationException(
-                        $"Index {index} is out of range for a string with {text.Length} characters.");
-                }
-
-                return text[index];
-            }
+            return true;
         }
 
-        var defaultMemberAttribute = current.GetType().GetCustomAttribute<DefaultMemberAttribute>();
-        if (!string.IsNullOrWhiteSpace(defaultMemberAttribute?.MemberName))
+        return current is Microsoft.CSharp.RuntimeBinder.RuntimeBinderException binderException
+            && binderException.Message.Contains("null reference", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string UnwrapExceptionMessage(Exception ex)
+    {
+        var current = ex;
+        while (current is TargetInvocationException invocationException && invocationException.InnerException is not null)
         {
-            var indexer = current.GetType()
-                .GetProperty(defaultMemberAttribute.MemberName, BindingFlags.Instance | BindingFlags.Public);
-            if (indexer is not null)
-            {
-                var parameters = indexer.GetIndexParameters();
-                if (parameters.Length == 1 && parameters[0].ParameterType.IsInstanceOfType(key))
-                {
-                    return indexer.GetValue(current, new[] { key });
-                }
-            }
+            current = invocationException.InnerException;
         }
 
-        throw new InvalidOperationException(
-            $"Index access is not supported for type '{current.GetType().Name}'.");
+        return current.Message;
     }
 
     private static bool TryResolveDictionaryValue(object current, string key, out object? value)
@@ -247,23 +522,26 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
     private sealed class CompiledExpression
     {
-        private CompiledExpression(Func<ExpressionContext, object?>? accessor, Issue? compileIssue)
+        private CompiledExpression(ScriptRunner<object?>? runner, Issue? compileIssue)
         {
-            Accessor = accessor;
+            Runner = runner;
             CompileIssue = compileIssue;
         }
 
         /// <summary>
-        /// Gets the compiled accessor delegate when expression compilation succeeds.
+        /// Gets the compiled script runner when expression compilation succeeds.
         /// </summary>
-        public Func<ExpressionContext, object?>? Accessor { get; }
+        public ScriptRunner<object?>? Runner { get; }
 
+        /// <summary>
+        /// Gets compilation issue when expression compilation fails.
+        /// </summary>
         public Issue? CompileIssue { get; }
 
-        public static CompiledExpression Success(Func<ExpressionContext, object?> accessor) =>
-            new(accessor, null);
+        public static CompiledExpression Success(ScriptRunner<object?> runner) =>
+            new(runner, null);
 
-        public static CompiledExpression Failure(string message) =>
+        public static CompiledExpression FailureCompilation(string message) =>
             new(
                 null,
                 new Issue
@@ -272,236 +550,5 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                     Kind = IssueKind.ExpressionSyntaxError,
                     Message = message,
                 });
-    }
-
-    private sealed record ParsedExpression(string RootName, IReadOnlyList<ExpressionSegment> Segments);
-
-    private abstract record ExpressionSegment;
-
-    private sealed record MemberSegment(string Name) : ExpressionSegment;
-
-    private sealed record IndexSegment(object Key) : ExpressionSegment;
-
-    private sealed class ExpressionParser
-    {
-        private readonly string _text;
-        private int _position;
-
-        public ExpressionParser(string text)
-        {
-            _text = text;
-        }
-
-        public bool TryParse(out ParsedExpression parsedExpression, out string errorMessage)
-        {
-            parsedExpression = new ParsedExpression(string.Empty, Array.Empty<ExpressionSegment>());
-
-            SkipWhitespace();
-            if (!TryParseIdentifier(out var rootName))
-            {
-                errorMessage = GetError("Expression must start with root, data, or vars.");
-                return false;
-            }
-
-            var segments = new List<ExpressionSegment>();
-            while (true)
-            {
-                SkipWhitespace();
-                if (IsEnd)
-                {
-                    parsedExpression = new ParsedExpression(rootName, segments);
-                    errorMessage = string.Empty;
-                    return true;
-                }
-
-                if (Current == '.')
-                {
-                    _position++;
-                    SkipWhitespace();
-                    if (!TryParseIdentifier(out var memberName))
-                    {
-                        errorMessage = GetError("A member name is required after '.'.");
-                        return false;
-                    }
-
-                    segments.Add(new MemberSegment(memberName));
-                    continue;
-                }
-
-                if (Current == '[')
-                {
-                    _position++;
-                    SkipWhitespace();
-                    if (!TryParseIndexKey(out var key, out errorMessage))
-                    {
-                        return false;
-                    }
-
-                    SkipWhitespace();
-                    if (IsEnd || Current != ']')
-                    {
-                        errorMessage = GetError("Missing closing ']'.");
-                        return false;
-                    }
-
-                    _position++;
-                    segments.Add(new IndexSegment(key));
-                    continue;
-                }
-
-                errorMessage = GetError($"Unsupported token '{Current}'.");
-                return false;
-            }
-        }
-
-        private bool TryParseIdentifier(out string identifier)
-        {
-            identifier = string.Empty;
-            if (IsEnd || (!char.IsLetter(Current) && Current != '_'))
-            {
-                return false;
-            }
-
-            var start = _position;
-            _position++;
-
-            while (!IsEnd && (char.IsLetterOrDigit(Current) || Current == '_'))
-            {
-                _position++;
-            }
-
-            identifier = _text[start.._position];
-            return true;
-        }
-
-        private bool TryParseIndexKey(out object key, out string errorMessage)
-        {
-            key = string.Empty;
-            errorMessage = string.Empty;
-
-            if (IsEnd)
-            {
-                errorMessage = GetError("An index value is required.");
-                return false;
-            }
-
-            if (Current is '"' or '\'')
-            {
-                return TryParseStringLiteral(out key, out errorMessage);
-            }
-
-            if (!TryParseInteger(out var intValue))
-            {
-                errorMessage = GetError("Only integer and string indexers are supported.");
-                return false;
-            }
-
-            key = intValue;
-            return true;
-        }
-
-        private bool TryParseInteger(out int value)
-        {
-            value = 0;
-            if (IsEnd)
-            {
-                return false;
-            }
-
-            var negative = false;
-            if (Current == '-')
-            {
-                negative = true;
-                _position++;
-            }
-
-            if (IsEnd || !char.IsDigit(Current))
-            {
-                return false;
-            }
-
-            var start = _position;
-            while (!IsEnd && char.IsDigit(Current))
-            {
-                _position++;
-            }
-
-            if (!int.TryParse(_text[start.._position], out value))
-            {
-                return false;
-            }
-
-            if (negative)
-            {
-                value = -value;
-            }
-
-            return true;
-        }
-
-        private bool TryParseStringLiteral(out object value, out string errorMessage)
-        {
-            value = string.Empty;
-            errorMessage = string.Empty;
-
-            var delimiter = Current;
-            _position++;
-
-            var builder = new StringBuilder();
-            while (!IsEnd)
-            {
-                var current = Current;
-                _position++;
-
-                if (current == delimiter)
-                {
-                    value = builder.ToString();
-                    return true;
-                }
-
-                if (current == '\\')
-                {
-                    if (IsEnd)
-                    {
-                        errorMessage = GetError("Incomplete escape sequence.");
-                        return false;
-                    }
-
-                    var escaped = Current;
-                    _position++;
-                    builder.Append(escaped switch
-                    {
-                        '\\' => '\\',
-                        '"' => '"',
-                        '\'' => '\'',
-                        'n' => '\n',
-                        'r' => '\r',
-                        't' => '\t',
-                        _ => escaped,
-                    });
-                    continue;
-                }
-
-                builder.Append(current);
-            }
-
-            errorMessage = GetError("Unterminated string literal.");
-            return false;
-        }
-
-        private void SkipWhitespace()
-        {
-            while (!IsEnd && char.IsWhiteSpace(Current))
-            {
-                _position++;
-            }
-        }
-
-        private string GetError(string message) =>
-            $"{message} (position {_position + 1})";
-
-        private bool IsEnd => _position >= _text.Length;
-
-        private char Current => _text[_position];
     }
 }
