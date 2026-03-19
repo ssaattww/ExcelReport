@@ -1,14 +1,14 @@
 # ExpressionEngine 詳細設計
 
 ## Status
-- As-Is: `ExpressionEngine` は独自パーサ方式で実装済み（証跡: `ExcelReport/ExcelReportLib/ExpressionEngine/ExpressionEngine.cs`）。
-- As-Is: API は `IExpressionEngine.Evaluate(string, ExpressionContext): ExpressionResult` を公開している（証跡: `ExcelReport/ExcelReportLib/ExpressionEngine/IExpressionEngine.cs`）。
-- Gap: 詳細設計は Roslyn ベース前提だが、実装は制限付き式評価であり乖離している。
-- To-Be: 評価基盤を Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) に切り替え、既存 API 契約 (`ExpressionResult`) は維持する。
+- As-Is: `ExpressionEngine` は Roslyn (`Microsoft.CodeAnalysis.CSharp.Scripting`) ベースで実装済み。
+- As-Is: API は `IExpressionEngine.Evaluate(string, ExpressionContext): ExpressionResult` を公開している。
+- As-Is: `Compilation Error` / `Runtime Error` を `IssueKind.ExpressionSyntaxError` / `IssueKind.ExpressionRuntimeError` で分類して返却する。
+- To-Be: 非公開型コンテキストに対するLINQ式サポートは制約があるため、必要に応じて公開DTO化または式側の明示キャスト運用を検討する。
 
 ## 1. 概要
-ExpressionEngine は、DSL 内に記述された C# 式（`@(...)`）を評価し、結果を `ExpressionResult` として返す。
-評価エンジンは Roslyn スクリプトを使用し、式単位でコンパイル結果をキャッシュする。
+ExpressionEngine は、DSL 内の C# 式（`@(...)`）を評価し、`ExpressionResult` を返す。
+Roslyn Script を使用し、式文字列だけでなく `root/data` の型バインディング条件を含めてコンパイル結果をキャッシュする。
 
 ## 2. API (Public Interfaces)
 
@@ -27,8 +27,7 @@ public interface IExpressionEvaluator : IExpressionEngine
 }
 ```
 
-- `IExpressionEvaluator` は設計用語との互換のための別名。
-- 返却値は `object` ではなく `ExpressionResult` を正とする。
+- `IExpressionEvaluator` は設計用語との互換エイリアス。
 
 ### 2.3 ExpressionContext / EvaluationContext
 ```csharp
@@ -44,24 +43,27 @@ public sealed class EvaluationContext : ExpressionContext
 }
 ```
 
-- `EvaluationContext` は設計ドキュメント互換のエイリアス。
-
 ## 3. データモデル
 
 ### 3.1 Roslyn Globals
-Roslyn スクリプトへ渡すグローバル変数は以下を提供する。
+Roslyn スクリプトへ渡す `globals` は次を保持する。
 
 ```csharp
-internal sealed class RoslynGlobals
+public sealed class ScriptGlobals
 {
-    public dynamic? root { get; init; }
-    public dynamic? data { get; init; }
-    public IReadOnlyDictionary<string, object?> vars { get; init; }
+    public object? rootObj { get; init; }
+    public object? dataObj { get; init; }
+    public object? varsObj { get; init; }
 }
 ```
 
+- `rootObj/dataObj` はコンパイル計画に応じて次を切り替える。
+  - 公開・参照可能な型: 生オブジェクトを渡し、スクリプト内で強型付けローカルに束縛。
+  - それ以外: `DynamicValue` ラッパーを渡し、従来互換の動的メンバー解決を使用。
+- `varsObj` は `DynamicVars` を渡し、`vars["key"]` 参照を提供。
+
 ### 3.2 参照設定 (References & Imports)
-既定で以下を `ScriptOptions` に設定する。
+既定 `ScriptOptions` は以下を設定する。
 - Imports:
   - `System`
   - `System.Linq`
@@ -72,43 +74,53 @@ internal sealed class RoslynGlobals
   - `System.Linq` (`typeof(Enumerable).Assembly`)
   - `System.Collections` (`typeof(IList).Assembly`)
   - `Microsoft.CSharp` (`typeof(Microsoft.CSharp.RuntimeBinder.Binder).Assembly`)
+  - `ExcelReportLib` (`typeof(ExpressionContext).Assembly`)
+
+加えて、`root/data` を強型付けする場合は対象型のアセンブリ参照を動的追加する。
 
 ## 4. 処理フロー
 
 ### 4.1 Evaluate フロー
 1. 式を正規化する（`@(...)` を除去、trim）。
-2. キャッシュを確認する（キー: 正規化後式文字列）。
-3. キャッシュミス時:
-   - `CSharpScript.Create<object?>(...)` でコンパイル。
-   - `CreateDelegate()` で `ScriptRunner<object?>` を生成しキャッシュ。
-4. `RoslynGlobals` (`root/data/vars`) を構築して実行。
-5. 成功時は `ExpressionResult.Success` を返す。
-6. 失敗時は `ExpressionResult.Failure*` を返す。
+2. `ExpressionContext` からコンパイル計画を構築する。
+   - `root/data` ごとに「強型付け束縛」または「dynamic束縛」を決定。
+3. キャッシュを確認する（キー: `正規化式 + rootバインディング + dataバインディング`）。
+4. キャッシュミス時:
+   - 生成済みスクリプト本文 + `ScriptOptions` で Roslyn コンパイル。
+5. `ScriptGlobals` を構築して実行。
+6. 成功時は `ExpressionResult.Success` を返す。
+7. 失敗時は `ExpressionResult.Failure*` を返す。
 
-### 4.2 キャッシュ方針
+### 4.2 LINQ式対応方針
+- `root/data` が公開型として強型付けできる場合、`Where/Sum/Select` など通常のLINQラムダ式を評価可能。
+- `root/data` が非公開型や匿名型で強型付けできない場合は `dynamic` フォールバック。
+  - この経路では「単純なメンバー/インデクサ参照」は互換維持する。
+  - ただし `dynamic` 呼び出し制約により、自然記法のLINQラムダ（例: `root.Items.Where(x => ...)`）は失敗し得る。
+
+### 4.3 キャッシュ方針
 - スコープ: `ExpressionEngine` インスタンス単位。
 - 実装: `ConcurrentDictionary<string, Lazy<CompiledExpression>>`。
-- 目的: 同一式の再コンパイル回避。
+- 目的: 同一式かつ同一バインディング条件の再コンパイル回避。
 
 ## 5. エラー処理
 
 ### 5.1 エラーポリシー
-- 式評価中の例外は外へ送出しない。
-- 戻り値 `ExpressionResult` に `Issue` を格納し、値は `#ERR(...)` とする。
-- 既存パイプライン（LayoutEngine/ReportGenerator）の Issue 集約経路を維持する。
+- 評価中例外は外へ送出しない。
+- `ExpressionResult` に `Issue` を格納し、値は `#ERR(...)` とする。
+- Null参照相当の実行例外は既存互換で `Success(null)` を返す。
 
 ### 5.2 エラー分類
 - Compilation Error:
-  - Roslyn 診断 (`DiagnosticSeverity.Error`) で検出。
-  - `IssueKind.ExpressionSyntaxError` として返す。
+  - Roslyn 診断 (`DiagnosticSeverity.Error`)。
+  - `IssueKind.ExpressionSyntaxError`。
 - Runtime Error:
   - スクリプト実行例外。
-  - `IssueKind.ExpressionRuntimeError` として返す。
+  - `IssueKind.ExpressionRuntimeError`。
 
 ## 6. 既存互換と責務境界
-- LayoutEngine 側の `repeat.var` ショートカット/書き換えロジックは維持する。
-- ExpressionEngine は C# 評価実行とエラー正規化に責務を限定する。
-- DslParser の `TreatExpressionSyntaxErrorAsFatal` 適用は別タスク（本対応外）。
+- LayoutEngine 側の `repeat.var` ショートカット/書き換えロジックは維持。
+- ExpressionEngine は「C#評価実行とエラー正規化」に責務を限定。
+- DslParser の `TreatExpressionSyntaxErrorAsFatal` 適用は別タスク。
 
 ## 7. テスト観点
 
@@ -116,17 +128,19 @@ internal sealed class RoslynGlobals
 - プロパティアクセス: `data.Name`
 - 演算: `data.Amount + 10`
 - 条件演算子: `data.Score >= 80 ? "合格" : "不合格"`
-- null 合体: `data.Address?.City ?? "不明"`
-- vars 参照: `vars["Key"]`
-- キャッシュ再利用: 同一式2回評価で2回目が cache hit
+- null合体: `data.Address?.City ?? "不明"`
+- vars参照: `vars["Key"]`
+- キャッシュ再利用
+- E2E: テンプレート内LINQ式（`repeat@from` と `cell@value`）
 
 ### 7.2 異常系
 - 構文エラー: `@(root.)` -> `ExpressionSyntaxError`
-- 実行時エラー: `@(1 / data.Divisor)` (Divisor=0) -> `ExpressionRuntimeError`
+- 実行時エラー: `@(1 / data.Divisor)` -> `ExpressionRuntimeError`
 
 ## 8. 非目標
 - 式の静的型検査結果を DslParser 段階へ昇格すること。
 - Roslyn 実行のセキュアサンドボックス化。
 
 ## 9. 変更履歴
-- 2026-03-19: Roslyn ベース実装へ設計を更新。API を現行 `ExpressionResult` 契約に整合。
+- 2026-03-19: Roslyn ベース実装へ設計を更新。
+- 2026-03-19: `root/data` の強型付けコンパイル計画と LINQ E2E 対応方針を追記。

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using ExcelReportLib.DSL;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -44,10 +45,14 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             return ExpressionResult.FailureCompilation("Expression is empty.", usedCache: false);
         }
 
-        var usedCache = _cache.TryGetValue(normalizedExpression, out var cached);
+        var compileContext = CreateScriptCompileContext(normalizedExpression, context);
+
+        var usedCache = _cache.TryGetValue(compileContext.CacheKey, out var cached);
         cached ??= _cache.GetOrAdd(
-            normalizedExpression,
-            key => new Lazy<CompiledExpression>(() => Compile(key), LazyThreadSafetyMode.ExecutionAndPublication));
+            compileContext.CacheKey,
+            _ => new Lazy<CompiledExpression>(
+                () => Compile(compileContext),
+                LazyThreadSafetyMode.ExecutionAndPublication));
 
         var compiled = cached.Value;
         if (compiled.CompileIssue is not null)
@@ -59,8 +64,8 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         {
             var globals = new ScriptGlobals
             {
-                rootObj = DynamicValue.Wrap(context.Root),
-                dataObj = DynamicValue.Wrap(context.Data),
+                rootObj = compileContext.UseDynamicRoot ? DynamicValue.Wrap(context.Root) : context.Root,
+                dataObj = compileContext.UseDynamicData ? DynamicValue.Wrap(context.Data) : context.Data,
                 varsObj = new DynamicVars(context.Vars),
             };
 
@@ -78,7 +83,6 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             return ExpressionResult.FailureRuntime($"Runtime error: {UnwrapExceptionMessage(ex)}", usedCache);
         }
     }
-
     /// <summary>
     /// Globals object for Roslyn script execution.
     /// </summary>
@@ -120,7 +124,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// Gets a wrapped value by key.
         /// </summary>
         /// <param name="key">Variable key.</param>
-        public dynamic this[string key] =>
+        public object? this[string key] =>
             _vars.TryGetValue(key, out var value)
                 ? DynamicValue.Wrap(value)
                 : null;
@@ -398,15 +402,232 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             : trimmed;
     }
 
-    private static CompiledExpression Compile(string expression)
+    private static ScriptCompileContext CreateScriptCompileContext(string expression, ExpressionContext context)
     {
-        var scriptText = BuildScriptText(expression);
+        var additionalReferences = new HashSet<Assembly>();
+        var rootBinding = BuildContextBinding("root", "rootObj", context.Root?.GetType(), additionalReferences);
+        var dataBinding = BuildContextBinding("data", "dataObj", context.Data?.GetType(), additionalReferences);
+        var scriptText = BuildScriptText(expression, rootBinding, dataBinding);
+        var scriptOptions = CreateScriptOptions(additionalReferences);
+        var cacheKey = BuildCacheKey(expression, rootBinding.CacheToken, dataBinding.CacheToken);
 
+        return new ScriptCompileContext(
+            cacheKey,
+            scriptText,
+            scriptOptions,
+            rootBinding.UseDynamic,
+            dataBinding.UseDynamic);
+    }
+
+    private static string BuildScriptText(string expression, ContextBinding rootBinding, ContextBinding dataBinding) =>
+        rootBinding.Declaration + Environment.NewLine +
+        dataBinding.Declaration + Environment.NewLine +
+        "dynamic vars = varsObj;" + Environment.NewLine +
+        $"return (object?)({expression});";
+
+    private static ContextBinding BuildContextBinding(
+        string variableName,
+        string sourceName,
+        Type? runtimeType,
+        ISet<Assembly> additionalReferences)
+    {
+        if (TryGetScriptTypeName(runtimeType, out var typeName))
+        {
+            CollectReferencedAssemblies(runtimeType!, additionalReferences);
+            return new ContextBinding(
+                $"var {variableName} = {sourceName} is {typeName} __typed_{variableName} ? __typed_{variableName} : default({typeName});",
+                typeName + "@" + runtimeType!.Assembly.FullName,
+                UseDynamic: false);
+        }
+
+        return new ContextBinding(
+            $"dynamic {variableName} = {sourceName};",
+            CacheToken: "dynamic",
+            UseDynamic: true);
+    }
+
+    private static string BuildCacheKey(string expression, string rootToken, string dataToken) =>
+        expression + Environment.NewLine +
+        "#root:" + rootToken + Environment.NewLine +
+        "#data:" + dataToken;
+
+    private static bool TryGetScriptTypeName(Type? type, out string typeName)
+    {
+        typeName = string.Empty;
+        if (type is null || !IsScriptVisibleType(type))
+        {
+            return false;
+        }
+
+        return TryFormatScriptTypeName(type, out typeName);
+    }
+
+    private static bool TryFormatScriptTypeName(Type type, out string typeName)
+    {
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType();
+            if (elementType is null || !TryFormatScriptTypeName(elementType, out var elementTypeName))
+            {
+                typeName = string.Empty;
+                return false;
+            }
+
+            var commas = new string(',', type.GetArrayRank() - 1);
+            typeName = $"{elementTypeName}[{commas}]";
+            return true;
+        }
+
+        if (type.IsGenericType)
+        {
+            var genericDefinition = type.GetGenericTypeDefinition();
+            var genericFullName = genericDefinition.FullName;
+            if (string.IsNullOrWhiteSpace(genericFullName))
+            {
+                typeName = string.Empty;
+                return false;
+            }
+
+            var tickIndex = genericFullName.IndexOf('`');
+            if (tickIndex >= 0)
+            {
+                genericFullName = genericFullName[..tickIndex];
+            }
+
+            var genericArguments = type.GetGenericArguments();
+            var argumentTypeNames = new string[genericArguments.Length];
+            for (var i = 0; i < genericArguments.Length; i++)
+            {
+                if (!TryFormatScriptTypeName(genericArguments[i], out argumentTypeNames[i]))
+                {
+                    typeName = string.Empty;
+                    return false;
+                }
+            }
+
+            typeName = $"global::{genericFullName.Replace('+', '.')}<{string.Join(", ", argumentTypeNames)}>";
+            return true;
+        }
+
+        var fullName = type.FullName;
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            typeName = string.Empty;
+            return false;
+        }
+
+        typeName = "global::" + fullName.Replace('+', '.');
+        return true;
+    }
+
+    private static bool IsScriptVisibleType(Type type)
+    {
+        if (type.IsByRef || type.IsPointer || type.IsGenericTypeDefinition || type.ContainsGenericParameters)
+        {
+            return false;
+        }
+
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType();
+            return elementType is not null && IsScriptVisibleType(elementType);
+        }
+
+        if (IsAnonymousType(type) || !IsPubliclyAccessible(type))
+        {
+            return false;
+        }
+
+        if (!type.IsGenericType)
+        {
+            return true;
+        }
+
+        foreach (var argument in type.GetGenericArguments())
+        {
+            if (!IsScriptVisibleType(argument))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsPubliclyAccessible(Type type)
+    {
+        var current = type;
+        while (current is not null)
+        {
+            if (!current.IsPublic && !current.IsNestedPublic)
+            {
+                return false;
+            }
+
+            current = current.DeclaringType!;
+        }
+
+        return true;
+    }
+
+    private static bool IsAnonymousType(Type type) =>
+        type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
+        && type.Name.Contains("AnonymousType", StringComparison.Ordinal)
+        && (type.Name.StartsWith("<>", StringComparison.Ordinal) || type.Name.StartsWith("VB$", StringComparison.Ordinal));
+
+    private static void CollectReferencedAssemblies(Type type, ISet<Assembly> additionalReferences)
+    {
+        if (type.IsByRef || type.IsPointer)
+        {
+            var elementType = type.GetElementType();
+            if (elementType is null)
+            {
+                return;
+            }
+
+            type = elementType;
+        }
+
+        additionalReferences.Add(type.Assembly);
+
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType();
+            if (elementType is not null)
+            {
+                CollectReferencedAssemblies(elementType, additionalReferences);
+            }
+
+            return;
+        }
+
+        if (type.DeclaringType is not null)
+        {
+            CollectReferencedAssemblies(type.DeclaringType, additionalReferences);
+        }
+
+        if (!type.IsGenericType)
+        {
+            return;
+        }
+
+        additionalReferences.Add(type.GetGenericTypeDefinition().Assembly);
+        foreach (var argument in type.GetGenericArguments())
+        {
+            if (!argument.IsGenericParameter)
+            {
+                CollectReferencedAssemblies(argument, additionalReferences);
+            }
+        }
+    }
+
+    private static CompiledExpression Compile(ScriptCompileContext compileContext)
+    {
         try
         {
             var script = CSharpScript.Create<object?>(
-                scriptText,
-                DefaultScriptOptions,
+                compileContext.ScriptText,
+                compileContext.ScriptOptions,
                 typeof(ScriptGlobals));
 
             var diagnostics = script.Compile();
@@ -432,13 +653,6 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             return CompiledExpression.FailureCompilation(ex.Message);
         }
     }
-
-    private static string BuildScriptText(string expression) =>
-        "dynamic root = rootObj;" + Environment.NewLine +
-        "dynamic data = dataObj;" + Environment.NewLine +
-        "dynamic vars = varsObj;" + Environment.NewLine +
-        $"return (object?)({expression});";
-
     private static ScriptOptions CreateDefaultScriptOptions()
     {
         var references = new HashSet<Assembly>
@@ -459,6 +673,18 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 "System.Collections.Generic");
     }
 
+    private static ScriptOptions CreateScriptOptions(ISet<Assembly> additionalReferences)
+    {
+        if (additionalReferences.Count == 0)
+        {
+            return DefaultScriptOptions;
+        }
+
+        var references = additionalReferences
+            .Where(static assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location));
+
+        return DefaultScriptOptions.WithReferences(references);
+    }
     private static bool IsNullAccessRuntimeError(Exception ex)
     {
         var current = ex;
@@ -520,6 +746,14 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             Span = issue.Span,
         };
 
+    private sealed record ContextBinding(string Declaration, string CacheToken, bool UseDynamic);
+
+    private sealed record ScriptCompileContext(
+        string CacheKey,
+        string ScriptText,
+        ScriptOptions ScriptOptions,
+        bool UseDynamicRoot,
+        bool UseDynamicData);
     private sealed class CompiledExpression
     {
         private CompiledExpression(ScriptRunner<object?>? runner, Issue? compileIssue)
@@ -552,3 +786,5 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 });
     }
 }
+
+
