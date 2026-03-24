@@ -1,9 +1,17 @@
 # Phases Status
 
-Last Updated: 2026-03-19
+Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: master向けPRでxUnitテストを実行するCI workflow（`pr-xunit-tests.yml`）を追加
+- 2026-03-24: 調査記録 `reports/pr-xunit-workflow-2026-03-24.md` を追加
+- 2026-03-24: NuGetパッケージにREADMEを同梱する修正を追加（`PackageReadmeFile` + package content）
+- 2026-03-24: `ExcelReportLib/README.md` を追加し、releaseトリガーpublishでのREADME警告解消に対応
+- 2026-03-24: 調査記録 `reports/nuget-package-readme-fix-2026-03-24.md` を追加
+- 2026-03-24: csx public型（`Submission#...`）で式評価が失敗する不具合を修正（型名構文検証 + dynamicフォールバック）
+- 2026-03-24: 回帰テスト `Evaluate_TypeNameContainingHash_UsesDynamicFallback` を追加し、ExpressionEngineテスト12件の通過を確認
+- 2026-03-24: 調査記録 `reports/csx-expression-hash-type-investigation-2026-03-24.md` を追加
 - 2026-03-19: `sheet repeat` 対応の調査レポートを作成
 - 2026-03-19: `sheet repeat` 詳細設計を Design/DslDefinition/DslDefinition_DetailDesign_v1.md に統合更新
 - 2026-03-19: 実装前の先行テスト (Red) を追加して未対応ギャップを可視化
@@ -38,3 +46,4 @@ Last Updated: 2026-03-19
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
+

@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Reflection.Emit;
 using ExcelReportLib.DSL;
 using ExcelReportLib.ExpressionEngine;
 
@@ -208,6 +210,40 @@ public sealed class ExpressionEngineTests
         Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
         Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
     }
+
+    [Fact]
+    public void Evaluate_TypeNameContainingHash_UsesDynamicFallback()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var scriptLikeType = CreatePublicTypeWithHashInName();
+        var instance = Activator.CreateInstance(scriptLikeType);
+
+        Assert.NotNull(instance);
+
+        var pairsField = scriptLikeType.GetField("Pairs", BindingFlags.Instance | BindingFlags.Public);
+        Assert.NotNull(pairsField);
+        pairsField!.SetValue(instance, new List<string> { "No1" });
+
+        var result = engine.Evaluate("@(root.Pairs)", new ExpressionContext(instance, instance));
+
+        Assert.False(result.HasError);
+        var pairs = Assert.IsAssignableFrom<IEnumerable<object?>>(result.Value);
+        Assert.Equal(new object?[] { "No1" }, pairs.ToArray());
+    }
+
+    private static Type CreatePublicTypeWithHashInName()
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("ExpressionEngineTests.ScriptLikeType" + Guid.NewGuid().ToString("N")),
+            AssemblyBuilderAccess.Run);
+        var module = assembly.DefineDynamicModule("Main");
+        var typeBuilder = module.DefineType("Submission#0Root", TypeAttributes.Public | TypeAttributes.Class);
+
+        typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        typeBuilder.DefineField("Pairs", typeof(List<string>), FieldAttributes.Public);
+
+        return typeBuilder.CreateType()!;
+    }
     private sealed class PersonRow
     {
         public string Name { get; init; } = string.Empty;
@@ -245,8 +281,4 @@ public sealed class ExpressionEngineTests
         public string City { get; init; } = string.Empty;
     }
 }
-
-
-
-
 

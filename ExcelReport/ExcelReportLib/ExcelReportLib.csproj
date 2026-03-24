@@ -10,12 +10,16 @@
     <Company>ssaattww</Company>
     <Description>Generate .xlsx workbooks from XML DSL templates and runtime data.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>excel;openxml;report;dsl</PackageTags>
     <RepositoryUrl>https://github.com/ssaattww/ExcelReport</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="LayoutEngine\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.0" />
@@ -27,3 +31,4 @@
     </EmbeddedResource>
   </ItemGroup>
 </Project>
+
