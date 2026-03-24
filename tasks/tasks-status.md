@@ -7,7 +7,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 - 2026-03-24 機能追加: `sheet` / `repeat` の `from`・`var` で子要素指定をサポート（属性形式も継続サポート）
 - 2026-03-24 互換制御: 属性と子要素が同時指定された場合はIssue(Warning)を記録し、属性値を優先
+- 2026-03-24 設計更新: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` と `Design/DslParser/DslParser_DetailDesign_v1.md` に from/var の属性・子要素併用仕様を反映
 - 2026-03-24 記録: `reports/from-var-element-support-2026-03-24.md` を作成
+- 2026-03-24 記録: `reports/from-var-element-design-doc-sync-2026-03-24.md` を作成
 - 2026-03-24 CI更新: master pushをトリガーにNuGet prereleaseを自動publishするworkflowへ拡張
 - 2026-03-24 バージョン規約: 最新安定タグ基準でpatch(3桁目)を自動増分し、`-pre.<run_number>`を付与
 - 2026-03-24 記録: `reports/master-push-prerelease-auto-version-2026-03-24.md` を作成
