@@ -659,7 +659,9 @@ public sealed class RendererTests
         int col,
         object? value,
         string? formula = null,
-        string? formulaRef = null) =>
+        string? formulaRef = null,
+        string? formulaRefScope = null,
+        string scopePath = "/sheet/0") =>
         new(
             row,
             col,
@@ -668,6 +670,8 @@ public sealed class RendererTests
             value,
             formula,
             formulaRef,
+            formulaRefScope,
+            scopePath,
             new StylePlan(
                 CreateStyle(),
                 appliedStyles: [],
@@ -766,4 +770,3 @@ public sealed class RendererTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 }
-

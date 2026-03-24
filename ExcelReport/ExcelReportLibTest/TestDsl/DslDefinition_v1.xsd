@@ -235,6 +235,7 @@
     <!-- 単一参照用ショートカット -->
     <xs:attribute name="styleRef"   type="xs:string"/>
     <xs:attribute name="formulaRef" type="xs:string"/>
+    <xs:attribute name="formulaRefScope" type="xs:string"/>
   </xs:complexType>
 
   <!-- use -->

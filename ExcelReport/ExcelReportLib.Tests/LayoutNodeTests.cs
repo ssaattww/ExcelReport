@@ -72,6 +72,25 @@ public sealed class LayoutNodeTests
     }
 
     /// <summary>
+    /// Verifies that parse cell formula ref scope reads formula ref scope attribute.
+    /// </summary>
+    [Fact]
+    public void Parse_Cell_FormulaRefScope_ReadsAttribute()
+    {
+        var issues = new List<Issue>();
+        var cellElement = XElement.Parse(
+            """
+            <cell xmlns="urn:excelreport:v1" formulaRef="RowData" formulaRefScope="local" value="1" />
+            """);
+
+        var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
+
+        Assert.Equal("RowData", cell.FormulaRef);
+        Assert.Equal("local", cell.FormulaRefScope);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
     /// Verifies that parse repeat has from expr raw.
     /// </summary>
     [Fact]
@@ -172,4 +191,3 @@ public sealed class LayoutNodeTests
         Assert.All(grid.Children.Values, child => Assert.IsType<CellAst>(child));
     }
 }
-

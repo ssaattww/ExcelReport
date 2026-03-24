@@ -26,6 +26,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// Gets or sets the formula ref.
         /// </summary>
         public string? FormulaRef { get; init; }
+        /// <summary>
+        /// Gets or sets the formula ref scope.
+        /// </summary>
+        public string? FormulaRefScope { get; init; }
 
         /// <summary>
         /// Initializes a new instance of the cell ast type.
@@ -37,6 +41,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             var valueAttr = elem.Attribute("value");
             var styleRefAttr = elem.Attribute("styleRef");
             var formulaRefAttr = elem.Attribute("formulaRef");
+            var formulaRefScopeAttr = elem.Attribute("formulaRefScope");
 
             ValueRaw = ResolvePreferredText(
                 elem,
@@ -46,6 +51,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
                 issues);
             StyleRefShortcut = styleRefAttr?.Value;
             FormulaRef = formulaRefAttr?.Value;
+            FormulaRefScope = formulaRefScopeAttr?.Value;
             // Todo: ValueRaw から式のパース
         }
 

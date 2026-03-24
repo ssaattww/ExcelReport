@@ -174,6 +174,7 @@ XSD 上の型: `WorkbookType`。
     - `=` で始まる文字列: Excel 数式として扱う。
   - `styleRef` : 単一 style 名を指定するショートカット。
   - `formulaRef` : 数式定義用の論理名（例えば `Detail.Value`）。
+  - `formulaRefScope` : `formulaRef` の可視範囲。`global`（既定）または `local`。
 - 子要素:
   - `<value>...</value>` : `value` 属性の代替指定。
   - `<styleRef name="..."/>` : 複数のグローバル style を重ね掛けする。
@@ -479,6 +480,8 @@ root.Lines.Select((value, index) => new { value, index });
 ## 9. Excel 関数と formulaRef（概要）
 
 - `formulaRef` でセル系列に論理名を付ける。
+- `formulaRefScope="local"` を付与した系列は同一階層（最寄りスコープ）優先で解決される。
+- `formulaRefScope="global"`（既定）は他階層からも参照可能。
 - Excel 数式中では `#{Name}` / `#{Name:NameEnd}` のように記述する。
 - 実際のアドレス解決はレイアウト結果に基づいて行う。
 - 系列は 1 次元連続の範囲のみ許可（縦一列または横一行）。2 次元展開は Fatal。
@@ -690,4 +693,3 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
-
