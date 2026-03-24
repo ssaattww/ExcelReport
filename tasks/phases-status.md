@@ -4,6 +4,8 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: master向けPRでxUnitテストを実行するCI workflow（`pr-xunit-tests.yml`）を追加
+- 2026-03-24: 調査記録 `reports/pr-xunit-workflow-2026-03-24.md` を追加
 - 2026-03-24: NuGetパッケージにREADMEを同梱する修正を追加（`PackageReadmeFile` + package content）
 - 2026-03-24: `ExcelReportLib/README.md` を追加し、releaseトリガーpublishでのREADME警告解消に対応
 - 2026-03-24: 調査記録 `reports/nuget-package-readme-fix-2026-03-24.md` を追加
