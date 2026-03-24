@@ -239,10 +239,11 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             var formulaRefScope = ResolveFormulaRefScope(cell.FormulaRefScope);
             if (string.Equals(formulaRefScope, "local", StringComparison.Ordinal))
             {
-                if (!localSeriesByScopeAndName.TryGetValue(cell.ScopePath, out var byName))
+                var localScopeKey = ResolveLocalFormulaScopeKey(cell.ScopePath);
+                if (!localSeriesByScopeAndName.TryGetValue(localScopeKey, out var byName))
                 {
                     byName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
-                    localSeriesByScopeAndName[cell.ScopePath] = byName;
+                    localSeriesByScopeAndName[localScopeKey] = byName;
                 }
 
                 if (!byName.TryGetValue(formulaRefName, out var localSeriesCells))
@@ -306,7 +307,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var currentScope = scopePath;
         while (currentScope.Length > 0)
         {
-            if (context.LocalAreasByScope.TryGetValue(currentScope, out var scopedAreas)
+            var localScopeKey = ResolveLocalFormulaScopeKey(currentScope);
+            if (context.LocalAreasByScope.TryGetValue(localScopeKey, out var scopedAreas)
                 && scopedAreas.TryGetValue(name, out var scopedArea))
             {
                 return scopedArea;
@@ -322,6 +324,29 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         return context.GlobalAreas.TryGetValue(name, out var area) ? area : null;
+    }
+
+    private static string ResolveLocalFormulaScopeKey(string scopePath)
+    {
+        if (string.IsNullOrWhiteSpace(scopePath))
+        {
+            return scopePath;
+        }
+
+        var repeatMarkerIndex = scopePath.LastIndexOf("/repeat-", StringComparison.Ordinal);
+        if (repeatMarkerIndex >= 0)
+        {
+            var endIndex = scopePath.IndexOf('/', repeatMarkerIndex + 1);
+            return endIndex >= 0 ? scopePath[..endIndex] : scopePath;
+        }
+
+        var lastSeparatorIndex = scopePath.LastIndexOf('/');
+        if (lastSeparatorIndex > 0)
+        {
+            return scopePath[..lastSeparatorIndex];
+        }
+
+        return scopePath;
     }
 
     private static string ResolveFormulaRefScope(string? formulaRefScope)

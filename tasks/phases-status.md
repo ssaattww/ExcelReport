@@ -4,6 +4,9 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: レビュー指摘対応として local formulaRef のスコープキーを最寄りrepeat単位へ正規化し、同一反復の sibling 間参照を解決
+- 2026-03-24: 回帰テスト `Build_FormulaRefPlaceholders_LocalScopeInRepeat_ResolvesAcrossSiblingScopes` を追加
+- 2026-03-24: 調査記録 `reports/pr38-review-fix-local-formularef-scopekey-2026-03-24.md` を追加
 - 2026-03-24: PR #38 CI失敗（`WorksheetStateBuilder` の `LastIndexOf` 呼び出し不整合）を修正し、コンパイルエラーを解消
 - 2026-03-24: 調査記録 `reports/pr38-ci-fix-worksheetstate-lastindexof-2026-03-24.md` を追加
 - 2026-03-24: issue#35対応として `cell@formulaRefScope`（local/global）を追加し、formulaRef の参照範囲を指定可能に拡張
@@ -76,4 +79,3 @@ Last Updated: 2026-03-24
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
-
