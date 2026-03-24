@@ -38,6 +38,7 @@ Last Updated: 2026-03-24
 | FP44 | GitHub Release の pre-release/release 種別と NuGet publish の版種を同期させる（`publish-nuget.yml` で判定） | 対応済み | 2026-03-19 |
 | FP45 | READMEには公開運用手順を置かず、NuGet公開手順はreportsで管理する | 対応済み | 2026-03-19 |
 | FP46 | ブランチを分けて作業し、最終成果は必ずPRとして提出する | 対応中 | 2026-03-24 |
+| FP47 | NuGet package公開時のREADME警告は、csprojのmetadata設定だけでなく実ファイル同梱まで含めて解消する | 対応中 | 2026-03-24 |
 ---
 
 ## 対応履歴

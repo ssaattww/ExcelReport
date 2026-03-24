@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 調査対応: NuGetパッケージのREADME未同梱警告を調査し、`reports/nuget-package-readme-fix-2026-03-24.md` を作成
+- 2026-03-24 実装対応: `ExcelReportLib.csproj` に `PackageReadmeFile` と README同梱設定を追加し、`ExcelReportLib/README.md` を新規作成
 - 2026-03-24 不具合調査: csx上のpublic型（`Submission#...`）で `repeat from` 評価が失敗する問題を調査し、`reports/csx-expression-hash-type-investigation-2026-03-24.md` を作成
 - 2026-03-24 修正対応: `ExpressionEngine` に不正型名検出 + dynamicフォールバックを追加、回帰テストを追加
 - 2026-03-19 調査対応: `sheet repeat` 未対応範囲を調査し、`reports/sheet-repeat-investigation-2026-03-19.md` を作成
@@ -48,6 +50,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 
 ## Additional Work (2026-03-19)
+
+- 2026-03-24 NuGet README対応: package readme metadata/content を追加し、release起点publishで警告が出ない状態へ修正
+- 2026-03-24 記録: `reports/nuget-package-readme-fix-2026-03-24.md` を作成
 
 - 2026-03-24 不具合修正: csx public型名（`#` を含む）での式評価失敗を修正（型名構文検証 + dynamicフォールバック）
 - 2026-03-24 検証: `ExpressionEngineTests`（12件）全通過
