@@ -405,6 +405,65 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that nested repeat var references in a conditional expression are fully rewritten.
+    /// </summary>
+    [Fact]
+    public void Expand_NestedRepeat_ConditionalExpressionUsingVarMultipleTimes_DoesNotEmitExpressionSyntaxError()
+    {
+        var root = new CompareRoot
+        {
+            Pairs =
+            [
+                new ComparePair
+                {
+                    Key = "L1",
+                    Mchs =
+                    [
+                        new Mch { Name = "Machine1" },
+                        new Mch { Name = "Machine2" },
+                    ],
+                },
+                new ComparePair
+                {
+                    Key = "L2",
+                    Mchs =
+                    [
+                        new Mch { Name = "Machine3" },
+                        new Mch { Name = "Machine4" },
+                    ],
+                },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Compare">
+                <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
+                  <grid>
+                    <cell r="1" c="1" value="@(p.Key)" />
+                    <repeat r="1" c="2" direction="right" from="@(p.Mchs)" var="m">
+                      <cell r="1" c="1" value="@(m.Name != &quot;Machine1&quot; ? m.Name : &quot;&quot;)" />
+                    </repeat>
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.ExpressionSyntaxError);
+
+        var values = Assert.Single(plan.Sheets).Cells.Select(cell => cell.Value?.ToString()).ToArray();
+        Assert.Contains("L1", values);
+        Assert.Contains("L2", values);
+        Assert.Contains(string.Empty, values);
+        Assert.Contains("Machine2", values);
+        Assert.Contains("Machine3", values);
+        Assert.Contains("Machine4", values);
+    }
+
+    /// <summary>
     /// Verifies that expand grid border mode all applied to all cells.
     /// </summary>
     [Fact]
@@ -756,6 +815,23 @@ public sealed class LayoutEngineTests
     private sealed class NestedGridRoot
     {
         public List<GridRow> Rows { get; init; } = [];
+    }
+
+    private sealed class CompareRoot
+    {
+        public List<ComparePair> Pairs { get; init; } = [];
+    }
+
+    private sealed class ComparePair
+    {
+        public string Key { get; init; } = string.Empty;
+
+        public List<Mch> Mchs { get; init; } = [];
+    }
+
+    private sealed class Mch
+    {
+        public string? Name { get; init; }
     }
 
     private sealed class RepeatItem
