@@ -169,14 +169,17 @@ XSD 上の型: `WorkbookType`。
 
 - 属性:
   - `r`, `c`, `rowSpan`, `colSpan`, `when` : 共通配置属性。
-  - `value` : 出力値。
+  - `value` : 出力値（`<value>` 子要素でも指定可能）。
     - `@( ... )` 形式: C# 式として評価した結果を文字列化してセット。
     - `=` で始まる文字列: Excel 数式として扱う。
   - `styleRef` : 単一 style 名を指定するショートカット。
   - `formulaRef` : 数式定義用の論理名（例えば `Detail.Value`）。
 - 子要素:
+  - `<value>...</value>` : `value` 属性の代替指定。
   - `<styleRef name="..."/>` : 複数のグローバル style を重ね掛けする。
   - `<style>...</style>` : インライン style。
+- 制約:
+  - `value` を属性と子要素の両方で指定した場合は Issue(Warning) を記録し、属性値を優先して継続する。
 
 ### 4.3. grid
 
@@ -492,6 +495,7 @@ root.Lines.Select((value, index) => new { value, index });
 - As-Is: DSL 固有検証 `ValidateDsl` は未実装スタブ（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
 - As-Is: `sheet` の `var`（属性または `<var>`）指定時に `from`（属性または `<from>`）必須検証を実装済み（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:586`）。`sheet@name` が式の場合の重複名検証はレイアウト展開時に実施（証跡: `ExcelReport/ExcelReportLib/LayoutEngine/LayoutEngine.cs:129`）。
 - As-Is: `sheet` / `repeat` の `from`・`var` は属性と子要素の両記法を許容し、同時指定時は Issue(Warning) を記録して属性値を優先する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/SheetAst.cs:109`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/RepeatAst.cs:56`）。
+- As-Is: `cell` の `value` は属性と子要素（`<value>`）の両記法を許容し、同時指定時は Issue(Warning) を記録して属性値を優先する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs`）。
 - To-Be: `cell@styleRef` ショートカット読込を実装する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
 - To-Be: `componentImport` 内 `<styles>` 取り込みを接続する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:19`, `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:76`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:169`）。
 

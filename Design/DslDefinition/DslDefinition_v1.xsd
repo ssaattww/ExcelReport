@@ -229,6 +229,7 @@
   <xs:complexType name="CellType">
     <xs:sequence>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="value"    type="ExprString"/>
         <xs:element name="styleRef" type="StyleRefType"/>
         <xs:element name="style"    type="LocalStyleType"/>
       </xs:choice>

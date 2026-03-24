@@ -4,6 +4,10 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: `cell` の `value` を属性と子要素(`<value>`)の両方で指定可能に拡張
+- 2026-03-24: `cell` の `value` 競合時（属性+子要素）に Warning を記録し、属性値を優先する互換ルールを追加
+- 2026-03-24: `DslDefinition_v1.xsd` の `CellType` に `<value>` 要素を追加し、schema有効時の記法を拡張
+- 2026-03-24: 調査記録 `reports/cell-value-element-support-2026-03-24.md` を追加
 - 2026-03-24: repeat内の括弧付き式（@((p...))）で var 未解決となる不具合を修正
 - 2026-03-24: var書き換えを先頭一致判定から式全体のRoslyn構文木置換へ一般化
 - 2026-03-24: 調査記録 reports/rewrite-repeat-var-robust-2026-03-24.md を追加

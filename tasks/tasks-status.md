@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 機能追加: `cell` の `value` を属性/子要素(`<value>`)の両記法に対応
+- 2026-03-24 互換制御: `cell` の `value` が属性と子要素で競合した場合はWarningを記録し属性値を優先
+- 2026-03-24 テスト追加: `LayoutNodeTests` 2件 + `DslParserTests` 1件で `cell/<value>` 対応を検証
+- 2026-03-24 記録: `reports/cell-value-element-support-2026-03-24.md` を作成
 - 2026-03-24 不具合修正: repeat内の括弧付き式（@((p...))）で var が未解決になる ExpressionSyntaxError を解消
 - 2026-03-24 実装改善: var書き換えを先頭一致依存からRoslyn構文木ベースの実参照置換へ一般化
 - 2026-03-24 テスト追加: LayoutEngineTests に括弧付き式ケースと識別子参照ケース（p == null）を追加

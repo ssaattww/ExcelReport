@@ -30,6 +30,48 @@ public sealed class LayoutNodeTests
     }
 
     /// <summary>
+    /// Verifies that parse cell value child element parses value raw.
+    /// </summary>
+    [Fact]
+    public void Parse_Cell_ValueElement_ParsesValueRaw()
+    {
+        var issues = new List<Issue>();
+        var cellElement = XElement.Parse(
+            """
+            <cell xmlns="urn:excelreport:v1">
+              <value>@(root.Items.Where(x => x.Name != "Machine1").Count())</value>
+            </cell>
+            """);
+
+        var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
+
+        Assert.Equal("@(root.Items.Where(x => x.Name != \"Machine1\").Count())", cell.ValueRaw);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
+    /// Verifies that parse cell value attribute and child conflicts prefers attribute with warning.
+    /// </summary>
+    [Fact]
+    public void Parse_Cell_ValueConflict_PrefersAttributeWithWarning()
+    {
+        var issues = new List<Issue>();
+        var cellElement = XElement.Parse(
+            """
+            <cell xmlns="urn:excelreport:v1" value="@(root.AttrValue)">
+              <value>@(root.ElementValue)</value>
+            </cell>
+            """);
+
+        var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
+
+        Assert.Equal("@(root.AttrValue)", cell.ValueRaw);
+        var warning = Assert.Single(
+            issues.Where(issue => issue.Severity == IssueSeverity.Warning && issue.Kind == IssueKind.InvalidAttributeValue));
+        Assert.Contains("value", warning.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Verifies that parse repeat has from expr raw.
     /// </summary>
     [Fact]
