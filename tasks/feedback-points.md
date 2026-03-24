@@ -46,6 +46,7 @@ Last Updated: 2026-03-24
 | FP52 | GitHub の Releases 画面に pre-release を表示できるよう、master push で pre-release を自動作成する | 対応中 | 2026-03-24 |
 | FP53 | NuGet READMEはリポジトリREADMEへ一本化し、二重管理を避ける。buildステータス表示は実ワークフローバッジに合わせる | 対応済み | 2026-03-24 |
 | FP54 | 入れ子repeatの条件式でvarを複数回参照した際のExpressionSyntaxError（m未解決）を解消する | 対応済み | 2026-03-24 |
+| FP55 | rewrite処理はモグラたたきではなく汎用的な方式（先頭一致依存を排除）で修正する | 対応済み | 2026-03-24 |
 ---
 
 ## 対応履歴
@@ -67,4 +68,6 @@ Last Updated: 2026-03-24
 | FP11 | PM/Codex責任分担の明確化 | 2026-03-03 |
 | FP12 | git commit -a で許可削減 | 2026-03-03 |
 | FP13 | 毎回の許可確認を排除 | 2026-03-03 |
+
+
 
