@@ -606,7 +606,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 
             var commas = new string(',', type.GetArrayRank() - 1);
             typeName = $"{elementTypeName}[{commas}]";
-            return true;
+            return IsValidScriptTypeName(typeName);
         }
 
         if (type.IsGenericType)
@@ -637,7 +637,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
             }
 
             typeName = $"global::{genericFullName.Replace('+', '.')}<{string.Join(", ", argumentTypeNames)}>";
-            return true;
+            return IsValidScriptTypeName(typeName);
         }
 
         var fullName = type.FullName;
@@ -648,9 +648,20 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         }
 
         typeName = "global::" + fullName.Replace('+', '.');
-        return true;
+        return IsValidScriptTypeName(typeName);
     }
 
+
+    private static bool IsValidScriptTypeName(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            return false;
+        }
+
+        var syntax = SyntaxFactory.ParseTypeName(typeName);
+        return !syntax.ContainsDiagnostics;
+    }
     private static bool IsScriptVisibleType(Type type)
     {
         if (type.IsByRef || type.IsPointer || type.IsGenericTypeDefinition || type.ContainsGenericParameters)
