@@ -4,6 +4,9 @@ on:
   release:
     types:
       - published
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
@@ -17,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -47,6 +52,28 @@ jobs:
               fi
               package_version="$base_version"
             fi
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref_name }}" == "master" ]]; then
+            latest_stable_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
+            if [[ -n "$latest_stable_tag" ]]; then
+              base_version="${latest_stable_tag#v}"
+              commits_since_base=$(git rev-list --count "${latest_stable_tag}..HEAD")
+            else
+              base_version="${version_prefix}"
+              commits_since_base=$(git rev-list --count HEAD)
+            fi
+
+            if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid base version format: $base_version"
+              exit 1
+            fi
+
+            IFS='.' read -r major minor patch <<< "$base_version"
+            if [[ "$commits_since_base" -lt 1 ]]; then
+              commits_since_base=1
+            fi
+
+            next_patch=$((patch + commits_since_base))
+            package_version="${major}.${minor}.${next_patch}-pre.${GITHUB_RUN_NUMBER}"
           else
             package_version="${version_prefix}-ci.${GITHUB_RUN_NUMBER}"
           fi
@@ -87,3 +114,4 @@ jobs:
             --api-key "${{ env.NUGET_API_KEY }}" \
             --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
+
