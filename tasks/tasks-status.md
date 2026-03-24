@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 ドキュメント改善: ルートREADMEのbuildステータスバッジを実ワークフロー表示へ修正
+- 2026-03-24 運用統一: NuGet同梱READMEをリポジトリREADMEへ一本化（専用README削除）
+- 2026-03-24 記録: `reports/readme-badge-and-package-readme-sync-2026-03-24.md` を作成
 - 2026-03-24 CI改善: master push時のNuGet prerelease suffixを `-pre` 固定へ変更（`-pre.<run_number>` 廃止）
 - 2026-03-24 CI改善: master push時に GitHub pre-release も自動作成する処理を追加
 - 2026-03-24 記録更新: `reports/master-push-prerelease-auto-version-2026-03-24.md` をNuGet/GitHub両対応内容へ更新
@@ -95,4 +98,3 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
-
