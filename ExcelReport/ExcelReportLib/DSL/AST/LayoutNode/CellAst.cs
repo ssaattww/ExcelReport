@@ -38,10 +38,41 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             var styleRefAttr = elem.Attribute("styleRef");
             var formulaRefAttr = elem.Attribute("formulaRef");
 
-            ValueRaw = valueAttr?.Value;
+            ValueRaw = ResolvePreferredText(
+                elem,
+                valueAttr,
+                elem.GetFirstOrDefaultChildElement("value"),
+                "value",
+                issues);
             StyleRefShortcut = styleRefAttr?.Value;
             FormulaRef = formulaRefAttr?.Value;
             // Todo: ValueRaw から式のパース
+        }
+
+        private static string ResolvePreferredText(
+            XElement owner,
+            XAttribute? attribute,
+            XElement? element,
+            string targetName,
+            List<Issue> issues)
+        {
+            if (attribute is not null && element is not null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Warning,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = $"<cell> 要素の {targetName} は属性と子要素の両方に指定されています。属性値を優先します。",
+                    Span = SourceSpan.CreateSpanAttributes(owner),
+                });
+            }
+
+            if (attribute is not null)
+            {
+                return attribute.Value;
+            }
+
+            return element?.Value.Trim() ?? string.Empty;
         }
     }
 }

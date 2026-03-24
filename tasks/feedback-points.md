@@ -46,6 +46,7 @@ Last Updated: 2026-03-24
 | FP52 | GitHub の Releases 画面に pre-release を表示できるよう、master push で pre-release を自動作成する | 対応中 | 2026-03-24 |
 | FP53 | NuGet READMEはリポジトリREADMEへ一本化し、二重管理を避ける。buildステータス表示は実ワークフローバッジに合わせる | 対応済み | 2026-03-24 |
 | FP54 | 入れ子repeatの条件式でvarを複数回参照した際のExpressionSyntaxError（m未解決）を解消する | 対応済み | 2026-03-24 |
+| FP55 | cell の value を属性/子要素の両記法で許容し、競合時はWarning記録+属性優先で継続する | 対応済み | 2026-03-24 |
 ---
 
 ## 対応履歴

@@ -198,5 +198,37 @@ public sealed class DslParserTests
             result.Issues,
             issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
     }
+
+    /// <summary>
+    /// Verifies that parse cell value element with schema validation succeeds.
+    /// </summary>
+    [Fact]
+    public void ParseFromText_CellValueElement_WithSchemaValidation_Succeeds()
+    {
+        var result = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <cell r="1" c="1">
+                  <value>@(root.Items.Where(x => x.Name != "Machine1").Count())</value>
+                </cell>
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = true,
+            });
+
+        Assert.False(result.HasFatal);
+        var root = Assert.IsType<WorkbookAst>(result.Root);
+        var sheet = Assert.Single(root.Sheets);
+        var cell = Assert.IsType<CellAst>(Assert.Single(sheet.Children.Values));
+        Assert.Equal("@(root.Items.Where(x => x.Name != \"Machine1\").Count())", cell.ValueRaw);
+
+        Assert.DoesNotContain(
+            result.Issues,
+            issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
+    }
 }
 

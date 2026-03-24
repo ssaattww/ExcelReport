@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 機能追加: `cell` の `value` を属性/子要素(`<value>`)の両記法に対応
+- 2026-03-24 互換制御: `cell` の `value` が属性と子要素で競合した場合はWarningを記録し属性値を優先
+- 2026-03-24 テスト追加: `LayoutNodeTests` 2件 + `DslParserTests` 1件で `cell/<value>` 対応を検証
+- 2026-03-24 記録: `reports/cell-value-element-support-2026-03-24.md` を作成
 - 2026-03-24 不具合修正: 入れ子repeatの条件式で var を複数参照した際の ExpressionSyntaxError (m 未解決) を解消
 - 2026-03-24 テスト追加: LayoutEngineTests.Expand_NestedRepeat_ConditionalExpressionUsingVarMultipleTimes_DoesNotEmitExpressionSyntaxError を追加（修正前Fail/修正後Pass）
 - 2026-03-24 記録: `reports/repeat-var-conditional-expression-fix-2026-03-24.md` を作成
