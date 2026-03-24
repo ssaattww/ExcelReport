@@ -5,6 +5,9 @@ using ExcelReportLib.DSL.AST;
 using ExcelReportLib.DSL.AST.LayoutNode;
 using ExcelReportLib.ExpressionEngine;
 using ExcelReportLib.Styles;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ExcelReportLib.LayoutEngine;
 
@@ -801,24 +804,96 @@ public sealed class LayoutEngine : ILayoutEngine
         foreach (var pair in vars)
         {
             var variableName = pair.Key;
-            if (body.StartsWith(variableName + ".", StringComparison.Ordinal))
+            var isScoped = body.StartsWith(variableName + ".", StringComparison.Ordinal)
+                || body.StartsWith(variableName + "[", StringComparison.Ordinal);
+            if (!isScoped)
             {
-                rewrittenExpression = "@(data." + body[(variableName.Length + 1)..] + ")";
-                scopedData = pair.Value;
-                return true;
+                continue;
             }
 
-            if (body.StartsWith(variableName + "[", StringComparison.Ordinal))
+            if (TryRewriteScopedVariableExpressionBody(body, variableName, out var rewrittenBody))
+            {
+                rewrittenExpression = "@(" + rewrittenBody + ")";
+            }
+            else if (body.StartsWith(variableName + ".", StringComparison.Ordinal))
+            {
+                rewrittenExpression = "@(data." + body[(variableName.Length + 1)..] + ")";
+            }
+            else
             {
                 rewrittenExpression = "@(data" + body[variableName.Length..] + ")";
-                scopedData = pair.Value;
-                return true;
             }
+
+            scopedData = pair.Value;
+            return true;
         }
 
         rewrittenExpression = string.Empty;
         scopedData = null;
         return false;
+    }
+
+    private static bool TryRewriteScopedVariableExpressionBody(
+        string expressionBody,
+        string variableName,
+        out string rewrittenBody)
+    {
+        var syntax = SyntaxFactory.ParseExpression(expressionBody);
+        if (syntax.ContainsDiagnostics)
+        {
+            rewrittenBody = string.Empty;
+            return false;
+        }
+
+        var rewriter = new ScopedVariableExpressionRewriter(variableName);
+        if (rewriter.Visit(syntax) is not ExpressionSyntax rewrittenSyntax)
+        {
+            rewrittenBody = string.Empty;
+            return false;
+        }
+
+        rewrittenBody = rewriter.Rewritten
+            ? rewrittenSyntax.ToFullString()
+            : expressionBody;
+        return true;
+    }
+
+    private sealed class ScopedVariableExpressionRewriter : CSharpSyntaxRewriter
+    {
+        private readonly string _variableName;
+
+        public ScopedVariableExpressionRewriter(string variableName)
+        {
+            _variableName = variableName;
+        }
+
+        public bool Rewritten { get; private set; }
+
+        public override SyntaxNode? VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
+        {
+            var visited = (MemberAccessExpressionSyntax)base.VisitMemberAccessExpression(node)!;
+            if (visited.Expression is IdentifierNameSyntax identifier
+                && string.Equals(identifier.Identifier.ValueText, _variableName, StringComparison.Ordinal))
+            {
+                Rewritten = true;
+                return visited.WithExpression(SyntaxFactory.IdentifierName("data"));
+            }
+
+            return visited;
+        }
+
+        public override SyntaxNode? VisitElementAccessExpression(ElementAccessExpressionSyntax node)
+        {
+            var visited = (ElementAccessExpressionSyntax)base.VisitElementAccessExpression(node)!;
+            if (visited.Expression is IdentifierNameSyntax identifier
+                && string.Equals(identifier.Identifier.ValueText, _variableName, StringComparison.Ordinal))
+            {
+                Rewritten = true;
+                return visited.WithExpression(SyntaxFactory.IdentifierName("data"));
+            }
+
+            return visited;
+        }
     }
 
     private static string NormalizeExpressionBody(string expression)

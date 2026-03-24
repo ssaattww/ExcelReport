@@ -4,6 +4,9 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: 入れ子repeat条件式 (`m.Name != "Machine1" ? m.Name : ""`) で `m` が未解決になる不具合を修正
+- 2026-03-24: `LayoutEngine` の var スコープ式書き換えをRoslyn構文木ベースへ拡張し、式中の複数参照を一括置換
+- 2026-03-24: 調査記録 `reports/repeat-var-conditional-expression-fix-2026-03-24.md` を追加
 - 2026-03-24: ルートREADMEのbuildステータスバッジを実ワークフロー表示へ修正
 - 2026-03-24: NuGet同梱READMEをリポジトリREADMEへ一本化し、専用READMEを削除
 - 2026-03-24: 調査記録 `reports/readme-badge-and-package-readme-sync-2026-03-24.md` を追加
