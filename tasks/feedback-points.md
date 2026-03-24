@@ -40,6 +40,7 @@ Last Updated: 2026-03-24
 | FP46 | ブランチを分けて作業し、最終成果は必ずPRとして提出する | 対応中 | 2026-03-24 |
 | FP47 | NuGet package公開時のREADME警告は、csprojのmetadata設定だけでなく実ファイル同梱まで含めて解消する | 対応中 | 2026-03-24 |
 | FP48 | master向けPRにはxUnit自動テストを必ず紐づけ、マージ前にCIで品質を確認する | 対応中 | 2026-03-24 |
+| FP49 | master push時はNuGet prereleaseを自動発行し、patch(3桁目)は自動増分する。通常releaseは手動運用を継続する | 対応中 | 2026-03-24 |
 ---
 
 ## 対応履歴

@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 CI更新: master pushをトリガーにNuGet prereleaseを自動publishするworkflowへ拡張
+- 2026-03-24 バージョン規約: 最新安定タグ基準でpatch(3桁目)を自動増分し、`-pre.<run_number>`を付与
+- 2026-03-24 記録: `reports/master-push-prerelease-auto-version-2026-03-24.md` を作成
 - 2026-03-24 CI対応: master向けPRでxUnitテストを実行するGitHub Actions (`.github/workflows/pr-xunit-tests.yml`) を追加
 - 2026-03-24 記録: `reports/pr-xunit-workflow-2026-03-24.md` を作成
 - 2026-03-24 調査対応: NuGetパッケージのREADME未同梱警告を調査し、`reports/nuget-package-readme-fix-2026-03-24.md` を作成

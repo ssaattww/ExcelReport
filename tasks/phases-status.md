@@ -4,6 +4,9 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: `publish-nuget.yml` を拡張し、master push時にNuGet prereleaseを自動publishする運用へ更新
+- 2026-03-24: 最新安定タグ基準でpatch(3桁目)を自動増分するバージョン決定ロジックを追加
+- 2026-03-24: 調査記録 `reports/master-push-prerelease-auto-version-2026-03-24.md` を追加
 - 2026-03-24: master向けPRでxUnitテストを実行するCI workflow（`pr-xunit-tests.yml`）を追加
 - 2026-03-24: 調査記録 `reports/pr-xunit-workflow-2026-03-24.md` を追加
 - 2026-03-24: NuGetパッケージにREADMEを同梱する修正を追加（`PackageReadmeFile` + package content）
