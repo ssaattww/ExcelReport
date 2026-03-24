@@ -16,25 +16,25 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public static string TagName => "repeat";
         /// <summary>
         /// ノードの定義名
-        /// (Attribute)
+        /// (Attribute / Child Element)
         /// </summary>
         public string Name { get; init; } = string.Empty;
         
         /// <summary>
         /// fromの生値
-        /// (Attribute)
+        /// (Attribute / Child Element)
         /// </summary>
         public string FromExprRaw { get; init; } = string.Empty;
         
         /// <summary>
         /// 繰り返す変数指定
-        /// (Attribute)
+        /// (Attribute / Child Element)
         /// </summary>
         public string VarName { get; init; } = string.Empty;
         
         /// <summary>
         /// 拡張方向
-        /// (Attribute)
+        /// (Attribute / Child Element)
         /// </summary>
         public RepeatDirection Direction { get; init; } = default!;
 
@@ -53,11 +53,21 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public RepeatAst(XElement repeatElem, List<Issue> issues)
         {
             var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
-            var fromExprRaw = repeatElem.Attribute("from")?.Value ?? string.Empty;
+            var fromExprRaw = ResolvePreferredText(
+                repeatElem,
+                repeatElem.Attribute("from"),
+                repeatElem.GetFirstOrDefaultChildElement("from"),
+                "from",
+                issues);
 
-            var varName = repeatElem.Attribute("var");
+            var varRaw = ResolvePreferredText(
+                repeatElem,
+                repeatElem.Attribute("var"),
+                repeatElem.GetFirstOrDefaultChildElement("var"),
+                "var",
+                issues);
             // var は省略可能。未指定時は既定値 "item"
-            var varNameStr = string.IsNullOrWhiteSpace(varName?.Value) ? "item" : varName!.Value;
+            var varNameStr = string.IsNullOrWhiteSpace(varRaw) ? "item" : varRaw;
 
             var direction = repeatElem.Attribute("direction");
             var directionStr = direction?.Value ?? string.Empty;
@@ -98,6 +108,32 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             Direction = repeatDirection;
             Body = body;
         }
+
+        private static string ResolvePreferredText(
+            XElement owner,
+            XAttribute? attribute,
+            XElement? element,
+            string targetName,
+            List<Issue> issues)
+        {
+            if (attribute is not null && element is not null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Warning,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = $"<repeat> 要素の {targetName} は属性と子要素の両方に指定されています。属性値を優先します。",
+                    Span = SourceSpan.CreateSpanAttributes(owner)
+                });
+            }
+
+            if (attribute is not null)
+            {
+                return attribute.Value;
+            }
+
+            return element?.Value.Trim() ?? string.Empty;
+        }
     }
     /// <summary>
     /// Specifies repeat direction values.
@@ -118,3 +154,4 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         Err
     }
 }
+

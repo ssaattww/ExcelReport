@@ -37,7 +37,7 @@ namespace ExcelReportLib.DSL.AST
         public string VarName { get; init; } = "item";
 
         /// <summary>
-        /// var 属性が明示指定されたかを取得します。
+        /// var 指定が明示されたかを取得します。
         /// </summary>
         public bool HasVarAttribute { get; init; }
 
@@ -106,15 +106,29 @@ namespace ExcelReportLib.DSL.AST
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
-            var fromExprRaw = sheetElem.Attribute("from")?.Value ?? string.Empty;
-            var varAttr = sheetElem.Attribute("var");
-            var varName = string.IsNullOrWhiteSpace(varAttr?.Value) ? "item" : varAttr!.Value;
+            var fromExprRaw = ResolvePreferredText(
+                sheetElem,
+                sheetElem.Attribute("from"),
+                sheetElem.GetFirstOrDefaultChildElement("from"),
+                "from",
+                issues);
+
+            var varRaw = ResolvePreferredText(
+                sheetElem,
+                sheetElem.Attribute("var"),
+                sheetElem.GetFirstOrDefaultChildElement("var"),
+                "var",
+                issues);
+            var varName = string.IsNullOrWhiteSpace(varRaw) ? "item" : varRaw;
+            var hasVarSpecified =
+                sheetElem.Attribute("var") is not null
+                || sheetElem.GetFirstOrDefaultChildElement("var") is not null;
 
             Name = name;
             Rows = ParseOptionalNonNegativeIntAttribute(sheetElem, "rows", issues);
             FromExprRaw = fromExprRaw;
             VarName = varName;
-            HasVarAttribute = varAttr is not null;
+            HasVarAttribute = hasVarSpecified;
             Cols = ParseOptionalNonNegativeIntAttribute(sheetElem, "cols", issues);
             StyleRefs = styles;
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
@@ -122,6 +136,32 @@ namespace ExcelReportLib.DSL.AST
             Span = SourceSpan.CreateSpanAttributes(sheetElem);
         }
 
+
+        private static string ResolvePreferredText(
+            XElement owner,
+            XAttribute? attribute,
+            XElement? element,
+            string targetName,
+            List<Issue> issues)
+        {
+            if (attribute is not null && element is not null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Warning,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = $"<sheet> 要素の {targetName} は属性と子要素の両方に指定されています。属性値を優先します。",
+                    Span = SourceSpan.CreateSpanAttributes(owner),
+                });
+            }
+
+            if (attribute is not null)
+            {
+                return attribute.Value;
+            }
+
+            return element?.Value.Trim() ?? string.Empty;
+        }
         private static int ParseOptionalNonNegativeIntAttribute(XElement elem, string attrName, List<Issue> issues)
         {
             var attr = elem.Attribute(attrName);
@@ -148,3 +188,4 @@ namespace ExcelReportLib.DSL.AST
         }
     }
 }
+

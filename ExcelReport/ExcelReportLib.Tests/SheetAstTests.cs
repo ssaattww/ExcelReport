@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
 using ExcelReportLib.DSL.AST.LayoutNode;
@@ -53,6 +54,54 @@ public sealed class SheetAstTests
         Assert.Equal("DetailHeader", Assert.IsType<AutoFilterAst>(options.AutoFilter).At);
     }
 
+
+    /// <summary>
+    /// Verifies that parse sheet from and var child elements parses values.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_FromAndVarElements_ParsesValues()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v1" name="Summary">
+              <from>@(root.Items.Where(x => x.Name != "Machine1"))</from>
+              <var>it</var>
+              <cell r="1" c="1" value="A" />
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+
+        Assert.Equal("@(root.Items.Where(x => x.Name != \"Machine1\"))", sheet.FromExprRaw);
+        Assert.Equal("it", sheet.VarName);
+        Assert.True(sheet.HasVarAttribute);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
+    /// Verifies that parse sheet attribute and child conflicts prefers attribute with warning.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_FromAndVarConflict_PrefersAttributeWithWarning()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v1" name="Summary" from="@(root.AttrItems)" var="attrVar">
+              <from>@(root.ElementItems)</from>
+              <var>elementVar</var>
+              <cell r="1" c="1" value="A" />
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+
+        Assert.Equal("@(root.AttrItems)", sheet.FromExprRaw);
+        Assert.Equal("attrVar", sheet.VarName);
+        var warnings = issues.Where(issue => issue.Severity == IssueSeverity.Warning && issue.Kind == IssueKind.InvalidAttributeValue).ToList();
+        Assert.Equal(2, warnings.Count);
+    }
     private static SheetAst CreateSheet()
     {
         var issues = new List<Issue>();
@@ -64,3 +113,4 @@ public sealed class SheetAstTests
         return sheet;
     }
 }
+

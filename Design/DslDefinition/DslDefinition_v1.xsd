@@ -169,6 +169,8 @@
   <!-- sheet（特殊な grid） -->
   <xs:complexType name="SheetType">
     <xs:sequence>
+      <xs:element name="from" type="ExprString" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="var" type="xs:string" minOccurs="0" maxOccurs="1"/>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="styleRef"    type="StyleRefType"/>
         <xs:element name="style"       type="LocalStyleType"/>
@@ -268,6 +270,8 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="from" type="ExprString" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="var" type="xs:string" minOccurs="0" maxOccurs="1"/>
       <!-- スタイル -->
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="styleRef" type="StyleRefType"/>
@@ -282,7 +286,7 @@
       </xs:choice>
     </xs:sequence>
     <xs:attributeGroup ref="PlacementAttrs"/>
-    <xs:attribute name="from"      type="ExprString"      use="required"/>
+    <xs:attribute name="from"      type="ExprString"      use="optional"/>
     <xs:attribute name="var"       type="xs:string"       use="optional" default="item"/>
     <xs:attribute name="direction" type="RepeatDirection" use="required"/>
     <xs:attribute name="name"      type="xs:string"/>
@@ -326,3 +330,4 @@
   </xs:complexType>
 
 </xs:schema>
+
