@@ -4,6 +4,9 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: master push時のprerelease suffixを `-pre` 固定へ変更（`-pre.<run_number>` を廃止）
+- 2026-03-24: master push時に GitHub pre-release を自動作成する処理を publish workflow に追加
+- 2026-03-24: 調査記録 `reports/master-push-prerelease-auto-version-2026-03-24.md` を NuGet/GitHub 両対応内容へ更新
 - 2026-03-24: `sheet` / `repeat` の from/var の子要素指定を追加し、属性形式との後方互換を維持
 - 2026-03-24: 属性と子要素の同時指定時に Warning を記録し、属性値を優先する排他ルールを実装
 - 2026-03-24: 設計書 `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` / `Design/DslParser/DslParser_DetailDesign_v1.md` を実装仕様に同期

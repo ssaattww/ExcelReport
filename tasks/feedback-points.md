@@ -43,6 +43,7 @@ Last Updated: 2026-03-24
 | FP49 | master push時はNuGet prereleaseを自動発行し、patch(3桁目)は自動増分する。通常releaseは手動運用を継続する | 対応中 | 2026-03-24 |
 | FP50 | from/var は属性と要素の両記法を許容し、競合時は属性優先 + Warning記録で継続処理する | 対応中 | 2026-03-24 |
 | FP51 | 既存の設計書（DslDefinition/DslParser）にも from/var 属性・子要素併用仕様を反映する | 対応済み | 2026-03-24 |
+| FP52 | GitHub の Releases 画面に pre-release を表示できるよう、master push で pre-release を自動作成する | 対応中 | 2026-03-24 |
 ---
 
 ## 対応履歴
