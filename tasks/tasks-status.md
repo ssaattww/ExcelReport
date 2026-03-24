@@ -9,6 +9,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - 2026-03-24 互換制御: `cell` の `value` が属性と子要素で競合した場合はWarningを記録し属性値を優先
 - 2026-03-24 テスト追加: `LayoutNodeTests` 2件 + `DslParserTests` 1件で `cell/<value>` 対応を検証
 - 2026-03-24 記録: `reports/cell-value-element-support-2026-03-24.md` を作成
+- 2026-03-24 不具合修正: repeat内の括弧付き式（@((p...))）で var が未解決になる ExpressionSyntaxError を解消
+- 2026-03-24 実装改善: var書き換えを先頭一致依存からRoslyn構文木ベースの実参照置換へ一般化
+- 2026-03-24 テスト追加: LayoutEngineTests に括弧付き式ケースと識別子参照ケース（p == null）を追加
+- 2026-03-24 記録: reports/rewrite-repeat-var-robust-2026-03-24.md を作成
 - 2026-03-24 不具合修正: 入れ子repeatの条件式で var を複数参照した際の ExpressionSyntaxError (m 未解決) を解消
 - 2026-03-24 テスト追加: LayoutEngineTests.Expand_NestedRepeat_ConditionalExpressionUsingVarMultipleTimes_DoesNotEmitExpressionSyntaxError を追加（修正前Fail/修正後Pass）
 - 2026-03-24 記録: `reports/repeat-var-conditional-expression-fix-2026-03-24.md` を作成
@@ -105,3 +109,6 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
+
+
+

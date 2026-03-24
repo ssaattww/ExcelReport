@@ -804,28 +804,35 @@ public sealed class LayoutEngine : ILayoutEngine
         foreach (var pair in vars)
         {
             var variableName = pair.Key;
-            var isScoped = body.StartsWith(variableName + ".", StringComparison.Ordinal)
-                || body.StartsWith(variableName + "[", StringComparison.Ordinal);
-            if (!isScoped)
+            if (TryRewriteScopedVariableExpressionBody(
+                body,
+                variableName,
+                out var rewrittenBody,
+                out var wasRewritten))
             {
-                continue;
+                if (!wasRewritten)
+                {
+                    continue;
+                }
+
+                rewrittenExpression = "@(" + rewrittenBody + ")";
+                scopedData = pair.Value;
+                return true;
             }
 
-            if (TryRewriteScopedVariableExpressionBody(body, variableName, out var rewrittenBody))
-            {
-                rewrittenExpression = "@(" + rewrittenBody + ")";
-            }
-            else if (body.StartsWith(variableName + ".", StringComparison.Ordinal))
+            if (body.StartsWith(variableName + ".", StringComparison.Ordinal))
             {
                 rewrittenExpression = "@(data." + body[(variableName.Length + 1)..] + ")";
-            }
-            else
-            {
-                rewrittenExpression = "@(data" + body[variableName.Length..] + ")";
+                scopedData = pair.Value;
+                return true;
             }
 
-            scopedData = pair.Value;
-            return true;
+            if (body.StartsWith(variableName + "[", StringComparison.Ordinal))
+            {
+                rewrittenExpression = "@(data" + body[variableName.Length..] + ")";
+                scopedData = pair.Value;
+                return true;
+            }
         }
 
         rewrittenExpression = string.Empty;
@@ -836,12 +843,14 @@ public sealed class LayoutEngine : ILayoutEngine
     private static bool TryRewriteScopedVariableExpressionBody(
         string expressionBody,
         string variableName,
-        out string rewrittenBody)
+        out string rewrittenBody,
+        out bool wasRewritten)
     {
         var syntax = SyntaxFactory.ParseExpression(expressionBody);
         if (syntax.ContainsDiagnostics)
         {
             rewrittenBody = string.Empty;
+            wasRewritten = false;
             return false;
         }
 
@@ -849,12 +858,12 @@ public sealed class LayoutEngine : ILayoutEngine
         if (rewriter.Visit(syntax) is not ExpressionSyntax rewrittenSyntax)
         {
             rewrittenBody = string.Empty;
+            wasRewritten = false;
             return false;
         }
 
-        rewrittenBody = rewriter.Rewritten
-            ? rewrittenSyntax.ToFullString()
-            : expressionBody;
+        wasRewritten = rewriter.Rewritten;
+        rewrittenBody = wasRewritten ? rewrittenSyntax.ToFullString() : expressionBody;
         return true;
     }
 
@@ -868,6 +877,18 @@ public sealed class LayoutEngine : ILayoutEngine
         }
 
         public bool Rewritten { get; private set; }
+
+        public override SyntaxNode? VisitIdentifierName(IdentifierNameSyntax node)
+        {
+            if (string.Equals(node.Identifier.ValueText, _variableName, StringComparison.Ordinal)
+                && !IsIdentifierInMemberNamePosition(node))
+            {
+                Rewritten = true;
+                return SyntaxFactory.IdentifierName("data").WithTriviaFrom(node);
+            }
+
+            return base.VisitIdentifierName(node);
+        }
 
         public override SyntaxNode? VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
         {
@@ -893,6 +914,23 @@ public sealed class LayoutEngine : ILayoutEngine
             }
 
             return visited;
+        }
+
+        private static bool IsIdentifierInMemberNamePosition(IdentifierNameSyntax node)
+        {
+            if (node.Parent is MemberAccessExpressionSyntax memberAccess
+                && ReferenceEquals(memberAccess.Name, node))
+            {
+                return true;
+            }
+
+            if (node.Parent is QualifiedNameSyntax qualifiedName
+                && ReferenceEquals(qualifiedName.Right, node))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -1287,3 +1325,4 @@ public sealed class LayoutEngine : ILayoutEngine
         }
     }
 }
+

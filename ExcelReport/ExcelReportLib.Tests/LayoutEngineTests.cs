@@ -464,6 +464,76 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that repeat var references wrapped by parentheses do not emit expression syntax error.
+    /// </summary>
+    [Fact]
+    public void Expand_RepeatVarExpressionWrappedWithParentheses_DoesNotEmitExpressionSyntaxError()
+    {
+        var root = new CompareRoot
+        {
+            Pairs =
+            [
+                new ComparePair { LeftBoard = "L1", RightBoard = "R1" },
+                new ComparePair { LeftBoard = null, RightBoard = "R2" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Compare">
+                <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
+                  <cell r="1" c="12" value="@((p.LeftBoard ?? &quot;&quot;) + &quot;/&quot; + (p.RightBoard ?? &quot;&quot;))" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.ExpressionSyntaxError);
+
+        var cells = Assert.Single(plan.Sheets).Cells;
+        Assert.Equal(2, cells.Count);
+        Assert.Equal("L1/R1", cells[0].Value);
+        Assert.Equal("/R2", cells[1].Value);
+    }
+
+    /// <summary>
+    /// Verifies that repeat var identifier references are rewritten in any expression position.
+    /// </summary>
+    [Fact]
+    public void Expand_RepeatVarIdentifierReferenceInConditional_DoesNotEmitExpressionSyntaxError()
+    {
+        var root = new CompareRoot
+        {
+            Pairs =
+            [
+                new ComparePair { LeftBoard = "L1", RightBoard = "R1" },
+                new ComparePair { LeftBoard = null, RightBoard = "R2" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Compare">
+                <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
+                  <cell r="1" c="12" value="@(p == null ? &quot;NA&quot; : ((p.LeftBoard ?? &quot;&quot;) + &quot;/&quot; + (p.RightBoard ?? &quot;&quot;)))" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        Assert.DoesNotContain(plan.Issues, issue => issue.Kind == IssueKind.ExpressionSyntaxError);
+
+        var cells = Assert.Single(plan.Sheets).Cells;
+        Assert.Equal(2, cells.Count);
+        Assert.Equal("L1/R1", cells[0].Value);
+        Assert.Equal("/R2", cells[1].Value);
+    }
+
+    /// <summary>
     /// Verifies that expand grid border mode all applied to all cells.
     /// </summary>
     [Fact]
@@ -825,6 +895,10 @@ public sealed class LayoutEngineTests
     private sealed class ComparePair
     {
         public string Key { get; init; } = string.Empty;
+
+        public string? LeftBoard { get; init; }
+
+        public string? RightBoard { get; init; }
 
         public List<Mch> Mchs { get; init; } = [];
     }
