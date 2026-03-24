@@ -115,12 +115,21 @@ XSD 上の型: `WorkbookType`。
 </sheet>
 ```
 
+```xml
+<sheet name="@(it.Name)">
+  <from>@(root.Items.Where(x => x.Name != "Machine1"))</from>
+  <var>it</var>
+  <cell r="1" c="1" value="@(it.Name)" />
+</sheet>
+```
+
 - 属性:
   - `name` : シート名。`@( ... )` 式を指定可能。
   - `rows` / `cols` : シート行列サイズ。省略時は自動計算。
-  - `from` : シート反復元の C# 式。`IEnumerable` を返す必要がある。
-  - `var` : シート反復時の変数名。省略時は `item`。
+  - `from` : シート反復元の C# 式。`IEnumerable` を返す必要がある（`<from>` 子要素でも指定可能）。
+  - `var` : シート反復時の変数名。省略時は `item`（`<var>` 子要素でも指定可能）。
 - 子要素:
+  - 任意で `<from>` / `<var>`（属性 `from` / `var` の代替指定）。
   - 任意個の `styleRef` / `style`（シート全体スタイル）。
   - 任意個の `cell` / `use` / `grid` / `repeat`。
   - `sheetOptions`（任意）。
@@ -131,6 +140,7 @@ XSD 上の型: `WorkbookType`。
 - 制約:
   - `var` を指定する場合、`from` は必須。
   - `from` がコレクションでない場合は Error。
+  - `from` / `var` を属性と子要素の両方で指定した場合は Issue(Warning) を記録し、属性値を優先して継続する。
 
 ---
 
@@ -212,13 +222,24 @@ XSD 上の型: `WorkbookType`。
 </repeat>
 ```
 
+```xml
+<repeat name="DetailRows"
+        r="6" c="1" direction="down">
+  <from>@(root.Lines.Where(x => x.Code != "SKIP"))</from>
+  <var>it</var>
+  <styleRef name="DetailRowsGrid"/>
+  <use component="DetailRow" with="@(it)"/>
+</repeat>
+```
+
 - 属性:
   - 共通配置属性。
-  - `from` : C# 式。**IEnumerable** を返すこと（仕様制約）。
-  - `var` : ループ変数名。省略時 `"item"`。
+  - `from` : C# 式。**IEnumerable** を返すこと（仕様制約、`<from>` 子要素でも指定可能）。
+  - `var` : ループ変数名。省略時 `"item"`（`<var>` 子要素でも指定可能）。
   - `direction` : `"down"`（縦方向）または `"right"`（横方向）。
   - `name` : インスタンス名。sheetOptions の `@at` などで参照可能。
 - 子要素:
+  - 任意で `<from>` / `<var>`（属性 `from` / `var` の代替指定）。
   - 先頭に任意個の `styleRef` / `style`。
   - その後に `cell` / `use` / `grid` / `repeat` のいずれか 1 要素のみ（必須）。
 
@@ -226,6 +247,7 @@ XSD 上の型: `WorkbookType`。
 
 - `from` の式は必ず `IEnumerable` を返す必要がある（実装側で検証）。
 - レイアウト子要素は 1 つのみ。複数を書くと Fatal。
+- `from` / `var` を属性と子要素の両方で指定した場合は Issue(Warning) を記録し、属性値を優先して継続する。
 
 ---
 
@@ -369,6 +391,16 @@ repeat 内 grid の例:
 </repeat>
 ```
 
+```xml
+<repeat name="DetailRows"
+        r="6" c="1" direction="down">
+  <from>@(root.Lines.Where(x => x.Code != "SKIP"))</from>
+  <var>it</var>
+  <styleRef name="DetailRowsGrid"/>
+  <use component="DetailRow" with="@(it)"/>
+</repeat>
+```
+
 - `DetailRowsGrid` 内で `border mode="all"` などを定義。
 - `repeat` の 1 反復分を 1 つの grid とみなす。
 - grid の数だけ `mode="outer"` / `mode="all"` が独立に適用される。
@@ -458,7 +490,8 @@ root.Lines.Select((value, index) => new { value, index });
 - As-Is: `EnableSchemaValidation` は存在するが XSD 検証は無効（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:318`）。
 - To-Be: XSD 検証をデフォルト有効化し、スキーマ違反は Fatal とする（実装変更タスクあり）。
 - As-Is: DSL 固有検証 `ValidateDsl` は未実装スタブ（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
-- As-Is: `sheet@var` 指定時の `sheet@from` 必須検証を実装済み（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:586`）。`sheet@name` が式の場合の重複名検証はレイアウト展開時に実施（証跡: `ExcelReport/ExcelReportLib/LayoutEngine/LayoutEngine.cs:129`）。
+- As-Is: `sheet` の `var`（属性または `<var>`）指定時に `from`（属性または `<from>`）必須検証を実装済み（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:586`）。`sheet@name` が式の場合の重複名検証はレイアウト展開時に実施（証跡: `ExcelReport/ExcelReportLib/LayoutEngine/LayoutEngine.cs:129`）。
+- As-Is: `sheet` / `repeat` の `from`・`var` は属性と子要素の両記法を許容し、同時指定時は Issue(Warning) を記録して属性値を優先する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/SheetAst.cs:109`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/RepeatAst.cs:56`）。
 - To-Be: `cell@styleRef` ショートカット読込を実装する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
 - To-Be: `componentImport` 内 `<styles>` 取り込みを接続する（証跡: `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:19`, `ExcelReport/ExcelReportLib/DSL/AST/ComponentImportAst.cs:76`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:169`）。
 
@@ -653,5 +686,4 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
-
 

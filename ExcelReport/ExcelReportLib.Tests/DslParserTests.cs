@@ -158,4 +158,45 @@ public sealed class DslParserTests
             result.Issues,
             issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
     }
+
+    /// <summary>
+    /// Verifies that parse from and var child elements with schema validation succeeds.
+    /// </summary>
+    [Fact]
+    public void ParseFromText_FromAndVarElements_WithSchemaValidation_Succeeds()
+    {
+        var result = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <from>@(root.Pairs.Where(x => x.Key != "A"))</from>
+                <var>pair</var>
+                <repeat direction="down">
+                  <from>@(pair.Mchs)</from>
+                  <var>m</var>
+                  <cell value="@(m.Name)" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = true,
+            });
+
+        Assert.False(result.HasFatal);
+        var root = Assert.IsType<WorkbookAst>(result.Root);
+        var sheet = Assert.Single(root.Sheets);
+        Assert.Equal("@(root.Pairs.Where(x => x.Key != \"A\"))", sheet.FromExprRaw);
+        Assert.Equal("pair", sheet.VarName);
+
+        var repeat = Assert.IsType<RepeatAst>(Assert.Single(sheet.Children.Values));
+        Assert.Equal("@(pair.Mchs)", repeat.FromExprRaw);
+        Assert.Equal("m", repeat.VarName);
+
+        Assert.DoesNotContain(
+            result.Issues,
+            issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
+    }
 }
+

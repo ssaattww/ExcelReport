@@ -577,7 +577,7 @@ namespace ExcelReportLib.DSL
                     {
                         Severity = IssueSeverity.Error,
                         Kind = IssueKind.UndefinedRequiredAttribute,
-                        Message = "<repeat> 要素に from 属性がありません。",
+                        Message = "<repeat> 要素に from 指定がありません。",
                         Span = repeat.Span,
                     });
                 }
@@ -593,7 +593,7 @@ namespace ExcelReportLib.DSL
                     {
                         Severity = IssueSeverity.Error,
                         Kind = IssueKind.UndefinedRequiredAttribute,
-                        Message = "<sheet> 要素で var 属性を指定する場合は from 属性が必要です。",
+                        Message = "<sheet> 要素で var 指定を行う場合は from 指定が必要です。",
                         Span = sheet.Span,
                     });
                 }

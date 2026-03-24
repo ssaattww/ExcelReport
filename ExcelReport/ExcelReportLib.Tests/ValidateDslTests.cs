@@ -146,6 +146,29 @@ public sealed class ValidateDslTests
                 && issue.Message.Contains("from"));
     }
 
+    /// <summary>
+    /// Verifies that validate DSL sheet var element without from returns error.
+    /// </summary>
+    [Fact]
+    public void ValidateDsl_SheetVarElementWithoutFrom_ReturnsError()
+    {
+        var result = ParseDsl(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="@(it.Name)">
+                <var>it</var>
+                <cell r="1" c="1" value="A" />
+              </sheet>
+            </workbook>
+            """);
+
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Severity == IssueSeverity.Error
+                && issue.Kind == IssueKind.UndefinedRequiredAttribute
+                && issue.Message.Contains("from"));
+    }
+
     private static DslParseResult ParseDsl(string xml) =>
         DslParser.ParseFromText(
             xml,
@@ -154,5 +177,4 @@ public sealed class ValidateDslTests
                 EnableSchemaValidation = false,
             });
 }
-
 
