@@ -4,6 +4,8 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: PR #38 CI失敗（`WorksheetStateBuilder` の `LastIndexOf` 呼び出し不整合）を修正し、コンパイルエラーを解消
+- 2026-03-24: 調査記録 `reports/pr38-ci-fix-worksheetstate-lastindexof-2026-03-24.md` を追加
 - 2026-03-24: issue#35対応として `cell@formulaRefScope`（local/global）を追加し、formulaRef の参照範囲を指定可能に拡張
 - 2026-03-24: `LayoutEngine` でセルごとに `scopePath` を保持し、`WorksheetStateBuilder` で最寄りスコープ優先の placeholder 解決を実装
 - 2026-03-24: 検証として `WorksheetStateTests` に local scope + global fallback の回帰テストを追加
@@ -74,5 +76,4 @@ Last Updated: 2026-03-24
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
-
 

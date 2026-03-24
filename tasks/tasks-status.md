@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 CI修正: PR #38 の `xunit-tests` 失敗原因（`LastIndexOf('/', StringComparison.Ordinal)` の誤用）を修正
+- 2026-03-24 記録: `reports/pr38-ci-fix-worksheetstate-lastindexof-2026-03-24.md` を作成
 - 2026-03-24 issue#35対応: `cell@formulaRefScope`（local/global）を追加し、formulaRef の解決スコープを制御可能に拡張
 - 2026-03-24 実装拡張: `LayoutEngine` がセルに `scopePath` を付与、`WorksheetStateBuilder` が最寄りスコープ優先で `#{...}` を解決
 - 2026-03-24 テスト追加: `WorksheetStateTests` に local scope + global fallback の検証ケースを追加
@@ -113,5 +115,4 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
-
 

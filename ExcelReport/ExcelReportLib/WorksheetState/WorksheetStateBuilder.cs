@@ -312,7 +312,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 return scopedArea;
             }
 
-            var separatorIndex = currentScope.LastIndexOf('/', StringComparison.Ordinal);
+            var separatorIndex = currentScope.LastIndexOf('/');
             if (separatorIndex <= 0)
             {
                 break;
