@@ -93,7 +93,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
-        var resolvedCells = ResolveFormulaPlaceholders(cells, formulaPlaceholderAreas);
+        var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas);
         var options = BuildOptions(layoutSheet.Options, namedAreas);
 
         return new WorksheetState(
@@ -125,19 +125,22 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         return namedAreas;
     }
 
-    private static IReadOnlyDictionary<string, NamedAreaState> BuildFormulaPlaceholderAreas(
+    private static FormulaPlaceholderContext BuildFormulaPlaceholderAreas(
         LayoutSheet layoutSheet,
         IReadOnlyDictionary<string, NamedAreaState> namedAreas)
     {
-        var placeholderAreas = new Dictionary<string, NamedAreaState>(namedAreas, StringComparer.Ordinal);
-        AddFormulaReferenceNamedAreas(layoutSheet, placeholderAreas);
-        return placeholderAreas;
+        var globalAreas = new Dictionary<string, NamedAreaState>(namedAreas, StringComparer.Ordinal);
+        var localAreasByScope = new Dictionary<string, Dictionary<string, NamedAreaState>>(StringComparer.Ordinal);
+        AddFormulaReferenceNamedAreas(layoutSheet, globalAreas, localAreasByScope);
+        return new FormulaPlaceholderContext(globalAreas, localAreasByScope);
     }
 
     private static IReadOnlyDictionary<(int Row, int Column), CellState> ResolveFormulaPlaceholders(
         IReadOnlyDictionary<(int Row, int Column), CellState> cells,
-        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+        IReadOnlyList<LayoutCell> layoutCells,
+        FormulaPlaceholderContext context)
     {
+        var layoutCellByCoordinate = layoutCells.ToDictionary(cell => (cell.Row, cell.Col));
         var resolvedCells = new Dictionary<(int Row, int Column), CellState>(cells.Count);
 
         foreach (var (coordinate, cell) in cells)
@@ -148,7 +151,13 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 continue;
             }
 
-            var resolvedFormula = ReplaceFormulaPlaceholders(cell.Formula, namedAreas);
+            if (!layoutCellByCoordinate.TryGetValue(coordinate, out var layoutCell))
+            {
+                resolvedCells[coordinate] = cell;
+                continue;
+            }
+
+            var resolvedFormula = ReplaceFormulaPlaceholders(cell.Formula, layoutCell.ScopePath, context);
             if (string.Equals(resolvedFormula, cell.Formula, StringComparison.Ordinal))
             {
                 resolvedCells[coordinate] = cell;
@@ -170,13 +179,20 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static string ReplaceFormulaPlaceholders(
         string formula,
-        IReadOnlyDictionary<string, NamedAreaState> namedAreas) =>
+        string scopePath,
+        FormulaPlaceholderContext context) =>
         FormulaPlaceholderRegex.Replace(
             formula,
             match =>
             {
                 var startName = match.Groups["start"].Value.Trim();
-                if (startName.Length == 0 || !namedAreas.TryGetValue(startName, out var startArea))
+                if (startName.Length == 0)
+                {
+                    return match.Value;
+                }
+
+                var startArea = FindNamedArea(startName, scopePath, context);
+                if (startArea is null)
                 {
                     return match.Value;
                 }
@@ -189,7 +205,13 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 }
 
                 var endName = endGroup.Value.Trim();
-                if (endName.Length == 0 || !namedAreas.TryGetValue(endName, out var endArea))
+                if (endName.Length == 0)
+                {
+                    return match.Value;
+                }
+
+                var endArea = FindNamedArea(endName, scopePath, context);
+                if (endArea is null)
                 {
                     return match.Value;
                 }
@@ -200,9 +222,11 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static void AddFormulaReferenceNamedAreas(
         LayoutSheet layoutSheet,
-        IDictionary<string, NamedAreaState> namedAreas)
+        IDictionary<string, NamedAreaState> globalNamedAreas,
+        IDictionary<string, Dictionary<string, NamedAreaState>> localNamedAreasByScope)
     {
-        var seriesByName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
+        var globalSeriesByName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
+        var localSeriesByScopeAndName = new Dictionary<string, Dictionary<string, List<LayoutCell>>>(StringComparer.Ordinal);
 
         foreach (var cell in layoutSheet.Cells)
         {
@@ -212,16 +236,35 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 continue;
             }
 
-            if (!seriesByName.TryGetValue(formulaRefName, out var seriesCells))
+            var formulaRefScope = ResolveFormulaRefScope(cell.FormulaRefScope);
+            if (string.Equals(formulaRefScope, "local", StringComparison.Ordinal))
             {
-                seriesCells = [];
-                seriesByName[formulaRefName] = seriesCells;
+                if (!localSeriesByScopeAndName.TryGetValue(cell.ScopePath, out var byName))
+                {
+                    byName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
+                    localSeriesByScopeAndName[cell.ScopePath] = byName;
+                }
+
+                if (!byName.TryGetValue(formulaRefName, out var localSeriesCells))
+                {
+                    localSeriesCells = [];
+                    byName[formulaRefName] = localSeriesCells;
+                }
+
+                localSeriesCells.Add(cell);
+                continue;
             }
 
-            seriesCells.Add(cell);
+            if (!globalSeriesByName.TryGetValue(formulaRefName, out var globalSeriesCells))
+            {
+                globalSeriesCells = [];
+                globalSeriesByName[formulaRefName] = globalSeriesCells;
+            }
+
+            globalSeriesCells.Add(cell);
         }
 
-        foreach (var (name, seriesCells) in seriesByName)
+        foreach (var (name, seriesCells) in globalSeriesByName)
         {
             var orderedCells = seriesCells
                 .OrderBy(cell => cell.Row)
@@ -230,10 +273,70 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             var firstCell = orderedCells[0];
             var lastCell = orderedCells[^1];
 
-            TryAddFormulaReferenceNamedArea(namedAreas, name, firstCell);
-            TryAddFormulaReferenceNamedArea(namedAreas, $"{name}End", lastCell);
+            TryAddFormulaReferenceNamedArea(globalNamedAreas, name, firstCell);
+            TryAddFormulaReferenceNamedArea(globalNamedAreas, $"{name}End", lastCell);
+        }
+
+        foreach (var (scopePath, scopedSeriesByName) in localSeriesByScopeAndName)
+        {
+            var scopedNamedAreas = new Dictionary<string, NamedAreaState>(StringComparer.Ordinal);
+
+            foreach (var (name, seriesCells) in scopedSeriesByName)
+            {
+                var orderedCells = seriesCells
+                    .OrderBy(cell => cell.Row)
+                    .ThenBy(cell => cell.Col)
+                    .ToArray();
+                var firstCell = orderedCells[0];
+                var lastCell = orderedCells[^1];
+
+                TryAddFormulaReferenceNamedArea(scopedNamedAreas, name, firstCell);
+                TryAddFormulaReferenceNamedArea(scopedNamedAreas, $"{name}End", lastCell);
+            }
+
+            localNamedAreasByScope[scopePath] = scopedNamedAreas;
         }
     }
+
+    private static NamedAreaState? FindNamedArea(
+        string name,
+        string scopePath,
+        FormulaPlaceholderContext context)
+    {
+        var currentScope = scopePath;
+        while (currentScope.Length > 0)
+        {
+            if (context.LocalAreasByScope.TryGetValue(currentScope, out var scopedAreas)
+                && scopedAreas.TryGetValue(name, out var scopedArea))
+            {
+                return scopedArea;
+            }
+
+            var separatorIndex = currentScope.LastIndexOf('/', StringComparison.Ordinal);
+            if (separatorIndex <= 0)
+            {
+                break;
+            }
+
+            currentScope = currentScope[..separatorIndex];
+        }
+
+        return context.GlobalAreas.TryGetValue(name, out var area) ? area : null;
+    }
+
+    private static string ResolveFormulaRefScope(string? formulaRefScope)
+    {
+        if (string.Equals(formulaRefScope?.Trim(), "local", StringComparison.OrdinalIgnoreCase))
+        {
+            return "local";
+        }
+
+        return "global";
+    }
+
+    private sealed record FormulaPlaceholderContext(
+        IReadOnlyDictionary<string, NamedAreaState> GlobalAreas,
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> LocalAreasByScope);
 
     private static void TryAddFormulaReferenceNamedArea(
         IDictionary<string, NamedAreaState> namedAreas,
