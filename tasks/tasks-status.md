@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-24 CI改善: master push時のNuGet prerelease suffixを `-pre` 固定へ変更（`-pre.<run_number>` 廃止）
+- 2026-03-24 CI改善: master push時に GitHub pre-release も自動作成する処理を追加
+- 2026-03-24 記録更新: `reports/master-push-prerelease-auto-version-2026-03-24.md` をNuGet/GitHub両対応内容へ更新
 - 2026-03-24 機能追加: `sheet` / `repeat` の `from`・`var` で子要素指定をサポート（属性形式も継続サポート）
 - 2026-03-24 互換制御: 属性と子要素が同時指定された場合はIssue(Warning)を記録し、属性値を優先
 - 2026-03-24 設計更新: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` と `Design/DslParser/DslParser_DetailDesign_v1.md` に from/var の属性・子要素併用仕様を反映
