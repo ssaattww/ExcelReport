@@ -1,6 +1,7 @@
 # ExcelReportLib
 
-[![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
+[![PR xUnit](https://github.com/ssaattww/ExcelReport/actions/workflows/pr-xunit-tests.yml/badge.svg)](https://github.com/ssaattww/ExcelReport/actions/workflows/pr-xunit-tests.yml)
+[![Publish NuGet](https://github.com/ssaattww/ExcelReport/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/ssaattww/ExcelReport/actions/workflows/publish-nuget.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

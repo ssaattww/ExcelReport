@@ -4,6 +4,9 @@ Last Updated: 2026-03-24
 
 ## Overall Progress
 
+- 2026-03-24: ルートREADMEのbuildステータスバッジを実ワークフロー表示へ修正
+- 2026-03-24: NuGet同梱READMEをリポジトリREADMEへ一本化し、専用READMEを削除
+- 2026-03-24: 調査記録 `reports/readme-badge-and-package-readme-sync-2026-03-24.md` を追加
 - 2026-03-24: master push時のprerelease suffixを `-pre` 固定へ変更（`-pre.<run_number>` を廃止）
 - 2026-03-24: master push時に GitHub pre-release を自動作成する処理を publish workflow に追加
 - 2026-03-24: 調査記録 `reports/master-push-prerelease-auto-version-2026-03-24.md` を NuGet/GitHub 両対応内容へ更新
@@ -57,4 +60,3 @@ Last Updated: 2026-03-24
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
-
