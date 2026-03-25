@@ -4,6 +4,8 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: PR #40 再対応として、`LayoutEngine` の scopePath 連結ロジック（sheet/gridのchildIndex付与）を再修正
+- 2026-03-25: 回帰テスト `Expand_RepeatGridSiblings_ShareSameScopePath` を追加
 - 2026-03-25: .NET SDK 8.0.419 を導入し、`dotnet test` による実行検証を実施
 - 2026-03-25: `RendererTests` の `LayoutCell` ヘルパー引数を現行コンストラクタへ追随修正
 - 2026-03-25: `ExcelReportLib.Tests` 129件全通過を確認

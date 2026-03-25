@@ -2,7 +2,7 @@
 
 プロジェクトマネージャーへの指摘事項を記録
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-25
 
 ## アクティブな指摘点
 
@@ -51,6 +51,7 @@ Last Updated: 2026-03-24
 | FP57 | issue#35: formulaRef は同一階層ローカル参照と他階層参照（global）を書き分け可能にする | 対応中 | 2026-03-24 |
 | FP58 | PR #39 指摘: formulaRefScope は typoを黙殺しない（XSD制約 + Warningで明示） | 対応中 | 2026-03-25 |
 | FP59 | dotnet SDK環境でも実テストを回し、口頭報告ではなく実行結果で示す | 対応中 | 2026-03-25 |
+| FP60 | PR #40 指摘: grid兄弟セル間で local formulaRef を共有できるよう、scopePath を sibling分断しない設計にする | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

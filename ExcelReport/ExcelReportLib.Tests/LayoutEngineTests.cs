@@ -118,6 +118,43 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that repeat grid siblings keep same scope path.
+    /// </summary>
+    [Fact]
+    public void Expand_RepeatGridSiblings_ShareSameScopePath()
+    {
+        var root = new RepeatRoot
+        {
+            Items =
+            [
+                new RepeatItem { Name = "First" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <grid>
+                    <cell r="1" c="1" value="@(it.Name)" formulaRef="RowData" formulaRefScope="local" />
+                    <cell r="1" c="2" value="=SUM(#{RowData:RowDataEnd})" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var rowDataCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.FormulaRef, "RowData", StringComparison.Ordinal)));
+        var formulaCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.Formula, "=SUM(#{RowData:RowDataEnd})", StringComparison.Ordinal)));
+
+        Assert.Equal(rowDataCell.ScopePath, formulaCell.ScopePath);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that expand use resolves component.
     /// </summary>
     [Fact]
@@ -920,5 +957,4 @@ public sealed class LayoutEngineTests
         public string Right { get; init; } = string.Empty;
     }
 }
-
 

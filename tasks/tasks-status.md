@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#40再対応: `LayoutEngine` の scopePath 採番を再修正し、grid兄弟セルが同一スコープを共有するよう反映
+- 2026-03-25 テスト追加: `LayoutEngineTests.Expand_RepeatGridSiblings_ShareSameScopePath` を追加
+- 2026-03-25 記録: `reports/pr40-scopepath-sibling-fix-2026-03-25.md` を更新
 - 2026-03-25 環境対応: .NET SDK 8.0.419 を導入して `dotnet test` 実行環境を整備
 - 2026-03-25 不具合修正: `RendererTests` の `LayoutCell` ヘルパーを新コンストラクタ引数（`formulaRefScope`/`scopePath`）に追随
 - 2026-03-25 検証: `ExcelReportLib.Tests` 129件全通過（Failed 0）
