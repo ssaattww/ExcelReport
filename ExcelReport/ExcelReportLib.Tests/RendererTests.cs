@@ -393,6 +393,9 @@ public sealed class RendererTests
         var colorScale = Assert.Single(colorScaleRule.Elements<ColorScale>());
         Assert.Equal(3, colorScale.Elements<ConditionalFormatValueObject>().Count());
         Assert.Equal(3, colorScale.Elements<Color>().Count());
+        Assert.Equal(
+            new[] { "cfvo", "cfvo", "cfvo", "color", "color", "color" },
+            colorScale.ChildElements.Select(element => element.LocalName).ToArray());
 
         var formulaFormatting = conditionalFormattings[1];
         Assert.Equal("$A$5:$C$5", formulaFormatting.SequenceOfReferences!.InnerText);

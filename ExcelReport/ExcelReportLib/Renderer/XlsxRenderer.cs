@@ -502,15 +502,18 @@ public sealed class XlsxRenderer : IRenderer
 
         var colorScale = new ColorScale();
         colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Min });
-        colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MinColor) });
 
         if (!string.IsNullOrWhiteSpace(rule.MidColor))
         {
             colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Percentile, Val = "50" });
-            colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MidColor) });
         }
 
         colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Max });
+        colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MinColor) });
+        if (!string.IsNullOrWhiteSpace(rule.MidColor))
+        {
+            colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MidColor) });
+        }
         colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MaxColor) });
         colorScaleRule.Append(colorScale);
         return colorScaleRule;

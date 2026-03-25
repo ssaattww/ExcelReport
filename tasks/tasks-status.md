@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#41レビュー対応: colorScale の `cfvo`/`color` 子要素順序を `cfvo... -> color...` に修正
+- 2026-03-25 テスト追加: `RendererTests` に colorScale 子要素順序アサーションを追加
+- 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-review-cfvo-order-fix-2026-03-25.md` を作成
 - 2026-03-25 レビュー追従: expression+formulaRef 条件付き書式の OpenXML スキーマ妥当性E2Eテストを追加
 - 2026-03-25 テスト追加: `ReportGeneratorTests.Generate_ConditionalFormatting_ExpressionWithFormulaRef_OpenXmlSchemaValid`
 - 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）

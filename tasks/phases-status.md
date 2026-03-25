@@ -4,6 +4,10 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: PR#41レビュー指摘（CT_ColorScale順序）に対応し、cfvo先行・color後続の出力順へ修正
+- 2026-03-25: `RendererTests` に colorScale 子要素順序の回帰アサーションを追加
+- 2026-03-25: `ExcelReportLib.Tests` 137件全通過を確認
+- 2026-03-25: 調査記録 `reports/pr41-review-cfvo-order-fix-2026-03-25.md` を追加
 - 2026-03-25: レビュー結果対応として expression+formulaRef 条件付き書式の OpenXML 妥当性E2Eテストを追加
 - 2026-03-25: `ReportGeneratorTests` に schema validation ケースを追加
 - 2026-03-25: `ExcelReportLib.Tests` 137件全通過を確認
