@@ -4,6 +4,9 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: PR#41最新レビュー指摘のフォローアップとして2色colorScaleの子要素順序を回帰テスト化
+- 2026-03-25: 追加テスト+全体テストを実行し `ExcelReportLib.Tests` 140件全通過を確認
+- 2026-03-25: 調査記録 `reports/pr41-latest-review-followup-2026-03-25.md` を追加
 - 2026-03-25: ユーザー依頼に基づき .NET SDK 8.0.419 を `/workspace/.dotnet` へ導入
 - 2026-03-25: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` を再実行し 139件全通過を確認
 - 2026-03-25: 実行記録 `reports/test-run-dotnet-sdk-8.0.419-2026-03-25.md` を追加

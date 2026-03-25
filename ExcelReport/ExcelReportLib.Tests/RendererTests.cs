@@ -429,6 +429,45 @@ public sealed class RendererTests
     }
 
     /// <summary>
+    /// Verifies that two-color scale emits cfvo elements before color elements.
+    /// </summary>
+    [Fact]
+    public void Render_ConditionalFormatting_TwoColorScale_ChildOrder_IsCfvoThenColor()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCellState(2, 1, "A"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    options: CreateSheetOptions(
+                        """
+                        <conditionalFormatting at="A2:C8" minColor="#112233" maxColor="#AABBCC" />
+                        """)),
+            ]);
+
+        var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
+        var renderer = CreateRenderer();
+        var result = renderer.Render([worksheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+        var colorScale = Assert.Single(rule.Elements<ColorScale>());
+
+        Assert.Equal(ConditionalFormatValues.ColorScale, rule.Type!.Value);
+        Assert.Equal(2, colorScale.Elements<ConditionalFormatValueObject>().Count());
+        Assert.Equal(2, colorScale.Elements<Color>().Count());
+        Assert.Equal(
+            new[] { "cfvo", "cfvo", "color", "color" },
+            colorScale.ChildElements.Select(element => element.LocalName).ToArray());
+    }
+
+    /// <summary>
     /// Verifies that render nested row and column groups produce calculated outline levels.
     /// </summary>
     [Fact]

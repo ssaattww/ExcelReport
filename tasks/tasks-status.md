@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#41最新レビュー追従: 2色colorScaleの子要素順序（cfvo先行）を回帰テストで明示保証
+- 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_TwoColorScale_ChildOrder_IsCfvoThenColor`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 140件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-latest-review-followup-2026-03-25.md` を作成
 - 2026-03-25 環境対応: `dotnet-install.sh` で .NET SDK 8.0.419 を `/workspace/.dotnet` へ導入
 - 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` 実行（Passed 139, Failed 0）
 - 2026-03-25 記録: `reports/test-run-dotnet-sdk-8.0.419-2026-03-25.md` を作成
