@@ -474,6 +474,37 @@ public sealed class WorksheetStateTests
         Assert.Equal("=SUM(B2:B2)", sheet.Cells[(5, 4)].Formula);
     }
 
+    /// <summary>
+    /// Verifies that conditional formatting formula refs resolve from local scope using the target range.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_LocalScope_ResolvedFromTargetScope()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    options: CreateSheetOptions(
+                        """
+                        <conditionalFormatting at="B5:D5" formulaRef="RowData" />
+                        <conditionalFormatting at="B10:D10" formulaRef="RowData" />
+                        """)),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal(2, sheet.Options.ConditionalFormattings.Count);
+        Assert.Equal("B5", sheet.Options.ConditionalFormattings[0].FormulaRef);
+        Assert.Equal("B10", sheet.Options.ConditionalFormattings[1].FormulaRef);
+    }
+
     private static LayoutCell CreateCell(
         int row,
         int col,

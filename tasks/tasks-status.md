@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR追従: conditionalFormatting の boolean(1/0)受理と local formulaRef 解決を修正
+- 2026-03-25 テスト追加: `SheetAstTests.Parse_Sheet_ConditionalFormatting_BooleanLiterals_ParsesNumericBooleans` / `WorksheetStateTests.Build_ConditionalFormatting_FormulaRef_LocalScope_ResolvedFromTargetScope`
+- 2026-03-25 記録: `reports/pr-followup-conditional-formatting-local-scope-and-bool-2026-03-25.md` を作成
 - 2026-03-25 運用更新: ユーザー提示の最新版 `AGENTS.md`（Skills節含む）を同期
 - 2026-03-25 記録: `reports/agents-instructions-sync-2026-03-25.md` を作成
 - 2026-03-25 PR#41レビュー対応: colorScale の `cfvo`/`color` 子要素順序を `cfvo... -> color...` に修正

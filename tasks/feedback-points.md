@@ -61,6 +61,7 @@ Last Updated: 2026-03-25
 | FP67 | issue#34レビュー結果: expression+formulaRef のOpenXMLスキーマ妥当性をE2Eテストで担保する | 対応済み | 2026-03-25 |
 | FP68 | PR#41レビュー指摘: colorScale は `cfvo` を先に全件出力し、その後 `color` を出力する順序に修正する | 対応済み | 2026-03-25 |
 | FP69 | AGENTS.md に Skills の一覧・トリガー条件・運用手順を明記し、スキル利用方針を明文化する | 対応済み | 2026-03-25 |
+| FP70 | conditionalFormatting は XSD boolean literal（`1/0`）を受理し、formulaRef は local scope（`formulaRefScope="local"`）を解決できるようにする | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

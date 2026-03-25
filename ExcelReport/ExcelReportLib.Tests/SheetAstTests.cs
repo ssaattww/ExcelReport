@@ -165,6 +165,38 @@ public sealed class SheetAstTests
         Assert.Null(threeColorRule.Formula);
         Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
     }
+
+    /// <summary>
+    /// Verifies that parse sheet conditional formatting boolean literals.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_ConditionalFormatting_BooleanLiterals_ParsesNumericBooleans()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v1" name="Summary">
+              <sheetOptions>
+                <conditionalFormatting at="A2:A10" formula="A2&gt;100" fontBold="1" fontItalic="0" fontUnderline="1" />
+              </sheetOptions>
+              <cell r="1" c="1" value="A" />
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+        var options = Assert.IsType<SheetOptionsAst>(sheet.Options);
+        var rule = Assert.Single(options.ConditionalFormattings);
+
+        Assert.True(rule.FontBold);
+        Assert.False(rule.FontItalic);
+        Assert.True(rule.FontUnderline);
+        Assert.DoesNotContain(
+            issues,
+            issue => issue.Severity == IssueSeverity.Warning &&
+                     issue.Kind == IssueKind.InvalidAttributeValue &&
+                     issue.Message.Contains("font", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static SheetAst CreateSheet()
     {
         var issues = new List<Issue>();

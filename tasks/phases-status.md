@@ -4,6 +4,9 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: PRフォローアップとして conditionalFormatting の `fontBold/fontItalic/fontUnderline` で XML boolean literal（`1/0`）を受理
+- 2026-03-25: `sheetOptions/conditionalFormatting@formulaRef` の local scope 解決を `at` 対象レンジ交差ベースで補完
+- 2026-03-25: 回帰テスト2件を追加し、調査記録 `reports/pr-followup-conditional-formatting-local-scope-and-bool-2026-03-25.md` を作成
 - 2026-03-25: ユーザー提示の最新運用ルールに合わせて `AGENTS.md` を更新（Skills運用セクションを追加）
 - 2026-03-25: 調査記録 `reports/agents-instructions-sync-2026-03-25.md` を追加
 - 2026-03-25: PR#41レビュー指摘（CT_ColorScale順序）に対応し、cfvo先行・color後続の出力順へ修正

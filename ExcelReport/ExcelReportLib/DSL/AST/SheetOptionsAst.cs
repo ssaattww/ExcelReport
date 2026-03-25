@@ -528,9 +528,20 @@ namespace ExcelReportLib.DSL.AST
                 return null;
             }
 
-            if (bool.TryParse(raw.Trim(), out var value))
+            var normalized = raw.Trim();
+            if (bool.TryParse(normalized, out var value))
             {
                 return value;
+            }
+
+            if (string.Equals(normalized, "1", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (string.Equals(normalized, "0", StringComparison.Ordinal))
+            {
+                return false;
             }
 
             issues.Add(new Issue
