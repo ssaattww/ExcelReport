@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 運用更新: ユーザー提示の最新版 `AGENTS.md`（Skills節含む）を同期
+- 2026-03-25 記録: `reports/agents-instructions-sync-2026-03-25.md` を作成
 - 2026-03-25 PR#41レビュー対応: colorScale の `cfvo`/`color` 子要素順序を `cfvo... -> color...` に修正
 - 2026-03-25 テスト追加: `RendererTests` に colorScale 子要素順序アサーションを追加
 - 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）

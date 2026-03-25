@@ -60,6 +60,7 @@ Last Updated: 2026-03-25
 | FP66 | issue#34追加要望: expression条件付き書式で formulaRef 指定を可能にし、2色/3色/expression のE2Eを追加する | 対応済み | 2026-03-25 |
 | FP67 | issue#34レビュー結果: expression+formulaRef のOpenXMLスキーマ妥当性をE2Eテストで担保する | 対応済み | 2026-03-25 |
 | FP68 | PR#41レビュー指摘: colorScale は `cfvo` を先に全件出力し、その後 `color` を出力する順序に修正する | 対応済み | 2026-03-25 |
+| FP69 | AGENTS.md に Skills の一覧・トリガー条件・運用手順を明記し、スキル利用方針を明文化する | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

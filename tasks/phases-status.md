@@ -4,6 +4,8 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: ユーザー提示の最新運用ルールに合わせて `AGENTS.md` を更新（Skills運用セクションを追加）
+- 2026-03-25: 調査記録 `reports/agents-instructions-sync-2026-03-25.md` を追加
 - 2026-03-25: PR#41レビュー指摘（CT_ColorScale順序）に対応し、cfvo先行・color後続の出力順へ修正
 - 2026-03-25: `RendererTests` に colorScale 子要素順序の回帰アサーションを追加
 - 2026-03-25: `ExcelReportLib.Tests` 137件全通過を確認
