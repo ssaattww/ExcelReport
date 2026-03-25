@@ -17,6 +17,8 @@ public sealed class LayoutCell
     /// <param name="value">The value.</param>
     /// <param name="formula">The formula.</param>
     /// <param name="formulaRef">The formula ref.</param>
+    /// <param name="formulaRefScope">The formula ref scope.</param>
+    /// <param name="scopePath">The scope path.</param>
     /// <param name="stylePlan">The style plan.</param>
     public LayoutCell(
         int row,
@@ -26,6 +28,8 @@ public sealed class LayoutCell
         object? value,
         string? formula,
         string? formulaRef,
+        string? formulaRefScope,
+        string scopePath,
         StylePlan stylePlan)
     {
         Row = row;
@@ -35,6 +39,8 @@ public sealed class LayoutCell
         Value = value;
         Formula = formula;
         FormulaRef = formulaRef;
+        FormulaRefScope = formulaRefScope;
+        ScopePath = scopePath;
         StylePlan = stylePlan;
     }
 
@@ -72,6 +78,14 @@ public sealed class LayoutCell
     /// Gets the formula ref.
     /// </summary>
     public string? FormulaRef { get; }
+    /// <summary>
+    /// Gets the formula ref scope.
+    /// </summary>
+    public string? FormulaRefScope { get; }
+    /// <summary>
+    /// Gets the scope path.
+    /// </summary>
+    public string ScopePath { get; }
 
     /// <summary>
     /// Gets the style plan.

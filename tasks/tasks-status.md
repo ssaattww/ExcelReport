@@ -1,10 +1,27 @@
 # Tasks Status
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-25
 Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#40再対応: `LayoutEngine` の scopePath 採番を再修正し、grid兄弟セルが同一スコープを共有するよう反映
+- 2026-03-25 テスト追加: `LayoutEngineTests.Expand_RepeatGridSiblings_ShareSameScopePath` を追加
+- 2026-03-25 記録: `reports/pr40-scopepath-sibling-fix-2026-03-25.md` を更新
+- 2026-03-25 環境対応: .NET SDK 8.0.419 を導入して `dotnet test` 実行環境を整備
+- 2026-03-25 不具合修正: `RendererTests` の `LayoutCell` ヘルパーを新コンストラクタ引数（`formulaRefScope`/`scopePath`）に追随
+- 2026-03-25 検証: `ExcelReportLib.Tests` 129件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr39-dotnet-sdk-test-run-2026-03-25.md` を作成
+- 2026-03-25 PR#39指摘対応: `formulaRefScope` を XSD で `local|global` の列挙型に制約
+- 2026-03-25 防御実装: `CellAst` で不正 `formulaRefScope` を Warning 記録 + `global` 正規化
+- 2026-03-25 テスト追加: `LayoutNodeTests.Parse_Cell_InvalidFormulaRefScope_FallsBackToGlobalWithWarning`
+- 2026-03-25 記録: `reports/pr39-inline-comments-fix-2026-03-25.md` を作成
+- 2026-03-24 CI修正: PR #38 の `xunit-tests` 失敗原因（`LastIndexOf('/', StringComparison.Ordinal)` の誤用）を修正
+- 2026-03-24 記録: `reports/pr38-ci-fix-worksheetstate-lastindexof-2026-03-24.md` を作成
+- 2026-03-24 issue#35対応: `cell@formulaRefScope`（local/global）を追加し、formulaRef の解決スコープを制御可能に拡張
+- 2026-03-24 実装拡張: `LayoutEngine` がセルに `scopePath` を付与、`WorksheetStateBuilder` が最寄りスコープ優先で `#{...}` を解決
+- 2026-03-24 テスト追加: `WorksheetStateTests` に local scope + global fallback の検証ケースを追加
+- 2026-03-24 記録: `reports/issue35-formula-ref-scope-2026-03-24.md` を作成
 - 2026-03-24 機能追加: `cell` の `value` を属性/子要素(`<value>`)の両記法に対応
 - 2026-03-24 互換制御: `cell` の `value` が属性と子要素で競合した場合はWarningを記録し属性値を優先
 - 2026-03-24 テスト追加: `LayoutNodeTests` 2件 + `DslParserTests` 1件で `cell/<value>` 対応を検証
@@ -78,6 +95,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Additional Work (2026-03-19)
 
+- 2026-03-25 #35 E2E追加: `ReportGeneratorTests` に repeat + `formulaRefScope="local"` の実xlsx生成テストを追加
+- 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` で追加E2E含む全件通過
+- 2026-03-25 記録: `reports/issue35-e2e-repeat-local-scope-2026-03-25.md` を作成
+
 - 2026-03-24 CI追加: `pull_request -> master` トリガーで `ExcelReportLib.Tests` を実行するworkflowを新規追加
 - 2026-03-24 記録: `reports/pr-xunit-workflow-2026-03-24.md` を作成
 
@@ -109,6 +130,3 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 - Done: 完了
 - In Progress: 実施中
 - Not Started: 未着手
-
-
-

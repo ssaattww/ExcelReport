@@ -26,6 +26,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// Gets or sets the formula ref.
         /// </summary>
         public string? FormulaRef { get; init; }
+        /// <summary>
+        /// Gets or sets the formula ref scope.
+        /// </summary>
+        public string? FormulaRefScope { get; init; }
 
         /// <summary>
         /// Initializes a new instance of the cell ast type.
@@ -37,6 +41,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             var valueAttr = elem.Attribute("value");
             var styleRefAttr = elem.Attribute("styleRef");
             var formulaRefAttr = elem.Attribute("formulaRef");
+            var formulaRefScopeAttr = elem.Attribute("formulaRefScope");
 
             ValueRaw = ResolvePreferredText(
                 elem,
@@ -46,7 +51,36 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
                 issues);
             StyleRefShortcut = styleRefAttr?.Value;
             FormulaRef = formulaRefAttr?.Value;
+            FormulaRefScope = NormalizeFormulaRefScope(formulaRefScopeAttr?.Value, elem, issues);
             // Todo: ValueRaw から式のパース
+        }
+
+        private static string? NormalizeFormulaRefScope(string? rawScope, XElement owner, List<Issue> issues)
+        {
+            if (string.IsNullOrWhiteSpace(rawScope))
+            {
+                return null;
+            }
+
+            if (string.Equals(rawScope, "local", StringComparison.OrdinalIgnoreCase))
+            {
+                return "local";
+            }
+
+            if (string.Equals(rawScope, "global", StringComparison.OrdinalIgnoreCase))
+            {
+                return "global";
+            }
+
+            issues.Add(new Issue
+            {
+                Severity = IssueSeverity.Warning,
+                Kind = IssueKind.InvalidAttributeValue,
+                Message = $"<cell> 要素の formulaRefScope には 'local' または 'global' を指定してください。'{rawScope}' は無効のため 'global' として扱います。",
+                Span = SourceSpan.CreateSpanAttributes(owner),
+            });
+
+            return "global";
         }
 
         private static string ResolvePreferredText(

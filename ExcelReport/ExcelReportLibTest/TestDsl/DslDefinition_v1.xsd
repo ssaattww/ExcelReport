@@ -235,6 +235,7 @@
     <!-- 単一参照用ショートカット -->
     <xs:attribute name="styleRef"   type="xs:string"/>
     <xs:attribute name="formulaRef" type="xs:string"/>
+    <xs:attribute name="formulaRefScope" type="FormulaRefScopeType"/>
   </xs:complexType>
 
   <!-- use -->
@@ -256,6 +257,13 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="down"/>
       <xs:enumeration value="right"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FormulaRefScopeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="local"/>
+      <xs:enumeration value="global"/>
     </xs:restriction>
   </xs:simpleType>
 

@@ -139,8 +139,10 @@ public sealed class LayoutEngine : ILayoutEngine
         var namedAreas = new List<LayoutNamedArea>();
         var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
 
-        foreach (var child in sheet.Children.Values)
+        var sheetChildren = sheet.Children.Values.ToArray();
+        for (var childIndex = 0; childIndex < sheetChildren.Length; childIndex++)
         {
+            var child = sheetChildren[childIndex];
             var result = ExpandNode(
                 child,
                 baseRow: 1,
@@ -148,6 +150,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath: "/sheet",
                 inheritedStyles,
                 componentIndex,
                 styleResolver,
@@ -196,6 +199,7 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
+        string scopePath,
         StyleScope inheritedStyles,
         IReadOnlyDictionary<string, ComponentAst> componentIndex,
         IStyleResolver styleResolver,
@@ -220,6 +224,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath,
                 inheritedStyles,
                 styleResolver,
                 issues),
@@ -230,6 +235,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath,
                 inheritedStyles,
                 componentIndex,
                 styleResolver,
@@ -241,6 +247,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath,
                 inheritedStyles,
                 componentIndex,
                 styleResolver,
@@ -252,6 +259,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath,
                 inheritedStyles,
                 componentIndex,
                 styleResolver,
@@ -267,6 +275,7 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
+        string scopePath,
         StyleScope inheritedStyles,
         IStyleResolver styleResolver,
         IList<Issue> issues)
@@ -294,6 +303,8 @@ public sealed class LayoutEngine : ILayoutEngine
             rendered.Value,
             rendered.Formula,
             cell.FormulaRef,
+            cell.FormulaRefScope,
+            scopePath,
             stylePlan);
 
         return new ExpandResult(
@@ -310,6 +321,7 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
+        string scopePath,
         StyleScope inheritedStyles,
         IReadOnlyDictionary<string, ComponentAst> componentIndex,
         IStyleResolver styleResolver,
@@ -321,8 +333,10 @@ public sealed class LayoutEngine : ILayoutEngine
         var maxHeight = 0;
         var maxWidth = 0;
 
-        foreach (var child in grid.Children.Values)
+        var gridChildren = grid.Children.Values.ToArray();
+        for (var childIndex = 0; childIndex < gridChildren.Length; childIndex++)
         {
+            var child = gridChildren[childIndex];
             var childResult = ExpandNode(
                 child,
                 baseRow,
@@ -330,6 +344,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
+                scopePath,
                 styleScope,
                 componentIndex,
                 styleResolver,
@@ -368,6 +383,7 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
+        string scopePath,
         StyleScope inheritedStyles,
         IReadOnlyDictionary<string, ComponentAst> componentIndex,
         IStyleResolver styleResolver,
@@ -394,6 +410,7 @@ public sealed class LayoutEngine : ILayoutEngine
         var maxHeight = 0;
         var maxWidth = 0;
 
+        var iterationIndex = 0;
         foreach (var item in sequence)
         {
             var itemVars = CloneVars(vars);
@@ -406,10 +423,12 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 itemVars,
+                $"{scopePath}/repeat-{iterationIndex}",
                 styleScope,
                 componentIndex,
                 styleResolver,
                 issues);
+            iterationIndex++;
 
             if (result.Cells.Count > 0)
             {
@@ -456,6 +475,7 @@ public sealed class LayoutEngine : ILayoutEngine
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
+        string scopePath,
         StyleScope inheritedStyles,
         IReadOnlyDictionary<string, ComponentAst> componentIndex,
         IStyleResolver styleResolver,
@@ -497,6 +517,7 @@ public sealed class LayoutEngine : ILayoutEngine
             rootData,
             boundData,
             vars,
+            $"{scopePath}/use",
             styleScope,
             componentIndex,
             styleResolver,
@@ -1178,6 +1199,8 @@ public sealed class LayoutEngine : ILayoutEngine
             cell.Value,
             cell.Formula,
             cell.FormulaRef,
+            cell.FormulaRefScope,
+            cell.ScopePath,
             updatedStylePlan);
     }
 
@@ -1325,4 +1348,3 @@ public sealed class LayoutEngine : ILayoutEngine
         }
     }
 }
-

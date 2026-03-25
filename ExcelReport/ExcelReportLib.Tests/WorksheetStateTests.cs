@@ -404,6 +404,58 @@ public sealed class WorksheetStateTests
         Assert.Equal("=SUM(A1:D5)", formulaCell.Formula);
     }
 
+    /// <summary>
+    /// Verifies that local formula refs resolve within nearest scope while global refs remain accessible.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_LocalScope_ResolvesByNearestScopeAndGlobalFallback()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 1, col: 1, value: 10, formulaRef: "GlobalTotal", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 5, col: 4, value: null, formula: "=SUM(#{RowData:RowDataEnd})+#{GlobalTotal}", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 6, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                        CreateCell(row: 6, col: 4, value: null, formula: "=SUM(#{RowData:RowDataEnd})+#{GlobalTotal}", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal("=SUM(B5:B5)+A1", sheet.Cells[(5, 4)].Formula);
+        Assert.Equal("=SUM(B6:B6)+A1", sheet.Cells[(6, 4)].Formula);
+    }
+
+    /// <summary>
+    /// Verifies that local formula refs fall back to parent local scope before global scope.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_LocalScope_FallsBackToParentScope()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 50, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 4, value: null, formula: "=SUM(#{RowData:RowDataEnd})", scopePath: "/sheet/0/repeat-0/0"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal("=SUM(B2:B2)", sheet.Cells[(5, 4)].Formula);
+    }
+
     private static LayoutCell CreateCell(
         int row,
         int col,
@@ -411,7 +463,9 @@ public sealed class WorksheetStateTests
         int colSpan = 1,
         object? value = null,
         string? formula = null,
-        string? formulaRef = null) =>
+        string? formulaRef = null,
+        string? formulaRefScope = null,
+        string? scopePath = "/sheet/0") =>
         new(
             row,
             col,
@@ -420,6 +474,8 @@ public sealed class WorksheetStateTests
             value,
             formula,
             formulaRef,
+            formulaRefScope,
+            scopePath ?? "/sheet/0",
             CreateStylePlan());
 
     private static SheetOptionsAst CreateSheetOptions(string innerXml)

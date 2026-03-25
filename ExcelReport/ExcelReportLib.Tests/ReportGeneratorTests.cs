@@ -642,6 +642,52 @@ public sealed class ReportGeneratorTests
         Assert.Equal("300", ReadCellValue(document, GetCell(document, "Summary", "B2")));
         Assert.Equal("450", ReadCellValue(document, GetCell(document, "Summary", "A10")));
     }
+
+    /// <summary>
+    /// Verifies that local formulaRef scope is isolated per repeat iteration in end-to-end generation.
+    /// </summary>
+    [Fact]
+    public void Generate_RepeatWithLocalFormulaRefScope_ResolvesPerIteration()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <grid>
+                    <cell value="@(it.Name)" />
+                    <cell c="2" value="@(it.Value)" formulaRef="RowData" formulaRefScope="local" />
+                    <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Name = "A", Value = 10 },
+                new { Name = "B", Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+
+        using var document = OpenWorkbook(result);
+        var firstFormula = GetCell(document, "Summary", "C1").CellFormula;
+        var secondFormula = GetCell(document, "Summary", "C2").CellFormula;
+
+        Assert.NotNull(firstFormula);
+        Assert.NotNull(secondFormula);
+        Assert.Equal("SUM(B1:B1)", firstFormula!.Text);
+        Assert.Equal("SUM(B2:B2)", secondFormula!.Text);
+    }
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -704,4 +750,3 @@ public sealed class ReportGeneratorTests
         public decimal Amount { get; init; }
     }
 }
-
