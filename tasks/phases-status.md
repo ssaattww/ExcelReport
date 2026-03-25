@@ -1,9 +1,13 @@
 # Phases Status
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: .NET 8 SDK（8.0.419）で `dotnet test` を実行し、`ExcelReportLib.Tests` 129件全通過を確認
+- 2026-03-25: PR #39 レビュー指摘に対応し、`FindNamedArea` で immediate parent local scope を直接探索するよう修正
+- 2026-03-25: 回帰テスト `Build_FormulaRefPlaceholders_LocalScopeInRepeat_FallsBackToEnclosingLocalScope` を追加
+- 2026-03-25: 調査記録 `reports/pr39-review-fix-parent-local-scope-fallback-2026-03-25.md` を追加
 - 2026-03-24: 実行環境に .NET SDK 8.0.419 を導入し、`ExcelReportLib.Tests` 128件のローカル実行（全通過）を確認
 - 2026-03-24: `RendererTests` の `LayoutCell` ヘルパーを新コンストラクタ仕様へ追従修正
 - 2026-03-24: 調査記録 `reports/pr38-test-pass-after-dotnet-install-2026-03-24.md` を追加

@@ -459,6 +459,32 @@ public sealed class WorksheetStateTests
         Assert.Equal("=SUM(B6:B6)", sheet.Cells[(6, 4)].Formula);
     }
 
+    /// <summary>
+    /// Verifies that local formula refs fall back from repeat child scopes to enclosing non-repeat local scopes.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_LocalScopeInRepeat_FallsBackToEnclosingLocalScope()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 50, formulaRef: "OuterData", formulaRefScope: "local", scopePath: "/sheet/0/0"),
+                        CreateCell(row: 5, col: 4, value: null, formula: "=SUM(#{OuterData:OuterDataEnd})", scopePath: "/sheet/0/repeat-0/0"),
+                        CreateCell(row: 6, col: 4, value: null, formula: "=SUM(#{OuterData:OuterDataEnd})", scopePath: "/sheet/0/repeat-1/0"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal("=SUM(B2:B2)", sheet.Cells[(5, 4)].Formula);
+        Assert.Equal("=SUM(B2:B2)", sheet.Cells[(6, 4)].Formula);
+    }
+
     private static LayoutCell CreateCell(
         int row,
         int col,

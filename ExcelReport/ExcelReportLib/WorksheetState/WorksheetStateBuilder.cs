@@ -307,8 +307,15 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var currentScope = scopePath;
         while (currentScope.Length > 0)
         {
+            if (context.LocalAreasByScope.TryGetValue(currentScope, out var directScopedAreas)
+                && directScopedAreas.TryGetValue(name, out var directScopedArea))
+            {
+                return directScopedArea;
+            }
+
             var localScopeKey = ResolveLocalFormulaScopeKey(currentScope);
-            if (context.LocalAreasByScope.TryGetValue(localScopeKey, out var scopedAreas)
+            if (!string.Equals(localScopeKey, currentScope, StringComparison.Ordinal)
+                && context.LocalAreasByScope.TryGetValue(localScopeKey, out var scopedAreas)
                 && scopedAreas.TryGetValue(name, out var scopedArea))
             {
                 return scopedArea;

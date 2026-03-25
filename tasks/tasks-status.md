@@ -1,10 +1,14 @@
 # Tasks Status
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-25
 Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 動作確認: .NET 8 SDK（8.0.419）環境で `dotnet test` を実行し、`ExcelReportLib.Tests` 129件全通過（Failed 0）を確認
+- 2026-03-25 レビュー修正(#39): `FindNamedArea` で `currentScope` を直接探索してから正規化キー探索するよう修正
+- 2026-03-25 回帰テスト追加: `Build_FormulaRefPlaceholders_LocalScopeInRepeat_FallsBackToEnclosingLocalScope` を追加
+- 2026-03-25 記録: `reports/pr39-review-fix-parent-local-scope-fallback-2026-03-25.md` を作成
 - 2026-03-24 環境整備: .NET SDK 8.0.419 を導入し、ローカルで `dotnet test` を実行可能化
 - 2026-03-24 互換修正: `RendererTests` の `LayoutCell` ヘルパーを新コンストラクタ引数（`formulaRefScope` / `scopePath`）へ追従
 - 2026-03-24 テスト結果: `ExcelReportLib.Tests` 128件 全通過（Failed 0）
