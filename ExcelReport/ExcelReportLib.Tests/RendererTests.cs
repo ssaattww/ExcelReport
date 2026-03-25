@@ -468,6 +468,40 @@ public sealed class RendererTests
     }
 
     /// <summary>
+    /// Verifies that conditional formatting accepts a single-cell target.
+    /// </summary>
+    [Fact]
+    public void Render_ConditionalFormatting_SingleCellTarget_IsRendered()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCellState(1, 1, 10),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    options: CreateSheetOptions(
+                        """
+                        <conditionalFormatting at="A1" minColor="#112233" maxColor="#AABBCC" />
+                        """)),
+            ]);
+
+        var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
+        var renderer = CreateRenderer();
+        var result = renderer.Render([worksheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$A$1", conditionalFormatting.SequenceOfReferences!.InnerText);
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.ColorScale, rule.Type!.Value);
+    }
+
+    /// <summary>
     /// Verifies that render nested row and column groups produce calculated outline levels.
     /// </summary>
     [Fact]

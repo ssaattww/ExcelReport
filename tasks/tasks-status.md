@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#41 inline指摘対応: `conditionalFormatting@at="A1"` 単一セル指定をレンダラーで解決可能に修正
+- 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_SingleCellTarget_IsRendered`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 141件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-inline-single-cell-target-fix-2026-03-25.md` を作成
 - 2026-03-25 PR#41最新レビュー追従: 2色colorScaleの子要素順序（cfvo先行）を回帰テストで明示保証
 - 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_TwoColorScale_ChildOrder_IsCfvoThenColor`
 - 2026-03-25 検証: `ExcelReportLib.Tests` 140件全通過（Failed 0）

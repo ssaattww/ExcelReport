@@ -661,6 +661,11 @@ public sealed class XlsxRenderer : IRenderer
             return rangeReference;
         }
 
+        if (TryParseCellReference(target, out var row, out var column))
+        {
+            return ToAbsoluteCellReference((int)row, (int)column);
+        }
+
         if (!sheetState.NamedAreas.TryGetValue(target, out var namedArea))
         {
             return null;

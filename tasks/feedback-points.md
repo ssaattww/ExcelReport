@@ -64,6 +64,7 @@ Last Updated: 2026-03-25
 | FP70 | conditionalFormatting は XSD boolean literal（`1/0`）を受理し、formulaRef は local scope（`formulaRefScope="local"`）を解決できるようにする | 対応済み | 2026-03-25 |
 | FP71 | dotnet未導入環境では SDK を導入して実テストを回し、結果（Passed/Failed）をエビデンス付きで提示する | 対応済み | 2026-03-25 |
 | FP72 | PR#41最新レビュー: colorScale順序保証は3色だけでなく2色でも回帰テストで担保する | 対応済み | 2026-03-25 |
+| FP73 | PR#41 inline: conditionalFormatting の at は単一セル（A1）指定も有効にし、ルール欠落を防ぐ | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

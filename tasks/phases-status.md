@@ -4,6 +4,9 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: PR#41 inline指摘対応として `conditionalFormatting@at` の単一セル指定（例: `A1`）をレンダラー解決対象に追加
+- 2026-03-25: 回帰テスト `Render_ConditionalFormatting_SingleCellTarget_IsRendered` を追加
+- 2026-03-25: 全体テスト `ExcelReportLib.Tests` 141件全通過を確認、記録 `reports/pr41-inline-single-cell-target-fix-2026-03-25.md` を追加
 - 2026-03-25: PR#41最新レビュー指摘のフォローアップとして2色colorScaleの子要素順序を回帰テスト化
 - 2026-03-25: 追加テスト+全体テストを実行し `ExcelReportLib.Tests` 140件全通過を確認
 - 2026-03-25: 調査記録 `reports/pr41-latest-review-followup-2026-03-25.md` を追加
