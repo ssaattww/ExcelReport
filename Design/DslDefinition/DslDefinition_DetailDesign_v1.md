@@ -458,6 +458,43 @@ Area(name) = { topRow, bottomRow, leftCol, rightCol }
   - データ範囲: 行 `hr+1` 以降で、`hc1..hc2` のいずれかにセルが存在する行を連続として自動検出。
 - ヘッダ行のいずれかのセルが空文字の場合は Fatal。
 
+### 7.5. conditionalFormatting（issue #34）
+
+```xml
+<sheetOptions>
+  <conditionalFormatting at="DetailRows" minColor="#F8696B" maxColor="#63BE7B"/>
+</sheetOptions>
+```
+
+- 対応済みルール種別（2026-03-25時点）:
+  - **colorScale（2色/3色グラデーション）**
+  - **expression（Excel関数式一致時の書式変更）**
+- 属性:
+  - `at`（必須）: 対象範囲。`A2:C10` のようなセル範囲、または NamedArea 名を指定可能。
+  - `minColor`（任意）: 最小値側カラー（`#RRGGBB`）。省略時は `#F8696B`。
+  - `midColor`（任意）: 中央値側カラー（`#RRGGBB`）。指定時は3色グラデーションとして出力。
+  - `maxColor`（任意）: 最大値側カラー（`#RRGGBB`）。省略時は `#63BE7B`。
+  - `formula`（任意）: Excel関数式条件。指定時は `cfRule(type=expression)` として扱う。
+  - `formulaRef`（任意）: 式条件で参照するセル/名前付き領域。`formula` 未指定時は `NOT(ISBLANK(formulaRef))` を自動生成。
+  - `fillColor`（任意）: `formula` 条件一致時に適用する塗り色（`#RRGGBB`）。省略時は `#FFF2CC`。
+  - `fontName` / `fontSize` / `fontBold` / `fontItalic` / `fontUnderline`（任意）: 式一致時フォント設定。
+  - `numberFormatCode`（任意）: 式一致時の数値書式。
+  - `borderTop` / `borderBottom` / `borderLeft` / `borderRight` / `borderColor`（任意）: 式一致時の罫線設定。
+- 解決ルール:
+  - `at` が NamedArea 名の場合、`WorksheetStateBuilder` が実セル範囲へ変換する。
+  - `formula` 未指定時:
+    - Renderer は `conditionalFormatting/cfRule(type=colorScale)` を生成する。
+    - `midColor` 未指定なら2色、指定ありなら3色で出力する。
+  - `formula` 指定時:
+    - Renderer は `conditionalFormatting/cfRule(type=expression)` を生成する。
+    - `fillColor` とフォント/数値書式/罫線属性から DifferentialFormat（dxf）を作成し、条件一致セルへ適用する。
+  - `formula` 未指定かつ `formulaRef` 指定時:
+    - Renderer は `NOT(ISBLANK(<resolved formulaRef>))` を条件式として expression ルールを生成する。
+  - 優先度（priority）は DSL 記述順で採番する。
+- 非対応（現時点）:
+  - iconSet / dataBar / cellIs など未実装ルール
+  - フォント色（`font.color`）など `cell` スタイルの未実装項目
+
 ---
 
 ## 8. 式言語

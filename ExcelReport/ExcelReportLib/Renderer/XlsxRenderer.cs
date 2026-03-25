@@ -46,7 +46,6 @@ public sealed class XlsxRenderer : IRenderer
             var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
             var styleCatalog = StyleCatalog.Create(worksheets);
             stylesPart.Stylesheet = styleCatalog.Stylesheet;
-            stylesPart.Stylesheet.Save();
 
             var sheets = workbookPart.Workbook.AppendChild(new Sheets());
             uint nextSheetId = 1;
@@ -88,6 +87,7 @@ public sealed class XlsxRenderer : IRenderer
                 BuildAuditWorksheet(effectiveOptions),
                 SheetStateValues.Hidden);
 
+            stylesPart.Stylesheet.Save();
             workbookPart.Workbook.Save();
         }
 
@@ -155,6 +155,11 @@ public sealed class XlsxRenderer : IRenderer
         if (autoFilter is not null)
         {
             worksheet.Append(autoFilter);
+        }
+
+        foreach (var conditionalFormatting in BuildConditionalFormattings(sheetState, styleCatalog))
+        {
+            worksheet.Append(conditionalFormatting);
         }
 
         return worksheet;
@@ -424,6 +429,111 @@ public sealed class XlsxRenderer : IRenderer
         return reference is null ? null : new AutoFilter { Reference = reference };
     }
 
+    private static IReadOnlyList<ConditionalFormatting> BuildConditionalFormattings(
+        WorksheetStateModel sheetState,
+        StyleCatalog styleCatalog)
+    {
+        var result = new List<ConditionalFormatting>();
+        var priority = 1;
+
+        foreach (var rule in sheetState.Options.ConditionalFormattings)
+        {
+            var reference = TryResolveRangeReference(sheetState, rule.Target);
+            if (reference is null)
+            {
+                continue;
+            }
+
+            var conditionalFormatting = new ConditionalFormatting
+            {
+                SequenceOfReferences = new ListValue<StringValue> { InnerText = reference },
+            };
+
+            var conditionalRule = BuildConditionalFormattingRule(rule, styleCatalog, priority++);
+
+            conditionalFormatting.Append(conditionalRule);
+            result.Add(conditionalFormatting);
+        }
+
+        return result;
+    }
+
+    private static HexBinaryValue NormalizeConditionalFormatColor(string color)
+    {
+        var normalized = color.Trim();
+        if (normalized.StartsWith("#", StringComparison.Ordinal))
+        {
+            normalized = normalized[1..];
+        }
+
+        if (normalized.Length == 6)
+        {
+            normalized = $"FF{normalized}";
+        }
+
+        return normalized.ToUpperInvariant();
+    }
+
+    private static ConditionalFormattingRule BuildConditionalFormattingRule(
+        ConditionalFormattingState rule,
+        StyleCatalog styleCatalog,
+        int priority)
+    {
+        var resolvedFormula = ResolveExpressionFormula(rule);
+        if (!string.IsNullOrWhiteSpace(resolvedFormula))
+        {
+            var formula = SanitizeFormula(resolvedFormula);
+            var dxfId = styleCatalog.GetOrCreateDifferentialFormat(rule);
+            var expressionRule = new ConditionalFormattingRule
+            {
+                Type = ConditionalFormatValues.Expression,
+                Priority = priority,
+            };
+            expressionRule.SetAttribute(new OpenXmlAttribute("dxfId", string.Empty, dxfId.ToString(CultureInfo.InvariantCulture)));
+            expressionRule.Append(new Formula(formula));
+            return expressionRule;
+        }
+
+        var colorScaleRule = new ConditionalFormattingRule
+        {
+            Type = ConditionalFormatValues.ColorScale,
+            Priority = priority,
+        };
+
+        var colorScale = new ColorScale();
+        colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Min });
+
+        if (!string.IsNullOrWhiteSpace(rule.MidColor))
+        {
+            colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Percentile, Val = "50" });
+        }
+
+        colorScale.Append(new ConditionalFormatValueObject { Type = ConditionalFormatValueObjectValues.Max });
+        colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MinColor) });
+        if (!string.IsNullOrWhiteSpace(rule.MidColor))
+        {
+            colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MidColor) });
+        }
+        colorScale.Append(new Color { Rgb = NormalizeConditionalFormatColor(rule.MaxColor) });
+        colorScaleRule.Append(colorScale);
+        return colorScaleRule;
+    }
+
+    private static string? ResolveExpressionFormula(ConditionalFormattingState rule)
+    {
+        if (!string.IsNullOrWhiteSpace(rule.Formula))
+        {
+            return rule.Formula;
+        }
+
+        if (!string.IsNullOrWhiteSpace(rule.FormulaRef))
+        {
+            return $"NOT(ISBLANK({rule.FormulaRef}))";
+        }
+
+        return null;
+    }
+
     private static void AddSpecialSheet(
         WorkbookPart workbookPart,
         Sheets sheets,
@@ -549,6 +659,11 @@ public sealed class XlsxRenderer : IRenderer
         if (TryParseRangeReference(target, out var rangeReference))
         {
             return rangeReference;
+        }
+
+        if (TryParseCellReference(target, out var row, out var column))
+        {
+            return ToAbsoluteCellReference((int)row, (int)column);
         }
 
         if (!sheetState.NamedAreas.TryGetValue(target, out var namedArea))
@@ -731,11 +846,17 @@ public sealed class XlsxRenderer : IRenderer
     private sealed class StyleCatalog
     {
         private readonly IReadOnlyDictionary<StyleKey, uint> _styleIndexes;
+        private readonly Dictionary<string, uint> _fillDxfIndexes = new(StringComparer.Ordinal);
+        private readonly DifferentialFormats _differentialFormats;
 
-        private StyleCatalog(IReadOnlyDictionary<StyleKey, uint> styleIndexes, Stylesheet stylesheet)
+        private StyleCatalog(
+            IReadOnlyDictionary<StyleKey, uint> styleIndexes,
+            Stylesheet stylesheet,
+            DifferentialFormats differentialFormats)
         {
             _styleIndexes = styleIndexes;
             Stylesheet = stylesheet;
+            _differentialFormats = differentialFormats;
         }
 
         /// <summary>
@@ -839,16 +960,237 @@ public sealed class XlsxRenderer : IRenderer
             stylesheet.Append(new CellStyleFormats(new CellFormat()) { Count = 1U });
             stylesheet.Append(cellFormats);
             stylesheet.Append(new CellStyles(new CellStyle { Name = "Normal", FormatId = 0U, BuiltinId = 0U }) { Count = 1U });
-            stylesheet.Append(new DifferentialFormats() { Count = 0U });
+            var differentialFormats = new DifferentialFormats() { Count = 0U };
+            stylesheet.Append(differentialFormats);
             stylesheet.Append(new TableStyles { Count = 0U, DefaultTableStyle = "TableStyleMedium2", DefaultPivotStyle = "PivotStyleLight16" });
 
-            return new StyleCatalog(styleIndexes, stylesheet);
+            return new StyleCatalog(styleIndexes, stylesheet, differentialFormats);
         }
 
         public uint GetStyleIndex(CellState cellState)
         {
             var styleKey = StyleKey.FromCell(cellState);
             return styleKey.IsDefault ? 0U : _styleIndexes[styleKey];
+        }
+
+        public uint GetOrCreateDifferentialFormat(ConditionalFormattingState rule)
+        {
+            var key = string.Join(
+                "|",
+                NormalizeConditionalFormatColor(rule.FillColor).Value,
+                rule.FontName ?? string.Empty,
+                rule.FontSize?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+                rule.FontBold?.ToString() ?? string.Empty,
+                rule.FontItalic?.ToString() ?? string.Empty,
+                rule.FontUnderline?.ToString() ?? string.Empty,
+                rule.NumberFormatCode ?? string.Empty,
+                rule.BorderTop ?? string.Empty,
+                rule.BorderBottom ?? string.Empty,
+                rule.BorderLeft ?? string.Empty,
+                rule.BorderRight ?? string.Empty,
+                NormalizeOptionalConditionalFormatColor(rule.BorderColor) ?? string.Empty);
+
+            if (_fillDxfIndexes.TryGetValue(key, out var index))
+            {
+                return index;
+            }
+
+            var differentialFormat = new DifferentialFormat();
+
+            if (HasFont(rule))
+            {
+                differentialFormat.Font = CreateConditionalFont(rule);
+            }
+
+            differentialFormat.Fill = new Fill(
+                new PatternFill(
+                    new ForegroundColor { Rgb = NormalizeConditionalFormatColor(rule.FillColor).Value! },
+                    new BackgroundColor { Indexed = 64U })
+                { PatternType = PatternValues.Solid });
+
+            if (!string.IsNullOrWhiteSpace(rule.NumberFormatCode))
+            {
+                differentialFormat.NumberingFormat = new NumberingFormat
+                {
+                    NumberFormatId = 0U,
+                    FormatCode = rule.NumberFormatCode,
+                };
+            }
+
+            if (HasBorder(rule))
+            {
+                differentialFormat.Border = CreateConditionalBorder(rule);
+            }
+
+            _differentialFormats.Append(differentialFormat);
+            var created = (uint)_differentialFormats.ChildElements.Count - 1;
+            _differentialFormats.Count = (uint)_differentialFormats.ChildElements.Count;
+            _fillDxfIndexes[key] = created;
+            return created;
+        }
+
+        private static bool HasFont(ConditionalFormattingState rule) =>
+            !string.IsNullOrWhiteSpace(rule.FontName) ||
+            rule.FontSize is not null ||
+            rule.FontBold is not null ||
+            rule.FontItalic is not null ||
+            rule.FontUnderline is not null;
+
+        private static Font CreateConditionalFont(ConditionalFormattingState rule)
+        {
+            var font = new Font();
+            if (!string.IsNullOrWhiteSpace(rule.FontName))
+            {
+                font.Append(new FontName { Val = rule.FontName });
+            }
+
+            if (rule.FontSize is not null)
+            {
+                font.Append(new FontSize { Val = rule.FontSize.Value });
+            }
+
+            if (rule.FontBold == true)
+            {
+                font.Append(new Bold());
+            }
+
+            if (rule.FontItalic == true)
+            {
+                font.Append(new Italic());
+            }
+
+            if (rule.FontUnderline == true)
+            {
+                font.Append(new Underline());
+            }
+
+            return font;
+        }
+
+        private static bool HasBorder(ConditionalFormattingState rule) =>
+            !string.IsNullOrWhiteSpace(rule.BorderTop) ||
+            !string.IsNullOrWhiteSpace(rule.BorderBottom) ||
+            !string.IsNullOrWhiteSpace(rule.BorderLeft) ||
+            !string.IsNullOrWhiteSpace(rule.BorderRight);
+
+        private static Border CreateConditionalBorder(ConditionalFormattingState rule) =>
+            new()
+            {
+                LeftBorder = CreateLeftBorder(rule.BorderLeft, rule.BorderColor),
+                RightBorder = CreateRightBorder(rule.BorderRight, rule.BorderColor),
+                TopBorder = CreateTopBorder(rule.BorderTop, rule.BorderColor),
+                BottomBorder = CreateBottomBorder(rule.BorderBottom, rule.BorderColor),
+                DiagonalBorder = new DiagonalBorder(),
+            };
+
+        private static LeftBorder CreateLeftBorder(string? style, string? color)
+        {
+            var border = new LeftBorder();
+            ApplyBorderStyle(border, style, color);
+            return border;
+        }
+
+        private static RightBorder CreateRightBorder(string? style, string? color)
+        {
+            var border = new RightBorder();
+            ApplyBorderStyle(border, style, color);
+            return border;
+        }
+
+        private static TopBorder CreateTopBorder(string? style, string? color)
+        {
+            var border = new TopBorder();
+            ApplyBorderStyle(border, style, color);
+            return border;
+        }
+
+        private static BottomBorder CreateBottomBorder(string? style, string? color)
+        {
+            var border = new BottomBorder();
+            ApplyBorderStyle(border, style, color);
+            return border;
+        }
+
+        private static void ApplyBorderStyle(OpenXmlCompositeElement borderElement, string? style, string? color)
+        {
+            if (string.IsNullOrWhiteSpace(style))
+            {
+                return;
+            }
+
+            var mappedStyle = MapBorderStyle(style);
+            if (mappedStyle is null)
+            {
+                return;
+            }
+
+            switch (borderElement)
+            {
+                case LeftBorder left:
+                    left.Style = mappedStyle;
+                    break;
+                case RightBorder right:
+                    right.Style = mappedStyle;
+                    break;
+                case TopBorder top:
+                    top.Style = mappedStyle;
+                    break;
+                case BottomBorder bottom:
+                    bottom.Style = mappedStyle;
+                    break;
+            }
+
+            var normalizedColor = NormalizeOptionalConditionalFormatColor(color);
+            if (normalizedColor is null)
+            {
+                return;
+            }
+
+            var colorElement = new Color { Rgb = normalizedColor };
+            switch (borderElement)
+            {
+                case LeftBorder left:
+                    left.Color = colorElement;
+                    break;
+                case RightBorder right:
+                    right.Color = colorElement;
+                    break;
+                case TopBorder top:
+                    top.Color = colorElement;
+                    break;
+                case BottomBorder bottom:
+                    bottom.Color = colorElement;
+                    break;
+            }
+        }
+
+        private static BorderStyleValues? MapBorderStyle(string style) =>
+            style.Trim().ToLowerInvariant() switch
+            {
+                "thin" => BorderStyleValues.Thin,
+                "medium" => BorderStyleValues.Medium,
+                "thick" => BorderStyleValues.Thick,
+                "dotted" => BorderStyleValues.Dotted,
+                "dashed" => BorderStyleValues.Dashed,
+                "double" => BorderStyleValues.Double,
+                "hair" => BorderStyleValues.Hair,
+                "dashdot" => BorderStyleValues.DashDot,
+                "dashdotdot" => BorderStyleValues.DashDotDot,
+                "mediumdashed" => BorderStyleValues.MediumDashed,
+                "mediumdashdot" => BorderStyleValues.MediumDashDot,
+                "mediumdashdotdot" => BorderStyleValues.MediumDashDotDot,
+                "slantdashdot" => BorderStyleValues.SlantDashDot,
+                _ => null,
+            };
+
+        private static string? NormalizeOptionalConditionalFormatColor(string? color)
+        {
+            if (string.IsNullOrWhiteSpace(color))
+            {
+                return null;
+            }
+
+            return NormalizeConditionalFormatColor(color).Value;
         }
     }
 
@@ -1080,4 +1422,3 @@ public sealed class XlsxRenderer : IRenderer
             string? Color);
     }
 }
-

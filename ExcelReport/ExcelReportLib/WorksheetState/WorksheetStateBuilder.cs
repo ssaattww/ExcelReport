@@ -94,7 +94,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
         var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas);
-        var options = BuildOptions(layoutSheet.Options, namedAreas);
+        var options = BuildOptions(layoutSheet.Options, namedAreas, formulaPlaceholderAreas);
 
         return new WorksheetState(
             layoutSheet.Name,
@@ -361,7 +361,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static WorksheetOptionsState BuildOptions(
         SheetOptionsAst? options,
-        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext)
     {
         if (options is null)
         {
@@ -380,7 +381,32 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 .ToArray(),
             options.AutoFilter is null
                 ? null
-                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)));
+                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)),
+            options.ConditionalFormattings
+                .Select(rule =>
+                {
+                    var resolvedTarget = ResolveConditionalFormattingTarget(rule.At, namedAreas);
+                    return new ConditionalFormattingState(
+                        resolvedTarget,
+                        rule.MinColor,
+                        rule.MaxColor,
+                        rule.MidColor,
+                        rule.Formula,
+                        ResolveConditionalFormulaRefTarget(rule.FormulaRef, resolvedTarget, namedAreas, formulaPlaceholderContext),
+                        rule.FillColor,
+                        rule.FontName,
+                        rule.FontSize,
+                        rule.FontBold,
+                        rule.FontItalic,
+                        rule.FontUnderline,
+                        rule.NumberFormatCode,
+                        rule.BorderTop,
+                        rule.BorderBottom,
+                        rule.BorderLeft,
+                        rule.BorderRight,
+                        rule.BorderColor);
+                })
+                .ToArray());
     }
 
     private static string ResolveFreezeTarget(
@@ -429,6 +455,161 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         return $"{ToCellReference(area.TopRow, area.LeftColumn)}:{ToCellReference(area.BottomRow, area.RightColumn)}";
+    }
+
+    private static string ResolveConditionalFormattingTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas) =>
+        ResolveAutoFilterTarget(target, namedAreas);
+
+    private static string? ResolveConditionalFormulaRefTarget(
+        string? formulaRef,
+        string conditionalFormattingTarget,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext)
+    {
+        if (string.IsNullOrWhiteSpace(formulaRef))
+        {
+            return null;
+        }
+
+        if (formulaPlaceholderContext.GlobalAreas.TryGetValue(formulaRef, out var area) ||
+            namedAreas.TryGetValue(formulaRef, out area))
+        {
+            return ToCellReference(area.TopRow, area.LeftColumn);
+        }
+
+        if (TryResolveTargetArea(conditionalFormattingTarget, out var targetArea))
+        {
+            var scopedCandidates = formulaPlaceholderContext.LocalAreasByScope
+                .Select(pair => new
+                {
+                    Scope = pair.Key,
+                    Area = pair.Value.TryGetValue(formulaRef, out var localArea) ? localArea : null,
+                })
+                .Where(candidate => candidate.Area is not null && AreasIntersect(candidate.Area, targetArea))
+                .Select(candidate => new { candidate.Scope, Area = candidate.Area! })
+                .ToArray();
+
+            if (scopedCandidates.Length == 1)
+            {
+                return ToCellReference(scopedCandidates[0].Area.TopRow, scopedCandidates[0].Area.LeftColumn);
+            }
+
+            if (scopedCandidates.Length > 1)
+            {
+                var selected = scopedCandidates
+                    .OrderByDescending(candidate => CalculateIntersectionArea(candidate.Area, targetArea))
+                    .ThenByDescending(candidate => candidate.Scope.Count(c => c == '/'))
+                    .ThenBy(candidate => candidate.Scope, StringComparer.Ordinal)
+                    .First();
+                return ToCellReference(selected.Area.TopRow, selected.Area.LeftColumn);
+            }
+        }
+
+        var uniqueLocalArea = formulaPlaceholderContext.LocalAreasByScope
+            .Values
+            .Select(areasByName => areasByName.TryGetValue(formulaRef, out var localArea) ? localArea : null)
+            .Where(localArea => localArea is not null)
+            .Cast<NamedAreaState>()
+            .Distinct()
+            .ToArray();
+        if (uniqueLocalArea.Length == 1)
+        {
+            return ToCellReference(uniqueLocalArea[0].TopRow, uniqueLocalArea[0].LeftColumn);
+        }
+
+        return formulaRef;
+    }
+
+    private static bool TryResolveTargetArea(string target, out NamedAreaState area)
+    {
+        if (TryParseCellReference(target, out var row, out var col))
+        {
+            area = new NamedAreaState("_target", row, col, row, col);
+            return true;
+        }
+
+        if (TryParseRangeReference(target, out var topRow, out var leftCol, out var bottomRow, out var rightCol))
+        {
+            area = new NamedAreaState("_target", topRow, leftCol, bottomRow, rightCol);
+            return true;
+        }
+
+        area = default!;
+        return false;
+    }
+
+    private static bool AreasIntersect(NamedAreaState left, NamedAreaState right) =>
+        left.TopRow <= right.BottomRow &&
+        left.BottomRow >= right.TopRow &&
+        left.LeftColumn <= right.RightColumn &&
+        left.RightColumn >= right.LeftColumn;
+
+    private static int CalculateIntersectionArea(NamedAreaState left, NamedAreaState right)
+    {
+        var top = Math.Max(left.TopRow, right.TopRow);
+        var bottom = Math.Min(left.BottomRow, right.BottomRow);
+        var leftCol = Math.Max(left.LeftColumn, right.LeftColumn);
+        var rightCol = Math.Min(left.RightColumn, right.RightColumn);
+        if (top > bottom || leftCol > rightCol)
+        {
+            return 0;
+        }
+
+        return (bottom - top + 1) * (rightCol - leftCol + 1);
+    }
+
+    private static bool TryParseRangeReference(string reference, out int topRow, out int leftColumn, out int bottomRow, out int rightColumn)
+    {
+        topRow = bottomRow = leftColumn = rightColumn = 0;
+        var parts = reference.Split(':', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2)
+        {
+            return false;
+        }
+
+        if (!TryParseCellReference(parts[0], out var firstRow, out var firstColumn) ||
+            !TryParseCellReference(parts[1], out var lastRow, out var lastColumn))
+        {
+            return false;
+        }
+
+        topRow = Math.Min(firstRow, lastRow);
+        bottomRow = Math.Max(firstRow, lastRow);
+        leftColumn = Math.Min(firstColumn, lastColumn);
+        rightColumn = Math.Max(firstColumn, lastColumn);
+        return true;
+    }
+
+    private static bool TryParseCellReference(string reference, out int row, out int column)
+    {
+        row = 0;
+        column = 0;
+        if (string.IsNullOrWhiteSpace(reference))
+        {
+            return false;
+        }
+
+        var trimmed = reference.Trim();
+        var letters = new string(trimmed.TakeWhile(char.IsLetter).ToArray());
+        var digits = new string(trimmed.SkipWhile(char.IsLetter).ToArray());
+        if (letters.Length == 0 || digits.Length == 0 || !int.TryParse(digits, out row) || row <= 0)
+        {
+            return false;
+        }
+
+        foreach (var letter in letters.ToUpperInvariant())
+        {
+            if (letter < 'A' || letter > 'Z')
+            {
+                return false;
+            }
+
+            column = (column * 26) + (letter - 'A' + 1);
+        }
+
+        return column > 0;
     }
 
     private static string ToCellReference(int row, int column) =>

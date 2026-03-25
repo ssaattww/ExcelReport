@@ -5,6 +5,49 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 PR#41 inline指摘対応: `conditionalFormatting@at="A1"` 単一セル指定をレンダラーで解決可能に修正
+- 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_SingleCellTarget_IsRendered`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 141件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-inline-single-cell-target-fix-2026-03-25.md` を作成
+- 2026-03-25 PR#41最新レビュー追従: 2色colorScaleの子要素順序（cfvo先行）を回帰テストで明示保証
+- 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_TwoColorScale_ChildOrder_IsCfvoThenColor`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 140件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-latest-review-followup-2026-03-25.md` を作成
+- 2026-03-25 環境対応: `dotnet-install.sh` で .NET SDK 8.0.419 を `/workspace/.dotnet` へ導入
+- 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` 実行（Passed 139, Failed 0）
+- 2026-03-25 記録: `reports/test-run-dotnet-sdk-8.0.419-2026-03-25.md` を作成
+- 2026-03-25 PR追従: conditionalFormatting の boolean(1/0)受理と local formulaRef 解決を修正
+- 2026-03-25 テスト追加: `SheetAstTests.Parse_Sheet_ConditionalFormatting_BooleanLiterals_ParsesNumericBooleans` / `WorksheetStateTests.Build_ConditionalFormatting_FormulaRef_LocalScope_ResolvedFromTargetScope`
+- 2026-03-25 記録: `reports/pr-followup-conditional-formatting-local-scope-and-bool-2026-03-25.md` を作成
+- 2026-03-25 運用更新: ユーザー提示の最新版 `AGENTS.md`（Skills節含む）を同期
+- 2026-03-25 記録: `reports/agents-instructions-sync-2026-03-25.md` を作成
+- 2026-03-25 PR#41レビュー対応: colorScale の `cfvo`/`color` 子要素順序を `cfvo... -> color...` に修正
+- 2026-03-25 テスト追加: `RendererTests` に colorScale 子要素順序アサーションを追加
+- 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）
+- 2026-03-25 記録: `reports/pr41-review-cfvo-order-fix-2026-03-25.md` を作成
+- 2026-03-25 レビュー追従: expression+formulaRef 条件付き書式の OpenXML スキーマ妥当性E2Eテストを追加
+- 2026-03-25 テスト追加: `ReportGeneratorTests.Generate_ConditionalFormatting_ExpressionWithFormulaRef_OpenXmlSchemaValid`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）
+- 2026-03-25 記録: `reports/issue34-review-followup-2026-03-25.md` を作成
+- 2026-03-25 issue#34追加対応: expression条件付き書式に `formulaRef` 指定を追加（`formula` 未指定時は `NOT(ISBLANK(ref))` 自動生成）
+- 2026-03-25 E2E追加: `ReportGeneratorTests` に 2カラー/3カラー/expression+formulaRef の3ケースを追加
+- 2026-03-25 検証: `ExcelReportLib.Tests` 136件全通過（Failed 0）
+- 2026-03-25 記録: `reports/issue34-conditional-formatting-formularef-e2e-2026-03-25.md` を作成
+- 2026-03-25 issue#34追加対応: expression条件付き書式で `cell` 相当の書式属性（font/numberFormat/border/fill）を指定可能に拡張
+- 2026-03-25 レンダラー拡張: `conditionalFormatting@formula` から DifferentialFormat(dxf) を生成し `FormatId` に紐付け
+- 2026-03-25 記録: `reports/issue34-conditional-formatting-style-settings-2026-03-25.md` を作成
+- 2026-03-25 issue#34追加対応: `conditionalFormatting` で 3色colorScale（midColor）と expression式一致時の書式変更（formula+fillColor）を実装
+- 2026-03-25 テスト拡張: `SheetAstTests` / `WorksheetStateTests` / `RendererTests` を追加更新し 133件全通過を確認
+- 2026-03-25 設計更新: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` に 3色・expression 対応範囲を反映
+- 2026-03-25 記録: `reports/issue34-conditional-formatting-extensions-2026-03-25.md` を作成
+- 2026-03-25 issue#34追記対応: 条件付き書式の対応範囲（2色colorScaleのみ）を設計書へ明記
+- 2026-03-25 設計更新: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` に `7.5 conditionalFormatting` 節を追加
+- 2026-03-25 設計更新: `Design/BasicDesign_v1.md` のDSL要素一覧へ `conditionalFormatting` を追加
+- 2026-03-25 記録: `reports/issue34-design-doc-update-2026-03-25.md` を作成
+- 2026-03-25 issue#34対応: `sheetOptions/conditionalFormatting`（2色colorScale）を実装し、レンダラー出力まで対応
+- 2026-03-25 テスト追加: `SheetAstTests` / `WorksheetStateTests` / `RendererTests` に条件付き書式ケースを追加
+- 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` 132件全通過（Failed 0）
+- 2026-03-25 記録: `reports/issue34-conditional-formatting-2026-03-25.md` を作成
 - 2026-03-25 PR#40再対応: `LayoutEngine` の scopePath 採番を再修正し、grid兄弟セルが同一スコープを共有するよう反映
 - 2026-03-25 テスト追加: `LayoutEngineTests.Expand_RepeatGridSiblings_ShareSameScopePath` を追加
 - 2026-03-25 記録: `reports/pr40-scopepath-sibling-fix-2026-03-25.md` を更新

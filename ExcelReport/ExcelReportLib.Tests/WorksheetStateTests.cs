@@ -233,6 +233,8 @@ public sealed class WorksheetStateTests
                           <groupCols at="DetailHeader" collapsed="false" />
                         </groups>
                         <autoFilter at="DetailHeader" />
+                        <conditionalFormatting at="DetailRows" minColor="#112233" maxColor="#AABBCC" />
+                        <conditionalFormatting at="DetailHeader" formula="A5&gt;0" formulaRef="DetailHeader" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" />
                         """)),
             ]);
 
@@ -253,6 +255,22 @@ public sealed class WorksheetStateTests
 
         Assert.NotNull(sheet.Options.AutoFilter);
         Assert.Equal("B5:D5", sheet.Options.AutoFilter!.Target);
+
+        Assert.Equal(2, sheet.Options.ConditionalFormattings.Count);
+
+        var colorScaleRule = sheet.Options.ConditionalFormattings[0];
+        Assert.Equal("B6:D8", colorScaleRule.Target);
+        Assert.Equal("#112233", colorScaleRule.MinColor);
+        Assert.Equal("#AABBCC", colorScaleRule.MaxColor);
+
+        var formulaRule = sheet.Options.ConditionalFormattings[1];
+        Assert.Equal("B5:D5", formulaRule.Target);
+        Assert.Equal("A5>0", formulaRule.Formula);
+        Assert.Equal("B5", formulaRule.FormulaRef);
+        Assert.Equal("#FFEEDD", formulaRule.FillColor);
+        Assert.True(formulaRule.FontBold);
+        Assert.Equal("thin", formulaRule.BorderBottom);
+        Assert.Equal("#222222", formulaRule.BorderColor);
     }
 
     /// <summary>
@@ -454,6 +472,37 @@ public sealed class WorksheetStateTests
         var sheet = Assert.Single(builder.Build(plan));
 
         Assert.Equal("=SUM(B2:B2)", sheet.Cells[(5, 4)].Formula);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting formula refs resolve from local scope using the target range.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_LocalScope_ResolvedFromTargetScope()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    options: CreateSheetOptions(
+                        """
+                        <conditionalFormatting at="B5:D5" formulaRef="RowData" />
+                        <conditionalFormatting at="B10:D10" formulaRef="RowData" />
+                        """)),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal(2, sheet.Options.ConditionalFormattings.Count);
+        Assert.Equal("B5", sheet.Options.ConditionalFormattings[0].FormulaRef);
+        Assert.Equal("B10", sheet.Options.ConditionalFormattings[1].FormulaRef);
     }
 
     private static LayoutCell CreateCell(

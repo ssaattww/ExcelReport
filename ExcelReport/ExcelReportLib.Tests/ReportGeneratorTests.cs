@@ -1,5 +1,6 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Validation;
 using ExcelReportLib;
 using ExcelReportLib.DSL;
 using ExcelReportLib.Logger;
@@ -508,6 +509,138 @@ public sealed class ReportGeneratorTests
             || border.RightBorder?.Style?.Value is not null
             || border.TopBorder?.Style?.Value is not null
             || border.BottomBorder?.Style?.Value is not null);
+    }
+
+    /// <summary>
+    /// Verifies that end-to-end generation emits 2-color scale conditional formatting.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TwoColorScale_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <sheetOptions>
+                  <conditionalFormatting at="A2:A4" minColor="#112233" maxColor="#AABBCC" />
+                </sheetOptions>
+                <cell r="2" c="1" value="10" />
+                <cell r="3" c="1" value="20" />
+                <cell r="4" c="1" value="30" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.ColorScale, rule.Type!.Value);
+        var colorScale = Assert.Single(rule.Elements<ColorScale>());
+        Assert.Equal(2, colorScale.Elements<Color>().Count());
+    }
+
+    /// <summary>
+    /// Verifies that end-to-end generation emits 3-color scale conditional formatting.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_ThreeColorScale_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <sheetOptions>
+                  <conditionalFormatting at="A2:A4" minColor="#112233" midColor="#445566" maxColor="#AABBCC" />
+                </sheetOptions>
+                <cell r="2" c="1" value="10" />
+                <cell r="3" c="1" value="20" />
+                <cell r="4" c="1" value="30" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.ColorScale, rule.Type!.Value);
+        var colorScale = Assert.Single(rule.Elements<ColorScale>());
+        Assert.Equal(3, colorScale.Elements<Color>().Count());
+    }
+
+    /// <summary>
+    /// Verifies that end-to-end generation emits expression conditional formatting with formulaRef.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_ExpressionWithFormulaRef_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <sheetOptions>
+                  <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" />
+                </sheetOptions>
+                <cell r="2" c="1" value="1" formulaRef="FlagCell" />
+                <cell r="3" c="1" value="0" />
+                <cell r="4" c="1" value="1" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.Expression, rule.Type!.Value);
+        Assert.Equal("NOT(ISBLANK(A2))", Assert.Single(rule.Elements<Formula>()).Text);
+        Assert.False(string.IsNullOrWhiteSpace(rule.GetAttribute("dxfId", string.Empty).Value));
+    }
+
+    /// <summary>
+    /// Verifies that expression conditional formatting output is OpenXML schema valid.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_ExpressionWithFormulaRef_OpenXmlSchemaValid()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <sheetOptions>
+                  <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
+                </sheetOptions>
+                <cell r="2" c="1" value="1" formulaRef="FlagCell" />
+                <cell r="3" c="1" value="0" />
+                <cell r="4" c="1" value="1" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description}")
+            .ToArray();
+
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
     }
 
     /// <summary>
