@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 環境対応: `dotnet-install.sh` で .NET SDK 8.0.419 を `/workspace/.dotnet` へ導入
+- 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` 実行（Passed 139, Failed 0）
+- 2026-03-25 記録: `reports/test-run-dotnet-sdk-8.0.419-2026-03-25.md` を作成
 - 2026-03-25 PR追従: conditionalFormatting の boolean(1/0)受理と local formulaRef 解決を修正
 - 2026-03-25 テスト追加: `SheetAstTests.Parse_Sheet_ConditionalFormatting_BooleanLiterals_ParsesNumericBooleans` / `WorksheetStateTests.Build_ConditionalFormatting_FormulaRef_LocalScope_ResolvedFromTargetScope`
 - 2026-03-25 記録: `reports/pr-followup-conditional-formatting-local-scope-and-bool-2026-03-25.md` を作成

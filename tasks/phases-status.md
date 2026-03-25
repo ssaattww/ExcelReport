@@ -4,6 +4,9 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: ユーザー依頼に基づき .NET SDK 8.0.419 を `/workspace/.dotnet` へ導入
+- 2026-03-25: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` を再実行し 139件全通過を確認
+- 2026-03-25: 実行記録 `reports/test-run-dotnet-sdk-8.0.419-2026-03-25.md` を追加
 - 2026-03-25: PRフォローアップとして conditionalFormatting の `fontBold/fontItalic/fontUnderline` で XML boolean literal（`1/0`）を受理
 - 2026-03-25: `sheetOptions/conditionalFormatting@formulaRef` の local scope 解決を `at` 対象レンジ交差ベースで補完
 - 2026-03-25: 回帰テスト2件を追加し、調査記録 `reports/pr-followup-conditional-formatting-local-scope-and-bool-2026-03-25.md` を作成
