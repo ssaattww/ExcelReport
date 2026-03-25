@@ -1,9 +1,23 @@
 # Phases Status
 
-Last Updated: 2026-03-24
+Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: .NET SDK 8.0.419 を導入し、`dotnet test` による実行検証を実施
+- 2026-03-25: `RendererTests` の `LayoutCell` ヘルパー引数を現行コンストラクタへ追随修正
+- 2026-03-25: `ExcelReportLib.Tests` 129件全通過を確認
+- 2026-03-25: 実行記録 `reports/pr39-dotnet-sdk-test-run-2026-03-25.md` を追加
+- 2026-03-25: PR #39 指摘対応として `formulaRefScope` を XSD列挙（`local|global`）へ制約し typo 混入を防止
+- 2026-03-25: `CellAst` に不正 `formulaRefScope` の Warning 記録 + `global` 正規化を追加
+- 2026-03-25: `LayoutNodeTests` に不正 `formulaRefScope` の回帰テストを追加
+- 2026-03-25: 調査記録 `reports/pr39-inline-comments-fix-2026-03-25.md` を追加
+- 2026-03-24: PR #38 CI失敗（`WorksheetStateBuilder` の `LastIndexOf` 呼び出し不整合）を修正し、コンパイルエラーを解消
+- 2026-03-24: 調査記録 `reports/pr38-ci-fix-worksheetstate-lastindexof-2026-03-24.md` を追加
+- 2026-03-24: issue#35対応として `cell@formulaRefScope`（local/global）を追加し、formulaRef の参照範囲を指定可能に拡張
+- 2026-03-24: `LayoutEngine` でセルごとに `scopePath` を保持し、`WorksheetStateBuilder` で最寄りスコープ優先の placeholder 解決を実装
+- 2026-03-24: 検証として `WorksheetStateTests` に local scope + global fallback の回帰テストを追加
+- 2026-03-24: 調査記録 `reports/issue35-formula-ref-scope-2026-03-24.md` を追加
 - 2026-03-24: `cell` の `value` を属性と子要素(`<value>`)の両方で指定可能に拡張
 - 2026-03-24: `cell` の `value` 競合時（属性+子要素）に Warning を記録し、属性値を優先する互換ルールを追加
 - 2026-03-24: `DslDefinition_v1.xsd` の `CellType` に `<value>` 要素を追加し、schema有効時の記法を拡張
@@ -70,6 +84,3 @@ Last Updated: 2026-03-24
 - Not Started: 未着手
 - In Progress: 実施中
 - Completed: 完了
-
-
-
