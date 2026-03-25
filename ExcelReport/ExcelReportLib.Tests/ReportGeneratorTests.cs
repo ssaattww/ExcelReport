@@ -1,5 +1,6 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Validation;
 using ExcelReportLib;
 using ExcelReportLib.DSL;
 using ExcelReportLib.Logger;
@@ -607,6 +608,39 @@ public sealed class ReportGeneratorTests
         Assert.Equal(ConditionalFormatValues.Expression, rule.Type!.Value);
         Assert.Equal("NOT(ISBLANK(A2))", Assert.Single(rule.Elements<Formula>()).Text);
         Assert.False(string.IsNullOrWhiteSpace(rule.GetAttribute("dxfId", string.Empty).Value));
+    }
+
+    /// <summary>
+    /// Verifies that expression conditional formatting output is OpenXML schema valid.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_ExpressionWithFormulaRef_OpenXmlSchemaValid()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v1">
+              <sheet name="Summary">
+                <sheetOptions>
+                  <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
+                </sheetOptions>
+                <cell r="2" c="1" value="1" formulaRef="FlagCell" />
+                <cell r="3" c="1" value="0" />
+                <cell r="4" c="1" value="1" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description}")
+            .ToArray();
+
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
     }
 
     /// <summary>

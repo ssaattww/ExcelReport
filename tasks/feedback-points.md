@@ -58,6 +58,7 @@ Last Updated: 2026-03-25
 | FP64 | issue#34追加要望: 3色colorScale と formula一致時書式変更（expression）を実装し、設計書/テストを同期する | 対応済み | 2026-03-25 |
 | FP65 | issue#34追加要望: formula一致時に cell対応済み書式（font/numberFormat/border/fill）を指定できるよう拡張する | 対応済み | 2026-03-25 |
 | FP66 | issue#34追加要望: expression条件付き書式で formulaRef 指定を可能にし、2色/3色/expression のE2Eを追加する | 対応済み | 2026-03-25 |
+| FP67 | issue#34レビュー結果: expression+formulaRef のOpenXMLスキーマ妥当性をE2Eテストで担保する | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

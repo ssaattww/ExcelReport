@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-25 レビュー追従: expression+formulaRef 条件付き書式の OpenXML スキーマ妥当性E2Eテストを追加
+- 2026-03-25 テスト追加: `ReportGeneratorTests.Generate_ConditionalFormatting_ExpressionWithFormulaRef_OpenXmlSchemaValid`
+- 2026-03-25 検証: `ExcelReportLib.Tests` 137件全通過（Failed 0）
+- 2026-03-25 記録: `reports/issue34-review-followup-2026-03-25.md` を作成
 - 2026-03-25 issue#34追加対応: expression条件付き書式に `formulaRef` 指定を追加（`formula` 未指定時は `NOT(ISBLANK(ref))` 自動生成）
 - 2026-03-25 E2E追加: `ReportGeneratorTests` に 2カラー/3カラー/expression+formulaRef の3ケースを追加
 - 2026-03-25 検証: `ExcelReportLib.Tests` 136件全通過（Failed 0）

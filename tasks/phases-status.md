@@ -4,6 +4,10 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: レビュー結果対応として expression+formulaRef 条件付き書式の OpenXML 妥当性E2Eテストを追加
+- 2026-03-25: `ReportGeneratorTests` に schema validation ケースを追加
+- 2026-03-25: `ExcelReportLib.Tests` 137件全通過を確認
+- 2026-03-25: 調査記録 `reports/issue34-review-followup-2026-03-25.md` を追加
 - 2026-03-25: issue#34追加要望対応として expression条件付き書式の `formulaRef` 指定をサポート
 - 2026-03-25: `ReportGeneratorTests` に conditional formatting E2E（2色/3色/expression+formulaRef）を追加
 - 2026-03-25: `ExcelReportLib.Tests` 136件全通過を確認
