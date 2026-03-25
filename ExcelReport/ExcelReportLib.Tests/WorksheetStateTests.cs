@@ -233,6 +233,8 @@ public sealed class WorksheetStateTests
                           <groupCols at="DetailHeader" collapsed="false" />
                         </groups>
                         <autoFilter at="DetailHeader" />
+                        <conditionalFormatting at="DetailRows" minColor="#112233" maxColor="#AABBCC" />
+                        <conditionalFormatting at="DetailHeader" formula="A5&gt;0" formulaRef="DetailHeader" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" />
                         """)),
             ]);
 
@@ -253,6 +255,22 @@ public sealed class WorksheetStateTests
 
         Assert.NotNull(sheet.Options.AutoFilter);
         Assert.Equal("B5:D5", sheet.Options.AutoFilter!.Target);
+
+        Assert.Equal(2, sheet.Options.ConditionalFormattings.Count);
+
+        var colorScaleRule = sheet.Options.ConditionalFormattings[0];
+        Assert.Equal("B6:D8", colorScaleRule.Target);
+        Assert.Equal("#112233", colorScaleRule.MinColor);
+        Assert.Equal("#AABBCC", colorScaleRule.MaxColor);
+
+        var formulaRule = sheet.Options.ConditionalFormattings[1];
+        Assert.Equal("B5:D5", formulaRule.Target);
+        Assert.Equal("A5>0", formulaRule.Formula);
+        Assert.Equal("B5", formulaRule.FormulaRef);
+        Assert.Equal("#FFEEDD", formulaRule.FillColor);
+        Assert.True(formulaRule.FontBold);
+        Assert.Equal("thin", formulaRule.BorderBottom);
+        Assert.Equal("#222222", formulaRule.BorderColor);
     }
 
     /// <summary>

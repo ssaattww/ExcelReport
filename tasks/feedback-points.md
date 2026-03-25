@@ -53,6 +53,11 @@ Last Updated: 2026-03-25
 | FP59 | dotnet SDK環境でも実テストを回し、口頭報告ではなく実行結果で示す | 対応中 | 2026-03-25 |
 | FP60 | PR #40 指摘: grid兄弟セル間で local formulaRef を共有できるよう、scopePath を sibling分断しない設計にする | 対応済み | 2026-03-25 |
 | FP61 | #35 修正は unitだけでなく ReportGenerator 経由のE2Eテストを追加して再発防止を確認する | 対応済み | 2026-03-25 |
+| FP62 | issue#34: 条件付き書式（conditionalFormatting）をDSL/状態/Rendererまで一気通貫で実装し、実テスト通過で示す | 対応済み | 2026-03-25 |
+| FP63 | issue#34: 設計書に「対応済み条件付き書式の範囲（当時:2色colorScaleのみ）」を明記し、非対応範囲も併記する | 対応済み | 2026-03-25 |
+| FP64 | issue#34追加要望: 3色colorScale と formula一致時書式変更（expression）を実装し、設計書/テストを同期する | 対応済み | 2026-03-25 |
+| FP65 | issue#34追加要望: formula一致時に cell対応済み書式（font/numberFormat/border/fill）を指定できるよう拡張する | 対応済み | 2026-03-25 |
+| FP66 | issue#34追加要望: expression条件付き書式で formulaRef 指定を可能にし、2色/3色/expression のE2Eを追加する | 対応済み | 2026-03-25 |
 ---
 
 ## 対応履歴

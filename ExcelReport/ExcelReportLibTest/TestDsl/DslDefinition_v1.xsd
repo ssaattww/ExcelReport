@@ -301,6 +301,7 @@
       <xs:element name="freeze"     type="FreezeType"     minOccurs="0" maxOccurs="1"/>
       <xs:element name="groups"     type="GroupsType"     minOccurs="0" maxOccurs="1"/>
       <xs:element name="autoFilter" type="AutoFilterType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="conditionalFormatting" type="ConditionalFormattingType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -330,6 +331,28 @@
   <!-- autoFilter -->
   <xs:complexType name="AutoFilterType">
     <xs:attribute name="at" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- conditionalFormatting -->
+  <xs:complexType name="ConditionalFormattingType">
+    <xs:attribute name="at" type="xs:string" use="required"/>
+    <xs:attribute name="minColor" type="xs:string" use="optional"/>
+    <xs:attribute name="midColor" type="xs:string" use="optional"/>
+    <xs:attribute name="maxColor" type="xs:string" use="optional"/>
+    <xs:attribute name="formula" type="xs:string" use="optional"/>
+    <xs:attribute name="formulaRef" type="xs:string" use="optional"/>
+    <xs:attribute name="fillColor" type="xs:string" use="optional"/>
+    <xs:attribute name="fontName" type="xs:string" use="optional"/>
+    <xs:attribute name="fontSize" type="xs:double" use="optional"/>
+    <xs:attribute name="fontBold" type="xs:boolean" use="optional"/>
+    <xs:attribute name="fontItalic" type="xs:boolean" use="optional"/>
+    <xs:attribute name="fontUnderline" type="xs:boolean" use="optional"/>
+    <xs:attribute name="numberFormatCode" type="xs:string" use="optional"/>
+    <xs:attribute name="borderTop" type="xs:string" use="optional"/>
+    <xs:attribute name="borderBottom" type="xs:string" use="optional"/>
+    <xs:attribute name="borderLeft" type="xs:string" use="optional"/>
+    <xs:attribute name="borderRight" type="xs:string" use="optional"/>
+    <xs:attribute name="borderColor" type="xs:string" use="optional"/>
   </xs:complexType>
 
 </xs:schema>

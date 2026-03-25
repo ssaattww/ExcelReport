@@ -94,7 +94,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
         var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas);
-        var options = BuildOptions(layoutSheet.Options, namedAreas);
+        var options = BuildOptions(layoutSheet.Options, namedAreas, formulaPlaceholderAreas);
 
         return new WorksheetState(
             layoutSheet.Name,
@@ -361,7 +361,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static WorksheetOptionsState BuildOptions(
         SheetOptionsAst? options,
-        IReadOnlyDictionary<string, NamedAreaState> namedAreas)
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext)
     {
         if (options is null)
         {
@@ -380,7 +381,28 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 .ToArray(),
             options.AutoFilter is null
                 ? null
-                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)));
+                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)),
+            options.ConditionalFormattings
+                .Select(rule => new ConditionalFormattingState(
+                    ResolveConditionalFormattingTarget(rule.At, namedAreas),
+                    rule.MinColor,
+                    rule.MaxColor,
+                    rule.MidColor,
+                    rule.Formula,
+                    ResolveConditionalFormulaRefTarget(rule.FormulaRef, namedAreas, formulaPlaceholderContext),
+                    rule.FillColor,
+                    rule.FontName,
+                    rule.FontSize,
+                    rule.FontBold,
+                    rule.FontItalic,
+                    rule.FontUnderline,
+                    rule.NumberFormatCode,
+                    rule.BorderTop,
+                    rule.BorderBottom,
+                    rule.BorderLeft,
+                    rule.BorderRight,
+                    rule.BorderColor))
+                .ToArray());
     }
 
     private static string ResolveFreezeTarget(
@@ -429,6 +451,30 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         return $"{ToCellReference(area.TopRow, area.LeftColumn)}:{ToCellReference(area.BottomRow, area.RightColumn)}";
+    }
+
+    private static string ResolveConditionalFormattingTarget(
+        string target,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas) =>
+        ResolveAutoFilterTarget(target, namedAreas);
+
+    private static string? ResolveConditionalFormulaRefTarget(
+        string? formulaRef,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext)
+    {
+        if (string.IsNullOrWhiteSpace(formulaRef))
+        {
+            return null;
+        }
+
+        if (!formulaPlaceholderContext.GlobalAreas.TryGetValue(formulaRef, out var area) &&
+            !namedAreas.TryGetValue(formulaRef, out area))
+        {
+            return formulaRef;
+        }
+
+        return ToCellReference(area.TopRow, area.LeftColumn);
     }
 
     private static string ToCellReference(int row, int column) =>

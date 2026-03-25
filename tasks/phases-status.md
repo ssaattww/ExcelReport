@@ -4,6 +4,25 @@ Last Updated: 2026-03-25
 
 ## Overall Progress
 
+- 2026-03-25: issue#34追加要望対応として expression条件付き書式の `formulaRef` 指定をサポート
+- 2026-03-25: `ReportGeneratorTests` に conditional formatting E2E（2色/3色/expression+formulaRef）を追加
+- 2026-03-25: `ExcelReportLib.Tests` 136件全通過を確認
+- 2026-03-25: 調査記録 `reports/issue34-conditional-formatting-formularef-e2e-2026-03-25.md` を追加
+- 2026-03-25: issue#34追加要望対応として、expression条件一致時に cell相当書式（font/numberFormat/border/fill）を適用可能に拡張
+- 2026-03-25: `conditionalFormatting` のXSD/AST/State/Rendererを拡張し、dxf生成を属性駆動で実装
+- 2026-03-25: 調査記録 `reports/issue34-conditional-formatting-style-settings-2026-03-25.md` を追加
+- 2026-03-25: issue#34 追加要望対応として 3色colorScale（midColor）と expression条件式（formula）を実装
+- 2026-03-25: expression条件一致時の塗り変更（fillColor -> dxf/FormatId）を Renderer へ追加
+- 2026-03-25: `ExcelReportLib.Tests` 133件全通過を確認
+- 2026-03-25: 調査記録 `reports/issue34-conditional-formatting-extensions-2026-03-25.md` を追加
+- 2026-03-25: issue#34のレビュー指摘に対応し、設計書へ条件付き書式の対応範囲（2色colorScale限定）を追記
+- 2026-03-25: `Design/DslDefinition/DslDefinition_DetailDesign_v1.md` に `conditionalFormatting` 仕様節を追加
+- 2026-03-25: `Design/BasicDesign_v1.md` のDSL要素一覧を `conditionalFormatting` 追加内容へ同期
+- 2026-03-25: 調査記録 `reports/issue34-design-doc-update-2026-03-25.md` を追加
+- 2026-03-25: issue#34対応として `sheetOptions/conditionalFormatting` を追加し、OpenXML colorScale 形式で出力可能に拡張
+- 2026-03-25: `SheetAstTests` / `WorksheetStateTests` / `RendererTests` へ条件付き書式テストを追加
+- 2026-03-25: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` 132件全通過を確認
+- 2026-03-25: 調査記録 `reports/issue34-conditional-formatting-2026-03-25.md` を追加
 - 2026-03-25: PR #40 再対応として、`LayoutEngine` の scopePath 連結ロジック（sheet/gridのchildIndex付与）を再修正
 - 2026-03-25: 回帰テスト `Expand_RepeatGridSiblings_ShareSameScopePath` を追加
 - 2026-03-25: .NET SDK 8.0.419 を導入し、`dotnet test` による実行検証を実施

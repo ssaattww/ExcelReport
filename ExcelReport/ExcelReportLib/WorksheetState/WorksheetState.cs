@@ -177,7 +177,8 @@ public sealed class WorksheetOptionsState
         freezePanes: null,
         rowGroups: [],
         columnGroups: [],
-        autoFilter: null);
+        autoFilter: null,
+        conditionalFormattings: []);
 
     /// <summary>
     /// Initializes a new instance of the worksheet options state type.
@@ -186,16 +187,19 @@ public sealed class WorksheetOptionsState
     /// <param name="rowGroups">The row groups.</param>
     /// <param name="columnGroups">The column groups.</param>
     /// <param name="autoFilter">The auto filter.</param>
+    /// <param name="conditionalFormattings">The conditional formatting definitions.</param>
     public WorksheetOptionsState(
         FreezePaneState? freezePanes,
         IReadOnlyList<WorksheetGroupState> rowGroups,
         IReadOnlyList<WorksheetGroupState> columnGroups,
-        AutoFilterState? autoFilter)
+        AutoFilterState? autoFilter,
+        IReadOnlyList<ConditionalFormattingState> conditionalFormattings)
     {
         FreezePanes = freezePanes;
         RowGroups = (rowGroups ?? throw new ArgumentNullException(nameof(rowGroups))).ToArray();
         ColumnGroups = (columnGroups ?? throw new ArgumentNullException(nameof(columnGroups))).ToArray();
         AutoFilter = autoFilter;
+        ConditionalFormattings = (conditionalFormattings ?? throw new ArgumentNullException(nameof(conditionalFormattings))).ToArray();
     }
 
     /// <summary>
@@ -217,6 +221,11 @@ public sealed class WorksheetOptionsState
     /// Gets the auto filter.
     /// </summary>
     public AutoFilterState? AutoFilter { get; }
+
+    /// <summary>
+    /// Gets the conditional formatting definitions.
+    /// </summary>
+    public IReadOnlyList<ConditionalFormattingState> ConditionalFormattings { get; }
 }
 
 /// <summary>
@@ -257,6 +266,163 @@ public sealed class AutoFilterState
     /// Gets the target.
     /// </summary>
     public string Target { get; }
+}
+
+/// <summary>
+/// Represents conditional formatting state.
+/// </summary>
+public sealed class ConditionalFormattingState
+{
+    /// <summary>
+    /// Initializes a new instance of the conditional formatting state type.
+    /// </summary>
+    /// <param name="target">The target range.</param>
+    /// <param name="minColor">The minimum scale color.</param>
+    /// <param name="maxColor">The maximum scale color.</param>
+    /// <param name="midColor">The middle scale color for 3-color scale.</param>
+    /// <param name="formula">The formula rule expression.</param>
+    /// <param name="formulaRef">The formula reference target.</param>
+    /// <param name="fillColor">The fill color used when formula condition matches.</param>
+    /// <param name="fontName">The font name.</param>
+    /// <param name="fontSize">The font size.</param>
+    /// <param name="fontBold">The bold flag.</param>
+    /// <param name="fontItalic">The italic flag.</param>
+    /// <param name="fontUnderline">The underline flag.</param>
+    /// <param name="numberFormatCode">The number format code.</param>
+    /// <param name="borderTop">The top border style.</param>
+    /// <param name="borderBottom">The bottom border style.</param>
+    /// <param name="borderLeft">The left border style.</param>
+    /// <param name="borderRight">The right border style.</param>
+    /// <param name="borderColor">The border color.</param>
+    public ConditionalFormattingState(
+        string target,
+        string minColor,
+        string maxColor,
+        string? midColor,
+        string? formula,
+        string? formulaRef,
+        string fillColor,
+        string? fontName,
+        double? fontSize,
+        bool? fontBold,
+        bool? fontItalic,
+        bool? fontUnderline,
+        string? numberFormatCode,
+        string? borderTop,
+        string? borderBottom,
+        string? borderLeft,
+        string? borderRight,
+        string? borderColor)
+    {
+        Target = target ?? throw new ArgumentNullException(nameof(target));
+        MinColor = minColor ?? throw new ArgumentNullException(nameof(minColor));
+        MaxColor = maxColor ?? throw new ArgumentNullException(nameof(maxColor));
+        MidColor = midColor;
+        Formula = formula;
+        FormulaRef = formulaRef;
+        FillColor = fillColor ?? throw new ArgumentNullException(nameof(fillColor));
+        FontName = fontName;
+        FontSize = fontSize;
+        FontBold = fontBold;
+        FontItalic = fontItalic;
+        FontUnderline = fontUnderline;
+        NumberFormatCode = numberFormatCode;
+        BorderTop = borderTop;
+        BorderBottom = borderBottom;
+        BorderLeft = borderLeft;
+        BorderRight = borderRight;
+        BorderColor = borderColor;
+    }
+
+    /// <summary>
+    /// Gets the target range.
+    /// </summary>
+    public string Target { get; }
+
+    /// <summary>
+    /// Gets the minimum scale color.
+    /// </summary>
+    public string MinColor { get; }
+
+    /// <summary>
+    /// Gets the maximum scale color.
+    /// </summary>
+    public string MaxColor { get; }
+
+    /// <summary>
+    /// Gets the middle scale color for 3-color scale.
+    /// </summary>
+    public string? MidColor { get; }
+
+    /// <summary>
+    /// Gets the formula condition.
+    /// </summary>
+    public string? Formula { get; }
+
+    /// <summary>
+    /// Gets the formula reference target.
+    /// </summary>
+    public string? FormulaRef { get; }
+
+    /// <summary>
+    /// Gets the fill color for formula-based formatting.
+    /// </summary>
+    public string FillColor { get; }
+
+    /// <summary>
+    /// Gets the font name.
+    /// </summary>
+    public string? FontName { get; }
+
+    /// <summary>
+    /// Gets the font size.
+    /// </summary>
+    public double? FontSize { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether bold font.
+    /// </summary>
+    public bool? FontBold { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether italic font.
+    /// </summary>
+    public bool? FontItalic { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether underline font.
+    /// </summary>
+    public bool? FontUnderline { get; }
+
+    /// <summary>
+    /// Gets the number format code.
+    /// </summary>
+    public string? NumberFormatCode { get; }
+
+    /// <summary>
+    /// Gets the top border style.
+    /// </summary>
+    public string? BorderTop { get; }
+
+    /// <summary>
+    /// Gets the bottom border style.
+    /// </summary>
+    public string? BorderBottom { get; }
+
+    /// <summary>
+    /// Gets the left border style.
+    /// </summary>
+    public string? BorderLeft { get; }
+
+    /// <summary>
+    /// Gets the right border style.
+    /// </summary>
+    public string? BorderRight { get; }
+
+    /// <summary>
+    /// Gets the border color.
+    /// </summary>
+    public string? BorderColor { get; }
 }
 
 /// <summary>

@@ -312,7 +312,8 @@ public sealed class RendererTests
                 new FreezePaneState("B2"),
                 rowGroups: [],
                 columnGroups: [],
-                autoFilter: null));
+                autoFilter: null,
+                conditionalFormattings: []));
 
         var renderer = CreateRenderer();
 
@@ -357,9 +358,12 @@ public sealed class RendererTests
                           <groupRows at="DetailRows" collapsed="true" />
                         </groups>
                         <autoFilter at="DetailHeader" />
+                        <conditionalFormatting at="DetailRows" minColor="#112233" midColor="#445566" maxColor="#AABBCC" />
+                        <conditionalFormatting at="DetailHeader" formulaRef="DetailHeader" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
                         """)),
             ]);
         var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
+        Assert.Equal("A5", worksheet.Options.ConditionalFormattings[1].FormulaRef);
         var renderer = CreateRenderer();
 
         var result = renderer.Render([worksheet], CreateOptions());
@@ -378,6 +382,31 @@ public sealed class RendererTests
         var autoFilter = worksheetPart.Worksheet.GetFirstChild<AutoFilter>();
         Assert.NotNull(autoFilter);
         Assert.Equal("$A$5:$C$5", autoFilter!.Reference!.Value);
+
+        var conditionalFormattings = worksheetPart.Worksheet.Elements<ConditionalFormatting>().ToArray();
+        Assert.Equal(2, conditionalFormattings.Length);
+
+        var colorScaleFormatting = conditionalFormattings[0];
+        Assert.Equal("$A$6:$C$8", colorScaleFormatting.SequenceOfReferences!.InnerText);
+        var colorScaleRule = Assert.Single(colorScaleFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.ColorScale, colorScaleRule.Type!.Value);
+        var colorScale = Assert.Single(colorScaleRule.Elements<ColorScale>());
+        Assert.Equal(3, colorScale.Elements<ConditionalFormatValueObject>().Count());
+        Assert.Equal(3, colorScale.Elements<Color>().Count());
+
+        var formulaFormatting = conditionalFormattings[1];
+        Assert.Equal("$A$5:$C$5", formulaFormatting.SequenceOfReferences!.InnerText);
+        var formulaRule = Assert.Single(formulaFormatting.Elements<ConditionalFormattingRule>());
+        Assert.Equal(ConditionalFormatValues.Expression, formulaRule.Type!.Value);
+        Assert.Equal("NOT(ISBLANK(A5))", Assert.Single(formulaRule.Elements<Formula>()).Text);
+        var dxfId = formulaRule.GetAttribute("dxfId", string.Empty).Value;
+        Assert.False(string.IsNullOrWhiteSpace(dxfId));
+        var differentialFormats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet.DifferentialFormats!;
+        var dxf = Assert.Single(differentialFormats.Elements<DifferentialFormat>());
+        Assert.NotNull(dxf.Fill);
+        Assert.NotNull(dxf.Font);
+        Assert.NotNull(dxf.NumberingFormat);
+        Assert.NotNull(dxf.Border);
 
         var rows = worksheetPart.Worksheet.Descendants<Row>()
             .Where(row => row.RowIndex is not null)
@@ -422,7 +451,8 @@ public sealed class RendererTests
                     new WorksheetGroupState("B:E", collapsed: true),
                     new WorksheetGroupState("C:D", collapsed: false),
                 ],
-                autoFilter: null));
+                autoFilter: null,
+                conditionalFormattings: []));
 
         var renderer = CreateRenderer();
         var result = renderer.Render([sheet], CreateOptions());
