@@ -7,6 +7,9 @@ Last Updated: 2026-03-25
 - 2026-03-25: PR #40 再対応として、`LayoutEngine` の scopePath 連結ロジック（sheet/gridのchildIndex付与）を再修正
 - 2026-03-25: 回帰テスト `Expand_RepeatGridSiblings_ShareSameScopePath` を追加
 - 2026-03-25: .NET SDK 8.0.419 を導入し、`dotnet test` による実行検証を実施
+- 2026-03-25: #35 の再発防止として `ReportGeneratorTests` に repeat + `formulaRefScope="local"` のE2Eテストを追加
+- 2026-03-25: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` で追加E2E含む全件通過を確認
+- 2026-03-25: 調査記録 `reports/issue35-e2e-repeat-local-scope-2026-03-25.md` を追加
 - 2026-03-25: `RendererTests` の `LayoutCell` ヘルパー引数を現行コンストラクタへ追随修正
 - 2026-03-25: `ExcelReportLib.Tests` 129件全通過を確認
 - 2026-03-25: 実行記録 `reports/pr39-dotnet-sdk-test-run-2026-03-25.md` を追加

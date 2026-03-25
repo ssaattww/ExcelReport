@@ -95,6 +95,10 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Additional Work (2026-03-19)
 
+- 2026-03-25 #35 E2E追加: `ReportGeneratorTests` に repeat + `formulaRefScope="local"` の実xlsx生成テストを追加
+- 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` で追加E2E含む全件通過
+- 2026-03-25 記録: `reports/issue35-e2e-repeat-local-scope-2026-03-25.md` を作成
+
 - 2026-03-24 CI追加: `pull_request -> master` トリガーで `ExcelReportLib.Tests` を実行するworkflowを新規追加
 - 2026-03-24 記録: `reports/pr-xunit-workflow-2026-03-24.md` を作成
 
