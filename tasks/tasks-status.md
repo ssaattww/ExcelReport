@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-26 CI失敗修正: `LayoutEngineTests.Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins` の import fixture を `<workbook>` から `<components>` へ修正し、`componentImport` ルート厳格化と整合
+- 2026-03-26 再検証: `dotnet test --no-restore` 全件実行で `Passed 179, Failed 0` を確認
 - 2026-03-26 PR#47追加レビュー対応(3-6): `FindNamedArea` の global/unique-descendant 衝突時に global優先+Warning化、sheet-scope `conditionalFormatting@formulaRef` は fallback経路のみ local非リーク化
 - 2026-03-26 PR#47追加レビュー対応(3-6): `styleImport`/`componentImport` にルート要素名（`styles`/`components`）のFatal検証を追加
 - 2026-03-26 テスト追加・更新: `WorksheetStateTests`/`ReportGeneratorTests`/`ValidateDslTests`/`ComponentImportTests`/`StyleImportTests` を更新し 76件通過

@@ -434,11 +434,11 @@ public sealed class LayoutEngineTests
         File.WriteAllText(
             importPath,
             """
-            <workbook xmlns="urn:excelreport:v2">
+            <components xmlns="urn:excelreport:v2">
               <component name="SharedComp">
                 <cell r="1" c="1" value="Imported" />
               </component>
-            </workbook>
+            </components>
             """);
 
         try
