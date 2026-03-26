@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<components xmlns="urn:excelreport:v1">
+<components xmlns="urn:excelreport:v2">
 
   <!-- このコンポーネント集で使用するスタイル定義を外部ファイルから読み込む -->
   <styles>
-    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v2.xml"/>
   </styles>
 
   <!-- タイトル -->
@@ -73,3 +73,4 @@
   </component>
 
 </components>
+

@@ -16,7 +16,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="Hello" />
               </sheet>
@@ -42,7 +42,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <grid r="2" c="3">
                   <cell r="1" c="1" value="A" />
@@ -88,7 +88,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <cell value="@(it.Name)" />
@@ -118,10 +118,10 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
-    /// Verifies that repeat grid siblings keep same scope path.
+    /// Verifies that repeat grid direct siblings share local scope paths.
     /// </summary>
     [Fact]
-    public void Expand_RepeatGridSiblings_ShareSameScopePath()
+    public void Expand_RepeatGridSiblings_ShareLocalScopePath()
     {
         var root = new RepeatRoot
         {
@@ -133,7 +133,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <grid>
@@ -155,6 +155,47 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that top-level siblings isolate local scope paths.
+    /// </summary>
+    [Fact]
+    public void Expand_TopLevelSiblings_IsolateLocalScopePath()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <grid r="1" c="1">
+                  <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                  <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+                </grid>
+                <grid r="10" c="1">
+                  <cell c="2" value="20" formulaRef="RowData" formulaRefScope="local" />
+                  <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+                </grid>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var rowDataCells = sheet.Cells
+            .Where(cell => string.Equals(cell.FormulaRef, "RowData", StringComparison.Ordinal))
+            .OrderBy(cell => cell.Row)
+            .ToArray();
+        var formulaCells = sheet.Cells
+            .Where(cell => string.Equals(cell.Formula, "=SUM(#{RowData:RowDataEnd})", StringComparison.Ordinal))
+            .OrderBy(cell => cell.Row)
+            .ToArray();
+
+        Assert.Equal(2, rowDataCells.Length);
+        Assert.Equal(2, formulaCells.Length);
+        Assert.Equal(rowDataCells[0].ScopePath, formulaCells[0].ScopePath);
+        Assert.Equal(rowDataCells[1].ScopePath, formulaCells[1].ScopePath);
+        Assert.NotEqual(rowDataCells[0].ScopePath, rowDataCells[1].ScopePath);
+        Assert.NotEqual(formulaCells[0].ScopePath, formulaCells[1].ScopePath);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that expand use resolves component.
     /// </summary>
     [Fact]
@@ -167,7 +208,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <component name="PersonRow">
                 <grid>
                   <cell r="1" c="1" value="@(data.Name)" />
@@ -189,10 +230,50 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
-    /// Verifies that expand use instance and repeat name generates named areas.
+    /// Verifies that conditional formatting defined on component is expanded per use scope.
     /// </summary>
     [Fact]
-    public void Expand_UseInstanceAndRepeatName_GeneratesNamedAreas()
+    public void Expand_ComponentConditionalFormatting_ExpandsPerUseScope()
+    {
+        var root = new RepeatRoot
+        {
+            Items =
+            [
+                new RepeatItem { Name = "A" },
+                new RepeatItem { Name = "B" },
+            ],
+        };
+
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="DetailRow">
+                <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                <grid>
+                  <cell c="2" value="@(data.Name)" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <use component="DetailRow" with="@(it)" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """,
+            root);
+
+        var sheet = Assert.Single(plan.Sheets);
+        Assert.Equal(2, sheet.ConditionalFormattings.Count);
+        Assert.Equal("/sheet/node-0/repeat-0/use", sheet.ConditionalFormattings[0].ScopePath);
+        Assert.Equal("/sheet/node-0/repeat-1/use", sheet.ConditionalFormattings[1].ScopePath);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
+    /// Verifies that expand use area, repeat area and grid area generate named areas.
+    /// </summary>
+    [Fact]
+    public void Expand_UseAreaAndRepeatAreaAndGridArea_GeneratesNamedAreas()
     {
         var root = new RepeatRoot
         {
@@ -205,7 +286,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <component name="DetailHeader">
                 <grid>
                   <cell r="1" c="1" value="H1" />
@@ -221,8 +302,12 @@ public sealed class LayoutEngineTests
                 </grid>
               </component>
               <sheet name="Summary">
-                <use component="DetailHeader" instance="DetailHeader" r="5" c="2" />
-                <repeat name="DetailRows" r="6" c="2" direction="down" from="@(root.Items)" var="it">
+                <grid r="4" c="2" area="SummaryGrid">
+                  <cell value="G1" />
+                  <cell r="2" value="G2" />
+                </grid>
+                <use component="DetailHeader" area="DetailHeader" r="6" c="2" />
+                <repeat area="DetailRows" r="7" c="2" direction="down" from="@(root.Items)" var="it">
                   <use component="DetailRow" with="@(it)" />
                 </repeat>
               </sheet>
@@ -233,16 +318,22 @@ public sealed class LayoutEngineTests
         var sheet = Assert.Single(plan.Sheets);
         var areas = sheet.NamedAreas.ToDictionary(area => area.Name, StringComparer.Ordinal);
 
+        var summaryGrid = areas["SummaryGrid"];
+        Assert.Equal(4, summaryGrid.TopRow);
+        Assert.Equal(2, summaryGrid.LeftColumn);
+        Assert.Equal(5, summaryGrid.BottomRow);
+        Assert.Equal(2, summaryGrid.RightColumn);
+
         var detailHeader = areas["DetailHeader"];
-        Assert.Equal(5, detailHeader.TopRow);
+        Assert.Equal(6, detailHeader.TopRow);
         Assert.Equal(2, detailHeader.LeftColumn);
-        Assert.Equal(5, detailHeader.BottomRow);
+        Assert.Equal(6, detailHeader.BottomRow);
         Assert.Equal(4, detailHeader.RightColumn);
 
         var detailRows = areas["DetailRows"];
-        Assert.Equal(6, detailRows.TopRow);
+        Assert.Equal(7, detailRows.TopRow);
         Assert.Equal(2, detailRows.LeftColumn);
-        Assert.Equal(7, detailRows.BottomRow);
+        Assert.Equal(8, detailRows.BottomRow);
         Assert.Equal(4, detailRows.RightColumn);
 
         Assert.Empty(plan.Issues);
@@ -282,7 +373,7 @@ public sealed class LayoutEngineTests
 
         var parseResult = DslParser.ParseFromText(
             $"""
-             <workbook xmlns="urn:excelreport:v1">
+             <workbook xmlns="urn:excelreport:v2">
                <componentImport href="{missingImportPath}" />
                <sheet name="Summary">
                  <cell r="1" c="1" value="Safe" />
@@ -318,7 +409,7 @@ public sealed class LayoutEngineTests
         File.WriteAllText(
             importPath,
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <component name="SharedComp">
                 <cell r="1" c="1" value="Imported" />
               </component>
@@ -329,7 +420,7 @@ public sealed class LayoutEngineTests
         {
             var parseResult = DslParser.ParseFromText(
                 $"""
-                 <workbook xmlns="urn:excelreport:v1">
+                 <workbook xmlns="urn:excelreport:v2">
                    <component name="SharedComp">
                      <cell r="1" c="1" value="Local" />
                    </component>
@@ -369,7 +460,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" when="@(false)" value="Hidden" />
               </sheet>
@@ -397,7 +488,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Rows)" var="row">
                   <grid>
@@ -474,7 +565,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Compare">
                 <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
                   <grid>
@@ -517,7 +608,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Compare">
                 <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
                   <cell r="1" c="12" value="@((p.LeftBoard ?? &quot;&quot;) + &quot;/&quot; + (p.RightBoard ?? &quot;&quot;))" />
@@ -552,7 +643,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Compare">
                 <repeat r="1" c="1" direction="down" from="@(root.Pairs)" var="p">
                   <cell r="1" c="12" value="@(p == null ? &quot;NA&quot; : ((p.LeftBoard ?? &quot;&quot;) + &quot;/&quot; + (p.RightBoard ?? &quot;&quot;)))" />
@@ -578,7 +669,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="GridAll" scope="grid">
                   <border mode="all" top="thin" bottom="thin" left="thin" right="thin" color="#123456" />
@@ -623,7 +714,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="GridOuter" scope="grid">
                   <border mode="outer" top="thin" bottom="thin" left="thin" right="thin" color="#654321" />
@@ -686,7 +777,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="GridAll" scope="grid">
                   <border mode="all" top="thin" color="#111111" />
@@ -731,7 +822,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="6" c="2" direction="down" from="@(root.Values)" var="it">
                   <cell value="@(it)" formulaRef="Detail.Value" />
@@ -766,7 +857,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="A" />
                 <grid r="2" c="3">
@@ -790,7 +881,7 @@ public sealed class LayoutEngineTests
     {
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.DownItems)" var="it">
                   <grid>
@@ -842,7 +933,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="@(it.Name)" from="@(root.Items)" var="it">
                 <cell r="1" c="1" value="@(it.Name)" />
               </sheet>
@@ -878,7 +969,7 @@ public sealed class LayoutEngineTests
 
         var plan = Expand(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="@(it.Name)" from="@(root.Items)" var="it">
                 <cell r="1" c="1" value="Value" />
               </sheet>
@@ -957,4 +1048,5 @@ public sealed class LayoutEngineTests
         public string Right { get; init; } = string.Empty;
     }
 }
+
 

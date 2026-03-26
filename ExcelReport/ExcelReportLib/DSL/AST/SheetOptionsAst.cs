@@ -30,10 +30,6 @@ namespace ExcelReportLib.DSL.AST
         /// Gets or sets the auto filter.
         /// </summary>
         public AutoFilterAst? AutoFilter { get; init; }
-        /// <summary>
-        /// Gets or sets the conditional formatting rules.
-        /// </summary>
-        public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
         /// Gets or sets the span.
@@ -75,9 +71,16 @@ namespace ExcelReportLib.DSL.AST
                 AutoFilter = new AutoFilterAst(autoFilterElem, issues);
             }
 
-            ConditionalFormattings = elem.Elements(ns + "conditionalFormatting")
-                .Select(e => new ConditionalFormattingAst(e, issues))
-                .ToArray();
+            foreach (var deprecated in elem.Elements(ns + ConditionalFormattingAst.TagName))
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredElement,
+                    Message = "<conditionalFormatting> は <sheetOptions> では定義できません。<sheet> 直下へ移動してください。",
+                    Span = SourceSpan.CreateSpanAttributes(deprecated),
+                });
+            }
 
             Span = SourceSpan.CreateSpanAttributes(elem);
         }

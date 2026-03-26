@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using ExcelReportLib.DSL;
 
 namespace ExcelReportLib.DSL.AST
 {
@@ -92,6 +93,19 @@ namespace ExcelReportLib.DSL.AST
             try
             {
                 doc = XDocument.Load(stream, LoadOptions.SetLineInfo);
+                var ns = doc.Root!.Name.Namespace;
+                if (!string.Equals(ns.NamespaceName, DslContract.NamespaceUri, StringComparison.Ordinal))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Fatal,
+                        Kind = IssueKind.SchemaViolation,
+                        Message = $"styleImport の namespace は '{DslContract.NamespaceUri}' のみサポートします。入力: '{ns.NamespaceName}' ({PathStr})",
+                        Span = SourceSpan.CreateSpanAttributes(doc.Root!),
+                    });
+                    return;
+                }
+
                 var importDir = Path.GetDirectoryName(PathStr) ?? string.Empty;
                 StylesAst = new StylesAst(doc.Root!, issues, importDir);
             }

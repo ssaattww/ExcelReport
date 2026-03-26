@@ -8,7 +8,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// <summary>
     /// 別定義のコンポーネントを使用することを表すASTノード
     /// </summary>
-    public sealed class UseAst : LayoutNodeAst
+    public sealed class UseAst : LayoutNodeAst, INamedAreaTarget
     {
         /// <summary>
         /// Gets the DSL element tag name.
@@ -19,9 +19,9 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// </summary>
         public string ComponentName { get; init; } = string.Empty;
         /// <summary>
-        /// Gets or sets the instance name.
+        /// Gets the target area name.
         /// </summary>
-        public string? InstanceName { get; init; }
+        public string? AreaName { get; init; }
         /// <summary>
         /// Gets or sets the with expr raw.
         /// </summary>
@@ -51,11 +51,23 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
                 });
                 return;
             }
-            var instanceAttr = elem.Attribute("instance");
+
+            if (elem.Attribute("instance") is not null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = "<use> 要素の instance 属性は廃止されました。area 属性を使用してください。",
+                    Span = SourceSpan.CreateSpanAttributes(elem),
+                });
+            }
+
+            var areaAttr = elem.Attribute("area");
             var withAttr = elem.Attribute("with");
 
             ComponentName = nameAttr.Value;
-            InstanceName = instanceAttr?.Value;
+            AreaName = string.IsNullOrWhiteSpace(areaAttr?.Value) ? null : areaAttr.Value.Trim();
             WithExprRaw = withAttr?.Value;
         }
     }

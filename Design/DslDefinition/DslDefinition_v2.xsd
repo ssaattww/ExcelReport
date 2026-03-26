@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  targetNamespace="urn:excelreport:v1"
-  xmlns="urn:excelreport:v1"
+  targetNamespace="urn:excelreport:v2"
+  xmlns="urn:excelreport:v2"
   elementFormDefault="qualified"
   attributeFormDefault="unqualified">
 
@@ -178,6 +178,7 @@
         <xs:element name="use"         type="UseType"/>
         <xs:element name="grid"        type="GridType"/>
         <xs:element name="repeat"      type="RepeatType"/>
+        <xs:element name="conditionalFormatting" type="ConditionalFormattingType"/>
       </xs:choice>
       <xs:element name="sheetOptions" type="SheetOptionsType" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
@@ -191,6 +192,7 @@
   <!-- component -->
   <xs:complexType name="ComponentType">
     <xs:sequence>
+      <xs:element name="conditionalFormatting" type="ConditionalFormattingType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:choice minOccurs="1" maxOccurs="1">
         <xs:element name="grid"   type="GridType"/>
         <xs:element name="use"    type="UseType"/>
@@ -210,10 +212,12 @@
         <xs:element name="use"      type="UseType"/>
         <xs:element name="grid"     type="GridType"/>
         <xs:element name="repeat"   type="RepeatType"/>
+        <xs:element name="conditionalFormatting" type="ConditionalFormattingType"/>
       </xs:choice>
     </xs:sequence>
     <xs:attribute name="rows" type="NonNegativeInt0" use="optional" default="0"/>
     <xs:attribute name="cols" type="NonNegativeInt0" use="optional" default="0"/>
+    <xs:attribute name="area" type="xs:string"/>
   </xs:complexType>
 
   <!-- 共通配置属性 -->
@@ -252,7 +256,7 @@
     </xs:sequence>
     <xs:attributeGroup ref="PlacementAttrs"/>
     <xs:attribute name="component" type="xs:string"  use="required"/>
-    <xs:attribute name="instance"  type="xs:string"/>
+    <xs:attribute name="area"  type="xs:string"/>
     <xs:attribute name="with"      type="ExprString"/>
   </xs:complexType>
 
@@ -286,6 +290,7 @@
         <xs:element name="styleRef" type="StyleRefType"/>
         <xs:element name="style"    type="LocalStyleType"/>
       </xs:choice>
+      <xs:element name="conditionalFormatting" type="ConditionalFormattingType" minOccurs="0" maxOccurs="unbounded"/>
       <!-- レイアウト要素は1つだけ -->
       <xs:choice minOccurs="1" maxOccurs="1">
         <xs:element name="cell"   type="CellType"/>
@@ -298,7 +303,7 @@
     <xs:attribute name="from"      type="ExprString"      use="optional"/>
     <xs:attribute name="var"       type="xs:string"       use="optional" default="item"/>
     <xs:attribute name="direction" type="RepeatDirection" use="required"/>
-    <xs:attribute name="name"      type="xs:string"/>
+    <xs:attribute name="area"      type="xs:string"/>
   </xs:complexType>
 
   <!-- sheetOptions -->
@@ -307,7 +312,6 @@
       <xs:element name="freeze"     type="FreezeType"     minOccurs="0" maxOccurs="1"/>
       <xs:element name="groups"     type="GroupsType"     minOccurs="0" maxOccurs="1"/>
       <xs:element name="autoFilter" type="AutoFilterType" minOccurs="0" maxOccurs="1"/>
-      <xs:element name="conditionalFormatting" type="ConditionalFormattingType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -362,3 +366,4 @@
   </xs:complexType>
 
 </xs:schema>
+

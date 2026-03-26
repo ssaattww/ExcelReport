@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workbook xmlns="urn:excelreport:v1">
+<workbook xmlns="urn:excelreport:v2">
 
   <styles>
-    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v2.xml"/>
   </styles>
 
-  <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v1.xml"/>
+  <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v2.xml"/>
 
   <!-- シート -->
   <sheet name="Summary">
 
     <!-- 1行目: タイトル -->
-    <use component="Title" instance="HeaderTitle" r="1" c="1" with="@(root)"/>
+    <use component="Title" area="HeaderTitle" r="1" c="1" with="@(root)"/>
 
     <!-- 2行目: KPI -->
-    <use component="KPI" instance="KPI" r="2" c="1" with="@(root.Summary)"/>
+    <use component="KPI" area="KPI" r="2" c="1" with="@(root.Summary)"/>
 
     <!-- 4行目: 日付 -->
     <cell r="4" c="1" value="=TODAY()">
@@ -28,13 +28,13 @@
     </cell>
 
     <!-- 5行目: Totals -->
-    <use component="TotalsRow" instance="TotalsRow" r="5" c="1" with="@(root)"/>
+    <use component="TotalsRow" area="TotalsRow" r="5" c="1" with="@(root)"/>
 
     <!-- 6行目: 明細ヘッダ -->
-    <use component="DetailHeader" instance="DetailHeader" r="6" c="1" with="@(root)"/>
+    <use component="DetailHeader" area="DetailHeader" r="6" c="1" with="@(root)"/>
 
     <!-- 7行目以降: 明細＋グリッド線 -->
-    <repeat name="DetailRows"
+    <repeat area="DetailRows"
             r="7" c="1" direction="down"
             from="@(root.Lines)" var="it">
       <styleRef name="DetailRowsGrid"/>
@@ -52,3 +52,4 @@
   </sheet>
 
 </workbook>
+

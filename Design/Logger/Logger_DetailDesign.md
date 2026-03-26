@@ -111,7 +111,7 @@ public sealed class ProgressEvent
     /// <summary>対象シート名（Sheet/Region/CellBatch の場合）。</summary>
     public string? SheetName { get; init; }
 
-    /// <summary>Region 名（repeat@name / use@name 等）。</summary>
+    /// <summary>Region 名（repeat@area / use@area / grid@area 等）。</summary>
     public string? RegionName { get; init; }
 
     /// <summary>進捗の個数情報（0..Total）。未指定の場合もある。</summary>
@@ -181,7 +181,7 @@ public sealed class LogEntry
     /// <summary>対象シート名。</summary>
     public string? SheetName { get; init; }
 
-    /// <summary>Region 名（use@name, repeat@name 等）。</summary>
+    /// <summary>Region 名（use@area, repeat@area, grid@area 等）。</summary>
     public string? RegionName { get; init; }
 
     /// <summary>セル座標等の詳細（例: "R=10,C=3"）。</summary>

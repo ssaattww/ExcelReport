@@ -8,6 +8,17 @@ using System.Xml.Linq;
 namespace ExcelReportLib.DSL.AST
 {
     /// <summary>
+    /// Represents a layout node that exposes a named target area.
+    /// </summary>
+    public interface INamedAreaTarget
+    {
+        /// <summary>
+        /// Gets the target area name.
+        /// </summary>
+        string? AreaName { get; }
+    }
+
+    /// <summary>
     /// Represents source span.
     /// </summary>
     public sealed class SourceSpan

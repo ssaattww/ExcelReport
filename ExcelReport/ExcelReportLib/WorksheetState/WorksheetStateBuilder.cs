@@ -1,4 +1,5 @@
 using ExcelReportLib.DSL.AST;
+using ExcelReportLib.DSL;
 using ExcelReportLib.LayoutEngine;
 using System.Text.RegularExpressions;
 
@@ -17,17 +18,18 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     /// Builds worksheet state models from an expanded layout plan.
     /// </summary>
     /// <param name="layoutPlan">The layout plan.</param>
+    /// <param name="issues">Optional issue sink for non-fatal worksheet-state warnings.</param>
     /// <returns>A collection containing the result.</returns>
-    public IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan)
+    public IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan, IList<Issue>? issues = null)
     {
         ArgumentNullException.ThrowIfNull(layoutPlan);
 
         return layoutPlan.Sheets
-            .Select(BuildSheet)
+            .Select(layoutSheet => BuildSheet(layoutSheet, issues))
             .ToArray();
     }
 
-    private static WorksheetState BuildSheet(LayoutSheet layoutSheet)
+    private static WorksheetState BuildSheet(LayoutSheet layoutSheet, IList<Issue>? issues)
     {
         ValidateSheetBounds(layoutSheet.Rows, layoutSheet.Cols, layoutSheet.Name);
 
@@ -93,8 +95,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
-        var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas);
-        var options = BuildOptions(layoutSheet.Options, namedAreas, formulaPlaceholderAreas);
+        var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas, issues);
+        var options = BuildOptions(layoutSheet.Options, layoutSheet.ConditionalFormattings, namedAreas, formulaPlaceholderAreas, issues);
 
         return new WorksheetState(
             layoutSheet.Name,
@@ -138,7 +140,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     private static IReadOnlyDictionary<(int Row, int Column), CellState> ResolveFormulaPlaceholders(
         IReadOnlyDictionary<(int Row, int Column), CellState> cells,
         IReadOnlyList<LayoutCell> layoutCells,
-        FormulaPlaceholderContext context)
+        FormulaPlaceholderContext context,
+        IList<Issue>? issues)
     {
         var layoutCellByCoordinate = layoutCells.ToDictionary(cell => (cell.Row, cell.Col));
         var resolvedCells = new Dictionary<(int Row, int Column), CellState>(cells.Count);
@@ -157,7 +160,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 continue;
             }
 
-            var resolvedFormula = ReplaceFormulaPlaceholders(cell.Formula, layoutCell.ScopePath, context);
+            var resolvedFormula = ReplaceFormulaPlaceholders(cell.Formula, layoutCell.ScopePath, context, issues);
             if (string.Equals(resolvedFormula, cell.Formula, StringComparison.Ordinal))
             {
                 resolvedCells[coordinate] = cell;
@@ -180,7 +183,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     private static string ReplaceFormulaPlaceholders(
         string formula,
         string scopePath,
-        FormulaPlaceholderContext context) =>
+        FormulaPlaceholderContext context,
+        IList<Issue>? issues) =>
         FormulaPlaceholderRegex.Replace(
             formula,
             match =>
@@ -191,7 +195,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                     return match.Value;
                 }
 
-                var startArea = FindNamedArea(startName, scopePath, context);
+                var startArea = FindNamedArea(startName, scopePath, context, issues);
                 if (startArea is null)
                 {
                     return match.Value;
@@ -210,7 +214,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                     return match.Value;
                 }
 
-                var endArea = FindNamedArea(endName, scopePath, context);
+                var endArea = FindNamedArea(endName, scopePath, context, issues);
                 if (endArea is null)
                 {
                     return match.Value;
@@ -301,7 +305,8 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     private static NamedAreaState? FindNamedArea(
         string name,
         string scopePath,
-        FormulaPlaceholderContext context)
+        FormulaPlaceholderContext context,
+        IList<Issue>? issues)
     {
         var currentScope = scopePath;
         while (currentScope.Length > 0)
@@ -321,7 +326,48 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             currentScope = currentScope[..separatorIndex];
         }
 
+        // Allow sibling visibility by resolving a unique descendant local area under the current scope.
+        if (TryResolveUniqueDescendantLocalArea(name, scopePath, context.LocalAreasByScope, out var descendantArea, out var descendantMatchCount))
+        {
+            return descendantArea;
+        }
+
+        if (descendantMatchCount > 1)
+        {
+            AddFormulaRefResolutionWarning(
+                issues,
+                $"Ambiguous local formulaRef resolution for target '{name}' in scope '{scopePath}': found {descendantMatchCount} descendant candidates, falling back to global/named lookup.");
+        }
+
         return context.GlobalAreas.TryGetValue(name, out var area) ? area : null;
+    }
+
+    private static bool TryResolveUniqueDescendantLocalArea(
+        string name,
+        string scopePath,
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> localAreasByScope,
+        out NamedAreaState area,
+        out int matchCount)
+    {
+        var descendantMatches = localAreasByScope
+            .Where(pair =>
+                !string.Equals(pair.Key, scopePath, StringComparison.Ordinal) &&
+                IsScopeWithinDefinitionScope(pair.Key, scopePath))
+            .Select(pair => pair.Value.TryGetValue(name, out var localArea) ? localArea : null)
+            .Where(localArea => localArea is not null)
+            .Cast<NamedAreaState>()
+            .DistinctBy(match => (match.TopRow, match.LeftColumn, match.BottomRow, match.RightColumn))
+            .ToArray();
+
+        matchCount = descendantMatches.Length;
+        if (descendantMatches.Length == 1)
+        {
+            area = descendantMatches[0];
+            return true;
+        }
+
+        area = default!;
+        return false;
     }
 
     private static string ResolveFormulaRefScope(string? formulaRefScope)
@@ -361,51 +407,57 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static WorksheetOptionsState BuildOptions(
         SheetOptionsAst? options,
+        IReadOnlyList<LayoutConditionalFormatting> conditionalFormattings,
         IReadOnlyDictionary<string, NamedAreaState> namedAreas,
-        FormulaPlaceholderContext formulaPlaceholderContext)
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        IList<Issue>? issues)
     {
-        if (options is null)
+        if (options is null && conditionalFormattings.Count == 0)
         {
             return WorksheetOptionsState.Empty;
         }
 
+        var freeze = options?.Freeze;
+        var groupRows = options?.GroupRows ?? Array.Empty<GroupRowsAst>();
+        var groupCols = options?.GroupCols ?? Array.Empty<GroupColsAst>();
+        var autoFilter = options?.AutoFilter;
+
         return new WorksheetOptionsState(
-            options.Freeze is null
+            freeze is null
                 ? null
-                : new FreezePaneState(ResolveFreezeTarget(options.Freeze.At, namedAreas)),
-            options.GroupRows
+                : new FreezePaneState(ResolveFreezeTarget(freeze.At, namedAreas)),
+            groupRows
                 .Select(group => new WorksheetGroupState(ResolveRowGroupTarget(group.At, namedAreas), group.Collapsed))
                 .ToArray(),
-            options.GroupCols
+            groupCols
                 .Select(group => new WorksheetGroupState(ResolveColumnGroupTarget(group.At, namedAreas), group.Collapsed))
                 .ToArray(),
-            options.AutoFilter is null
+            autoFilter is null
                 ? null
-                : new AutoFilterState(ResolveAutoFilterTarget(options.AutoFilter.At, namedAreas)),
-            options.ConditionalFormattings
-                .Select(rule =>
-                {
-                    var resolvedTarget = ResolveConditionalFormattingTarget(rule.At, namedAreas);
-                    return new ConditionalFormattingState(
-                        resolvedTarget,
-                        rule.MinColor,
-                        rule.MaxColor,
-                        rule.MidColor,
-                        rule.Formula,
-                        ResolveConditionalFormulaRefTarget(rule.FormulaRef, resolvedTarget, namedAreas, formulaPlaceholderContext),
-                        rule.FillColor,
-                        rule.FontName,
-                        rule.FontSize,
-                        rule.FontBold,
-                        rule.FontItalic,
-                        rule.FontUnderline,
-                        rule.NumberFormatCode,
-                        rule.BorderTop,
-                        rule.BorderBottom,
-                        rule.BorderLeft,
-                        rule.BorderRight,
-                        rule.BorderColor);
-                })
+                : new AutoFilterState(ResolveAutoFilterTarget(autoFilter.At, namedAreas)),
+            conditionalFormattings
+                .SelectMany(
+                    scopedRule => ResolveConditionalFormattingTargets(scopedRule.Rule.At, namedAreas, formulaPlaceholderContext, scopedRule.ScopePath)
+                        .Select(
+                            resolvedTarget => new ConditionalFormattingState(
+                                resolvedTarget,
+                                scopedRule.Rule.MinColor,
+                                scopedRule.Rule.MaxColor,
+                                scopedRule.Rule.MidColor,
+                                scopedRule.Rule.Formula,
+                                ResolveConditionalFormulaRefTarget(scopedRule.Rule.FormulaRef, resolvedTarget, namedAreas, formulaPlaceholderContext, scopedRule.ScopePath, issues),
+                                scopedRule.Rule.FillColor,
+                                scopedRule.Rule.FontName,
+                                scopedRule.Rule.FontSize,
+                                scopedRule.Rule.FontBold,
+                                scopedRule.Rule.FontItalic,
+                                scopedRule.Rule.FontUnderline,
+                                scopedRule.Rule.NumberFormatCode,
+                                scopedRule.Rule.BorderTop,
+                                scopedRule.Rule.BorderBottom,
+                                scopedRule.Rule.BorderLeft,
+                                scopedRule.Rule.BorderRight,
+                                scopedRule.Rule.BorderColor)))
                 .ToArray());
     }
 
@@ -457,31 +509,50 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         return $"{ToCellReference(area.TopRow, area.LeftColumn)}:{ToCellReference(area.BottomRow, area.RightColumn)}";
     }
 
-    private static string ResolveConditionalFormattingTarget(
+    private static IReadOnlyList<string> ResolveConditionalFormattingTargets(
         string target,
-        IReadOnlyDictionary<string, NamedAreaState> namedAreas) =>
-        ResolveAutoFilterTarget(target, namedAreas);
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        string definitionScopePath)
+    {
+        if (namedAreas.TryGetValue(target, out var namedArea))
+        {
+            return [ToRangeReference(namedArea)];
+        }
+
+        var localSeriesAreas = ResolveLocalFormulaRefSeriesAreas(target, formulaPlaceholderContext.LocalAreasByScope, definitionScopePath);
+        if (localSeriesAreas.Count > 0)
+        {
+            return localSeriesAreas
+                .Select(ToRangeReference)
+                .ToArray();
+        }
+
+        if (TryResolveFormulaRefSeriesArea(target, formulaPlaceholderContext.GlobalAreas, out var globalSeriesArea))
+        {
+            return [ToRangeReference(globalSeriesArea)];
+        }
+
+        return [target];
+    }
 
     private static string? ResolveConditionalFormulaRefTarget(
         string? formulaRef,
         string conditionalFormattingTarget,
         IReadOnlyDictionary<string, NamedAreaState> namedAreas,
-        FormulaPlaceholderContext formulaPlaceholderContext)
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        string definitionScopePath,
+        IList<Issue>? issues)
     {
         if (string.IsNullOrWhiteSpace(formulaRef))
         {
             return null;
         }
 
-        if (formulaPlaceholderContext.GlobalAreas.TryGetValue(formulaRef, out var area) ||
-            namedAreas.TryGetValue(formulaRef, out area))
-        {
-            return ToCellReference(area.TopRow, area.LeftColumn);
-        }
-
         if (TryResolveTargetArea(conditionalFormattingTarget, out var targetArea))
         {
             var scopedCandidates = formulaPlaceholderContext.LocalAreasByScope
+                .Where(pair => IsScopeWithinDefinitionScope(pair.Key, definitionScopePath))
                 .Select(pair => new
                 {
                     Scope = pair.Key,
@@ -503,12 +574,18 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                     .ThenByDescending(candidate => candidate.Scope.Count(c => c == '/'))
                     .ThenBy(candidate => candidate.Scope, StringComparer.Ordinal)
                     .First();
+
+                AddFormulaRefResolutionWarning(
+                    issues,
+                    $"Ambiguous local conditional formulaRef resolution for target '{formulaRef}' at '{conditionalFormattingTarget}': {scopedCandidates.Length} scoped candidates matched, selected scope '{selected.Scope}' by deterministic tie-break.");
+
                 return ToCellReference(selected.Area.TopRow, selected.Area.LeftColumn);
             }
         }
 
         var uniqueLocalArea = formulaPlaceholderContext.LocalAreasByScope
-            .Values
+            .Where(pair => IsScopeWithinDefinitionScope(pair.Key, definitionScopePath))
+            .Select(pair => pair.Value)
             .Select(areasByName => areasByName.TryGetValue(formulaRef, out var localArea) ? localArea : null)
             .Where(localArea => localArea is not null)
             .Cast<NamedAreaState>()
@@ -519,7 +596,53 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             return ToCellReference(uniqueLocalArea[0].TopRow, uniqueLocalArea[0].LeftColumn);
         }
 
+        if (uniqueLocalArea.Length > 1)
+        {
+            if (formulaPlaceholderContext.GlobalAreas.TryGetValue(formulaRef, out var globalArea))
+            {
+                AddFormulaRefResolutionWarning(
+                    issues,
+                    $"Ambiguous local conditional formulaRef resolution for target '{formulaRef}' in scope '{definitionScopePath}': multiple local candidates found, falling back to global lookup.");
+                return ToCellReference(globalArea.TopRow, globalArea.LeftColumn);
+            }
+
+            if (namedAreas.TryGetValue(formulaRef, out var namedArea))
+            {
+                AddFormulaRefResolutionWarning(
+                    issues,
+                    $"Ambiguous local conditional formulaRef resolution for target '{formulaRef}' in scope '{definitionScopePath}': multiple local candidates found, falling back to named-area lookup.");
+                return ToCellReference(namedArea.TopRow, namedArea.LeftColumn);
+            }
+
+            AddFormulaRefResolutionWarning(
+                issues,
+                $"Ambiguous local conditional formulaRef resolution for target '{formulaRef}' in scope '{definitionScopePath}': multiple local candidates found, falling back to raw target.");
+            return formulaRef;
+        }
+
+        if (formulaPlaceholderContext.GlobalAreas.TryGetValue(formulaRef, out var area) ||
+            namedAreas.TryGetValue(formulaRef, out area))
+        {
+            return ToCellReference(area.TopRow, area.LeftColumn);
+        }
+
         return formulaRef;
+    }
+
+    private static void AddFormulaRefResolutionWarning(IList<Issue>? issues, string message)
+    {
+        if (issues is null)
+        {
+            return;
+        }
+
+        issues.Add(
+            new Issue
+            {
+                Severity = IssueSeverity.Warning,
+                Kind = IssueKind.FormulaRefResolutionFallback,
+                Message = message,
+            });
     }
 
     private static bool TryResolveTargetArea(string target, out NamedAreaState area)
@@ -545,6 +668,81 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         left.BottomRow >= right.TopRow &&
         left.LeftColumn <= right.RightColumn &&
         left.RightColumn >= right.LeftColumn;
+
+    private static IReadOnlyList<NamedAreaState> ResolveLocalFormulaRefSeriesAreas(
+        string formulaRefName,
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> localAreasByScope,
+        string definitionScopePath) =>
+        localAreasByScope
+            // local は sheet 直下定義では漏らさず、それ以外は定義配下スコープを解決する。
+            .Where(pair => ShouldResolveLocalScopeCandidate(pair.Key, definitionScopePath))
+            .Select(pair => pair.Value)
+            .Select(
+                localAreas =>
+                    TryResolveFormulaRefSeriesArea(formulaRefName, localAreas, out var seriesArea)
+                        ? seriesArea
+                        : null)
+            .Where(seriesArea => seriesArea is not null)
+            .Select(seriesArea => seriesArea!)
+            .DistinctBy(
+                area => (area.TopRow, area.LeftColumn, area.BottomRow, area.RightColumn))
+            .OrderBy(area => area.TopRow)
+            .ThenBy(area => area.LeftColumn)
+            .ThenBy(area => area.BottomRow)
+            .ThenBy(area => area.RightColumn)
+            .ToArray();
+
+    private static bool ShouldResolveLocalScopeCandidate(string candidateScopePath, string definitionScopePath)
+    {
+        // sheet 直下定義は local 非リーク維持のため exact match のみ許可する。
+        if (string.Equals(definitionScopePath, "/sheet", StringComparison.Ordinal))
+        {
+            return string.Equals(candidateScopePath, definitionScopePath, StringComparison.Ordinal);
+        }
+
+        return IsScopeWithinDefinitionScope(candidateScopePath, definitionScopePath);
+    }
+
+    private static bool IsScopeWithinDefinitionScope(string candidateScopePath, string definitionScopePath)
+    {
+        if (string.IsNullOrWhiteSpace(definitionScopePath))
+        {
+            return true;
+        }
+
+        if (string.Equals(candidateScopePath, definitionScopePath, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return candidateScopePath.StartsWith(definitionScopePath + "/", StringComparison.Ordinal);
+    }
+
+    private static bool TryResolveFormulaRefSeriesArea(
+        string formulaRefName,
+        IReadOnlyDictionary<string, NamedAreaState> areasByName,
+        out NamedAreaState seriesArea)
+    {
+        if (!areasByName.TryGetValue(formulaRefName, out var startArea))
+        {
+            seriesArea = default!;
+            return false;
+        }
+
+        if (!areasByName.TryGetValue($"{formulaRefName}End", out var endArea))
+        {
+            seriesArea = startArea;
+            return true;
+        }
+
+        seriesArea = new NamedAreaState(
+            formulaRefName,
+            Math.Min(startArea.TopRow, endArea.TopRow),
+            Math.Min(startArea.LeftColumn, endArea.LeftColumn),
+            Math.Max(startArea.BottomRow, endArea.BottomRow),
+            Math.Max(startArea.RightColumn, endArea.RightColumn));
+        return true;
+    }
 
     private static int CalculateIntersectionArea(NamedAreaState left, NamedAreaState right)
     {
@@ -581,6 +779,9 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         rightColumn = Math.Max(firstColumn, lastColumn);
         return true;
     }
+
+    private static string ToRangeReference(NamedAreaState area) =>
+        $"{ToCellReference(area.TopRow, area.LeftColumn)}:{ToCellReference(area.BottomRow, area.RightColumn)}";
 
     private static bool TryParseCellReference(string reference, out int row, out int column)
     {

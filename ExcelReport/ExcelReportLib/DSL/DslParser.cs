@@ -11,8 +11,6 @@ namespace ExcelReportLib.DSL
     /// </summary>
     public static class DslParser
     {
-        private const string SchemaResourceName = "ExcelReportLib.DSL.DslDefinition_v1.xsd";
-        private const string SchemaRelativePath = "Design/DslDefinition/DslDefinition_v1.xsd";
         private const int MaxExcelRows = 1_048_576;
         private const int MaxExcelColumns = 16_384;
 
@@ -74,6 +72,11 @@ namespace ExcelReportLib.DSL
                     Kind = IssueKind.XmlMalformed,
                     Message = ex.Message,
                 });
+                return new DslParseResult { Root = null, Issues = issues };
+            }
+
+            if (!ValidateRootNamespace(doc, issues))
+            {
                 return new DslParseResult { Root = null, Issues = issues };
             }
 
@@ -632,14 +635,9 @@ namespace ExcelReportLib.DSL
 
             foreach (var node in EnumerateLayoutNodes(sheet.Children.Values))
             {
-                if (node is UseAst use && !string.IsNullOrWhiteSpace(use.InstanceName))
+                if (node is INamedAreaTarget namedAreaTarget && !string.IsNullOrWhiteSpace(namedAreaTarget.AreaName))
                 {
-                    targets.Add(use.InstanceName);
-                }
-
-                if (node is RepeatAst repeat && !string.IsNullOrWhiteSpace(repeat.Name))
-                {
-                    targets.Add(repeat.Name);
+                    targets.Add(namedAreaTarget.AreaName!);
                 }
             }
 
@@ -758,12 +756,12 @@ namespace ExcelReportLib.DSL
                 using var schemaStream = OpenSchemaStream();
                 if (schemaStream == null)
                 {
-                    errorMessage = $"XSD が見つかりません: {SchemaRelativePath}";
+                    errorMessage = $"XSD が見つかりません: {DslContract.SchemaRelativePath}";
                     return false;
                 }
 
                 using var schemaReader = XmlReader.Create(schemaStream);
-                schemaSet.Add("urn:excelreport:v1", schemaReader);
+                schemaSet.Add(DslContract.NamespaceUri, schemaReader);
                 schemaSet.Compile();
                 return true;
             }
@@ -776,7 +774,7 @@ namespace ExcelReportLib.DSL
 
         private static Stream? OpenSchemaStream()
         {
-            var resourceStream = typeof(DslParser).Assembly.GetManifestResourceStream(SchemaResourceName);
+            var resourceStream = typeof(DslParser).Assembly.GetManifestResourceStream(DslContract.SchemaResourceName);
             if (resourceStream != null)
             {
                 return resourceStream;
@@ -787,7 +785,7 @@ namespace ExcelReportLib.DSL
                 var directory = startDirectory;
                 while (!string.IsNullOrWhiteSpace(directory))
                 {
-                    var candidate = Path.Combine(directory, SchemaRelativePath);
+                    var candidate = Path.Combine(directory, DslContract.SchemaRelativePath);
                     if (File.Exists(candidate))
                     {
                         return File.OpenRead(candidate);
@@ -821,6 +819,36 @@ namespace ExcelReportLib.DSL
             }
 
             return roots;
+        }
+
+        private static bool ValidateRootNamespace(XDocument doc, List<Issue> issues)
+        {
+            var root = doc.Root;
+            if (root is null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Fatal,
+                    Kind = IssueKind.XmlMalformed,
+                    Message = "DSL のルート要素が存在しません。",
+                });
+                return false;
+            }
+
+            var namespaceUri = root.Name.NamespaceName;
+            if (string.Equals(namespaceUri, DslContract.NamespaceUri, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            issues.Add(new Issue
+            {
+                Severity = IssueSeverity.Fatal,
+                Kind = IssueKind.SchemaViolation,
+                Message = $"DSL namespace は '{DslContract.NamespaceUri}' のみサポートします。入力: '{namespaceUri}'。",
+                Span = SourceSpan.CreateSpanAttributes(root),
+            });
+            return false;
         }
 
 
@@ -966,6 +994,10 @@ namespace ExcelReportLib.DSL
         /// A formula reference series must be a single continuous one-dimensional range.
         /// </summary>
         FormulaRefSeriesNot1DContinuous,
+        /// <summary>
+        /// FormulaRef local-scope resolution was ambiguous and used fallback/tie-break behavior.
+        /// </summary>
+        FormulaRefResolutionFallback,
 
         // sheetOptions
         /// <summary>
@@ -1027,4 +1059,5 @@ namespace ExcelReportLib.DSL
         public bool HasFatal => Issues.Any(i => i.Severity == IssueSeverity.Fatal);
     }
 }
+
 

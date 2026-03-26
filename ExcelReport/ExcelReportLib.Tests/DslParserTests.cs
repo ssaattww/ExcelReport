@@ -110,7 +110,7 @@ public sealed class DslParserTests
     {
         var result = DslParser.ParseFromText(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="Base" scope="cell" />
                 <style name="Base" scope="cell" />
@@ -132,7 +132,7 @@ public sealed class DslParserTests
     {
         var result = DslParser.ParseFromText(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <grid>
                   <cell r="1" c="1" value="A" />
@@ -167,7 +167,7 @@ public sealed class DslParserTests
     {
         var result = DslParser.ParseFromText(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <from>@(root.Pairs.Where(x => x.Key != "A"))</from>
                 <var>pair</var>
@@ -207,7 +207,7 @@ public sealed class DslParserTests
     {
         var result = DslParser.ParseFromText(
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1">
                   <value>@(root.Items.Where(x => x.Name != "Machine1").Count())</value>
@@ -231,4 +231,5 @@ public sealed class DslParserTests
             issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
     }
 }
+
 

@@ -64,7 +64,7 @@ public sealed class SheetAstTests
         var issues = new List<Issue>();
         var sheetElement = XElement.Parse(
             """
-            <sheet xmlns="urn:excelreport:v1" name="Summary">
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
               <from>@(root.Items.Where(x => x.Name != "Machine1"))</from>
               <var>it</var>
               <cell r="1" c="1" value="A" />
@@ -88,7 +88,7 @@ public sealed class SheetAstTests
         var issues = new List<Issue>();
         var sheetElement = XElement.Parse(
             """
-            <sheet xmlns="urn:excelreport:v1" name="Summary" from="@(root.AttrItems)" var="attrVar">
+            <sheet xmlns="urn:excelreport:v2" name="Summary" from="@(root.AttrItems)" var="attrVar">
               <from>@(root.ElementItems)</from>
               <var>elementVar</var>
               <cell r="1" c="1" value="A" />
@@ -112,17 +112,14 @@ public sealed class SheetAstTests
         var issues = new List<Issue>();
         var sheetElement = XElement.Parse(
             """
-            <sheet xmlns="urn:excelreport:v1" name="Summary">
-              <sheetOptions>
-                <conditionalFormatting at="A2:A10" minColor="#111111" maxColor="#EEEEEE" />
-              </sheetOptions>
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <conditionalFormatting at="A2:A10" minColor="#111111" maxColor="#EEEEEE" />
               <cell r="1" c="1" value="A" />
             </sheet>
             """);
 
         var sheet = new SheetAst(sheetElement, issues);
-        var options = Assert.IsType<SheetOptionsAst>(sheet.Options);
-        var conditionalFormatting = Assert.Single(options.ConditionalFormattings);
+        var conditionalFormatting = Assert.Single(sheet.ConditionalFormattings);
         Assert.Equal("A2:A10", conditionalFormatting.At);
         Assert.Equal("#111111", conditionalFormatting.MinColor);
         Assert.Equal("#EEEEEE", conditionalFormatting.MaxColor);
@@ -138,20 +135,17 @@ public sealed class SheetAstTests
         var issues = new List<Issue>();
         var sheetElement = XElement.Parse(
             """
-            <sheet xmlns="urn:excelreport:v1" name="Summary">
-              <sheetOptions>
-                <conditionalFormatting at="A2:A10" formula="A2&gt;100" formulaRef="Detail.Value" fillColor="#FFF9C4" fontBold="true" numberFormatCode="#,##0" borderTop="thin" borderColor="#333333" />
-                <conditionalFormatting at="B2:B10" minColor="#F8696B" midColor="#FFEB84" maxColor="#63BE7B" />
-              </sheetOptions>
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <conditionalFormatting at="A2:A10" formula="A2&gt;100" formulaRef="Detail.Value" fillColor="#FFF9C4" fontBold="true" numberFormatCode="#,##0" borderTop="thin" borderColor="#333333" />
+              <conditionalFormatting at="B2:B10" minColor="#F8696B" midColor="#FFEB84" maxColor="#63BE7B" />
               <cell r="1" c="1" value="A" />
             </sheet>
             """);
 
         var sheet = new SheetAst(sheetElement, issues);
-        var options = Assert.IsType<SheetOptionsAst>(sheet.Options);
-        Assert.Equal(2, options.ConditionalFormattings.Count);
+        Assert.Equal(2, sheet.ConditionalFormattings.Count);
 
-        var formulaRule = options.ConditionalFormattings[0];
+        var formulaRule = sheet.ConditionalFormattings[0];
         Assert.Equal("A2>100", formulaRule.Formula);
         Assert.Equal("Detail.Value", formulaRule.FormulaRef);
         Assert.Equal("#FFF9C4", formulaRule.FillColor);
@@ -160,7 +154,7 @@ public sealed class SheetAstTests
         Assert.Equal("thin", formulaRule.BorderTop);
         Assert.Equal("#333333", formulaRule.BorderColor);
 
-        var threeColorRule = options.ConditionalFormattings[1];
+        var threeColorRule = sheet.ConditionalFormattings[1];
         Assert.Equal("#FFEB84", threeColorRule.MidColor);
         Assert.Null(threeColorRule.Formula);
         Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
@@ -175,17 +169,14 @@ public sealed class SheetAstTests
         var issues = new List<Issue>();
         var sheetElement = XElement.Parse(
             """
-            <sheet xmlns="urn:excelreport:v1" name="Summary">
-              <sheetOptions>
-                <conditionalFormatting at="A2:A10" formula="A2&gt;100" fontBold="1" fontItalic="0" fontUnderline="1" />
-              </sheetOptions>
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <conditionalFormatting at="A2:A10" formula="A2&gt;100" fontBold="1" fontItalic="0" fontUnderline="1" />
               <cell r="1" c="1" value="A" />
             </sheet>
             """);
 
         var sheet = new SheetAst(sheetElement, issues);
-        var options = Assert.IsType<SheetOptionsAst>(sheet.Options);
-        var rule = Assert.Single(options.ConditionalFormattings);
+        var rule = Assert.Single(sheet.ConditionalFormattings);
 
         Assert.True(rule.FontBold);
         Assert.False(rule.FontItalic);
@@ -195,6 +186,63 @@ public sealed class SheetAstTests
             issue => issue.Severity == IssueSeverity.Warning &&
                      issue.Kind == IssueKind.InvalidAttributeValue &&
                      issue.Message.Contains("font", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting under sheetOptions is rejected.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_ConditionalFormattingUnderSheetOptions_EmitsError()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <sheetOptions>
+                <conditionalFormatting at="A2:A10" minColor="#111111" maxColor="#EEEEEE" />
+              </sheetOptions>
+              <cell r="1" c="1" value="A" />
+            </sheet>
+            """);
+
+        _ = new SheetAst(sheetElement, issues);
+
+        Assert.Contains(
+            issues,
+            issue => issue.Severity == IssueSeverity.Error
+                     && issue.Message.Contains("<sheetOptions>", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that parse sheet layout nodes with area attributes expose named targets.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_LayoutNodesWithAreaAttributes_ExposeNamedTargets()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <grid area="GridArea" r="1" c="1">
+                <cell value="A" />
+              </grid>
+              <use component="DetailRow" area="UseArea" r="2" c="1" />
+              <repeat area="RepeatArea" direction="down" from="@(root.Items)" r="3" c="1">
+                <cell value="A" />
+              </repeat>
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+
+        var grid = Assert.Single(sheet.Children.Values.OfType<GridAst>());
+        var use = Assert.Single(sheet.Children.Values.OfType<UseAst>());
+        var repeat = Assert.Single(sheet.Children.Values.OfType<RepeatAst>());
+
+        Assert.Equal("GridArea", grid.AreaName);
+        Assert.Equal("UseArea", use.AreaName);
+        Assert.Equal("RepeatArea", repeat.AreaName);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
     }
 
     private static SheetAst CreateSheet()
@@ -208,3 +256,4 @@ public sealed class SheetAstTests
         return sheet;
     }
 }
+

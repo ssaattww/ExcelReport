@@ -5,11 +5,11 @@ namespace ExcelReportLib.Tests;
 
 internal static class DslTestFixtures
 {
-    internal const string FullTemplateFile = "DslDefinition_FullTemplate_Sample_v1.xml";
-    internal const string ExternalComponentFile = "DslDefinition_FullTemplate_SampleExternalComponent_v1.xml";
-    internal const string ExternalStyleFile = "DslDefinition_FullTemplate_SampleExternalStyle_v1.xml";
+    internal const string FullTemplateFile = "DslDefinition_FullTemplate_Sample_v2.xml";
+    internal const string ExternalComponentFile = "DslDefinition_FullTemplate_SampleExternalComponent_v2.xml";
+    internal const string ExternalStyleFile = "DslDefinition_FullTemplate_SampleExternalStyle_v2.xml";
 
-    private static readonly XNamespace Namespace = "urn:excelreport:v1";
+    private static readonly XNamespace Namespace = "urn:excelreport:v2";
     private static readonly string ProjectDirectory = ResolveProjectDirectory();
 
     internal static string FixtureDirectory { get; } = Path.GetFullPath(
@@ -59,3 +59,4 @@ internal static class DslTestFixtures
         Path.GetDirectoryName(callerFilePath)
         ?? throw new InvalidOperationException("Unable to determine the test project directory.");
 }
+

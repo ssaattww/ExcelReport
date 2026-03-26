@@ -58,6 +58,10 @@ namespace ExcelReportLib.DSL.AST
         /// Gets or sets the options.
         /// </summary>
         public SheetOptionsAst? Options { get; init; }
+        /// <summary>
+        /// Gets or sets conditional formatting rules defined under sheet.
+        /// </summary>
+        public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
         /// Gets or sets the span.
@@ -103,6 +107,11 @@ namespace ExcelReportLib.DSL.AST
             var optionsElem = sheetElem.Element(sheetElem.Name.Namespace + SheetOptionsAst.TagName);
             SheetOptionsAst? options = optionsElem != null ? new SheetOptionsAst(optionsElem, issues) : null;
 
+            // 条件付き書式の解析（sheet 直下で定義）
+            var conditionalFormattings = sheetElem.Elements(sheetElem.Name.Namespace + ConditionalFormattingAst.TagName)
+                .Select(element => new ConditionalFormattingAst(element, issues))
+                .ToArray();
+
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
@@ -133,6 +142,7 @@ namespace ExcelReportLib.DSL.AST
             StyleRefs = styles;
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
             Options = options;
+            ConditionalFormattings = conditionalFormattings;
             Span = SourceSpan.CreateSpanAttributes(sheetElem);
         }
 

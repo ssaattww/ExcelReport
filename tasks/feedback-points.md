@@ -2,7 +2,7 @@
 
 プロジェクトマネージャーへの指摘事項を記録
 
-Last Updated: 2026-03-25
+Last Updated: 2026-03-26
 
 ## アクティブな指摘点
 
@@ -31,7 +31,7 @@ Last Updated: 2026-03-25
 | FP37 | 名前定義は明示要件がない限り出力しない。現状はWorkbook.DefinedNamesを非出力とする | 対応済み | 2026-03-07 |
 | FP38 | sheetOptions groups はDSL属性追加ではなく、範囲重なりからネストレベルを自動算出して対応する | 対応済み | 2026-03-07 |
 | FP39 | sheetのrepeat対応は、実装前に調査レポート・設計書・先行テストを先に作成して進める | 対応済み | 2026-03-19 |
-| FP40 | sheet repeatの設計は別紙新規作成ではなく、Design/DslDefinition/DslDefinition_DetailDesign_v1.md を更新する形に統一する | 対応済み | 2026-03-19 |
+| FP40 | sheet repeatの設計は別紙新規作成ではなく、Design/DslDefinition/DslDefinition_DetailDesign.md を更新する形に統一する | 対応済み | 2026-03-19 |
 | FP41 | NuGet関連フォルダ（.nuget）はGit追跡しない。.gitignore で除外する | 対応済み | 2026-03-19 |
 | FP42 | E2Eテストを追加し、templateでLINQ式が使用できることを確認する | 対応済み | 2026-03-19 |
 | FP43 | バックグラウンド実行の状況を監視し、並列ジョブ暴走や残留プロセスを避けて進める | 対応中 | 2026-03-19 |
@@ -65,6 +65,19 @@ Last Updated: 2026-03-25
 | FP71 | dotnet未導入環境では SDK を導入して実テストを回し、結果（Passed/Failed）をエビデンス付きで提示する | 対応済み | 2026-03-25 |
 | FP72 | PR#41最新レビュー: colorScale順序保証は3色だけでなく2色でも回帰テストで担保する | 対応済み | 2026-03-25 |
 | FP73 | PR#41 inline: conditionalFormatting の at は単一セル（A1）指定も有効にし、ルール欠落を防ぐ | 対応済み | 2026-03-25 |
+| FP74 | issue対応時はGitHub CLI（`gh issue view`）で要件を取得し、ローカル推測で進めない | 対応済み | 2026-03-26 |
+| FP75 | 破壊的変更は既存設計書の修正可だが、`Design/BreakingChanges.md` に変更バージョンを明記して管理する | 対応中 | 2026-03-26 |
+| FP76 | 破壊的変更の変更後バージョンは即時確定できないため、予定/確定を分けて管理し、確定値はGitHub Releases(`tagName`)で更新する | 対応中 | 2026-03-26 |
+| FP77 | 変更後バージョン(予定)の表記は `X.Y.Zより後`（`after X.Y.Z`）に統一し、Actionによる強制チェックは行わない | 対応中 | 2026-03-26 |
+| FP78 | issue#45: named target属性は `area` に完全統一し、`repeat@name` / `use@instance` を互換なしで廃止する | 対応済み | 2026-03-26 |
+| FP79 | 条件付き書式は repeat/use/grid/sheet/formulaRef/local non-leak をE2Eで担保し、挙動差分はテストコードで明示する | 対応済み | 2026-03-26 |
+| FP80 | 実装後レビューで top-level sibling 間の local formulaRef スコープ混在リスクを記録し、修正方針と追加E2Eを定義する | 対応済み | 2026-03-26 |
+| FP81 | DSL契約を v2（`urn:excelreport:v2` / `DslDefinition_v2.xsd`）へ完全移行し、v1互換コードを残さない | 対応済み | 2026-03-26 |
+| FP82 | 設計書ファイル名からバージョンサフィックス（`_v1`等）を外す（XSDは例外） | 対応済み | 2026-03-26 |
+| FP83 | push自動publishの版数は `latest_stable_tag` ではなく `VersionPrefix` チャネル内タグを基準にし、`X.Y.Z-pre` の patch増分運用を維持する | 対応済み | 2026-03-26 |
+| FP84 | local可視性は「同一スコープ sibling は可視、sibling の内側スコープは不可視」を維持する | 対応済み | 2026-03-26 |
+| FP85 | local可視性は「同一親siblingは可視（sibling内のuse/grid/repeat配下localを含む）」へ確定し、衝突時は一意解決のみ許可する | 対応済み | 2026-03-26 |
+| FP86 | local `formulaRef` 解決で曖昧性によりフォールバック/タイブレークした場合は必ず Warning を記録する | 対応済み | 2026-03-26 |
 ---
 
 ## 対応履歴

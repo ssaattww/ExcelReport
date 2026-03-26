@@ -15,7 +15,7 @@ public sealed class LayoutSheet
     /// <param name="rows">The rows.</param>
     /// <param name="cols">The cols.</param>
     public LayoutSheet(string name, IEnumerable<LayoutCell> cells, int rows, int cols)
-        : this(name, cells, rows, cols, namedAreas: null, options: null)
+        : this(name, cells, rows, cols, namedAreas: null, options: null, scopedConditionalFormattings: null)
     {
     }
 
@@ -28,13 +28,34 @@ public sealed class LayoutSheet
     /// <param name="cols">The cols.</param>
     /// <param name="namedAreas">The named areas.</param>
     /// <param name="options">Options that control the operation.</param>
+    /// <param name="conditionalFormattings">Conditional formatting rules defined on the sheet scope.</param>
     public LayoutSheet(
         string name,
         IEnumerable<LayoutCell> cells,
         int rows,
         int cols,
         IEnumerable<LayoutNamedArea>? namedAreas = null,
-        SheetOptionsAst? options = null)
+        SheetOptionsAst? options = null,
+        IEnumerable<ConditionalFormattingAst>? conditionalFormattings = null)
+        : this(
+            name,
+            cells,
+            rows,
+            cols,
+            namedAreas,
+            options,
+            conditionalFormattings?.Select(rule => new LayoutConditionalFormatting(rule, "/sheet")))
+    {
+    }
+
+    private LayoutSheet(
+        string name,
+        IEnumerable<LayoutCell> cells,
+        int rows,
+        int cols,
+        IEnumerable<LayoutNamedArea>? namedAreas,
+        SheetOptionsAst? options,
+        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings)
     {
         Name = name;
         Rows = rows;
@@ -45,7 +66,36 @@ public sealed class LayoutSheet
             .ToArray();
         NamedAreas = (namedAreas ?? Array.Empty<LayoutNamedArea>()).ToArray();
         Options = options;
+        ConditionalFormattings = (scopedConditionalFormattings ?? Array.Empty<LayoutConditionalFormatting>()).ToArray();
     }
+
+    /// <summary>
+    /// Creates a layout sheet with explicit scoped conditional formatting definitions.
+    /// </summary>
+    /// <param name="name">The target name.</param>
+    /// <param name="cells">The cells.</param>
+    /// <param name="rows">The rows.</param>
+    /// <param name="cols">The cols.</param>
+    /// <param name="namedAreas">The named areas.</param>
+    /// <param name="options">Options that control the operation.</param>
+    /// <param name="scopedConditionalFormattings">Scoped conditional formatting rules.</param>
+    /// <returns>The created sheet.</returns>
+    internal static LayoutSheet CreateWithScopedConditionalFormattings(
+        string name,
+        IEnumerable<LayoutCell> cells,
+        int rows,
+        int cols,
+        IEnumerable<LayoutNamedArea>? namedAreas,
+        SheetOptionsAst? options,
+        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings) =>
+        new(
+            name,
+            cells,
+            rows,
+            cols,
+            namedAreas,
+            options,
+            scopedConditionalFormattings);
 
     /// <summary>
     /// Gets the name.
@@ -76,6 +126,11 @@ public sealed class LayoutSheet
     /// Gets the options.
     /// </summary>
     public SheetOptionsAst? Options { get; }
+
+    /// <summary>
+    /// Gets conditional formatting rules defined on the sheet.
+    /// </summary>
+    public IReadOnlyList<LayoutConditionalFormatting> ConditionalFormattings { get; }
 }
 
 /// <summary>
@@ -129,4 +184,31 @@ public sealed class LayoutNamedArea
     /// Gets the right column.
     /// </summary>
     public int RightColumn { get; }
+}
+
+/// <summary>
+/// Represents a scoped conditional formatting definition.
+/// </summary>
+public sealed class LayoutConditionalFormatting
+{
+    /// <summary>
+    /// Initializes a new instance of the scoped conditional formatting type.
+    /// </summary>
+    /// <param name="rule">The rule.</param>
+    /// <param name="scopePath">The definition scope path.</param>
+    public LayoutConditionalFormatting(ConditionalFormattingAst rule, string scopePath)
+    {
+        Rule = rule ?? throw new ArgumentNullException(nameof(rule));
+        ScopePath = scopePath ?? throw new ArgumentNullException(nameof(scopePath));
+    }
+
+    /// <summary>
+    /// Gets the rule.
+    /// </summary>
+    public ConditionalFormattingAst Rule { get; }
+
+    /// <summary>
+    /// Gets the definition scope path.
+    /// </summary>
+    public string ScopePath { get; }
 }

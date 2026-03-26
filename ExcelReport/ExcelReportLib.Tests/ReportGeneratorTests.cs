@@ -22,7 +22,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="@(root.Title)" />
               </sheet>
@@ -48,7 +48,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Broken">
                 <cell r="1" c="1" value="Oops" />
             </workbook>
@@ -70,7 +70,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="Ready" />
               </sheet>
@@ -105,7 +105,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <cell value="@(it.Name)" />
@@ -134,7 +134,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="Summary" />
               </sheet>
@@ -164,7 +164,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" styleRef="MissingStyle" value="Value" />
               </sheet>
@@ -186,7 +186,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="TitleCell" scope="cell">
                   <font name="Meiryo" size="16" bold="true"/>
@@ -269,8 +269,8 @@ public sealed class ReportGeneratorTests
               </component>
 
               <sheet name="Summary">
-                <use component="Title" instance="HeaderTitle" r="1" c="1" with="@(root)"/>
-                <use component="KPI" instance="KPI" r="2" c="1" with="@(root.Summary)"/>
+                <use component="Title" area="HeaderTitle" r="1" c="1" with="@(root)"/>
+                <use component="KPI" area="KPI" r="2" c="1" with="@(root.Summary)"/>
                 <cell r="4" c="1" value="=TODAY()">
                   <styleRef name="BaseCell"/>
                 </cell>
@@ -280,9 +280,9 @@ public sealed class ReportGeneratorTests
                     <border mode="cell" bottom="thin" color="#000000"/>
                   </style>
                 </cell>
-                <use component="TotalsRow" instance="TotalsRow" r="5" c="1" with="@(root)"/>
-                <use component="DetailHeader" instance="DetailHeader" r="6" c="1" with="@(root)"/>
-                <repeat name="DetailRows" r="7" c="1" direction="down" from="@(root.Lines)" var="it">
+                <use component="TotalsRow" area="TotalsRow" r="5" c="1" with="@(root)"/>
+                <use component="DetailHeader" area="DetailHeader" r="6" c="1" with="@(root)"/>
+                <repeat area="DetailRows" r="7" c="1" direction="down" from="@(root.Lines)" var="it">
                   <styleRef name="DetailRowsGrid"/>
                   <use component="DetailRow" with="@(it)"/>
                 </repeat>
@@ -327,7 +327,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <cell r="1" c="1" value="Bordered">
                   <style>
@@ -519,11 +519,9 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
-                <sheetOptions>
-                  <conditionalFormatting at="A2:A4" minColor="#112233" maxColor="#AABBCC" />
-                </sheetOptions>
+                <conditionalFormatting at="A2:A4" minColor="#112233" maxColor="#AABBCC" />
                 <cell r="2" c="1" value="10" />
                 <cell r="3" c="1" value="20" />
                 <cell r="4" c="1" value="30" />
@@ -545,6 +543,269 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
+    /// Verifies that conditional formatting can be defined directly under sheet.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_DefinedOnSheet_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="A2:A3" minColor="#112233" maxColor="#AABBCC" />
+                <cell r="2" c="1" value="10" />
+                <cell r="3" c="1" value="20" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        Assert.Equal("$A$2:$A$3", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting can be defined under grid.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_DefinedOnGrid_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <grid r="2" c="2">
+                  <cell value="10" formulaRef="GridData" />
+                  <cell r="2" value="20" formulaRef="GridData" />
+                  <conditionalFormatting at="GridData" minColor="#112233" maxColor="#AABBCC" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        Assert.Equal("$B$2:$B$3", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting can be defined under repeat.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_DefinedOnRepeat_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it" area="RowData">
+                  <grid>
+                    <cell c="2" value="@(it.Value)" formulaRef="RowData" formulaRefScope="local" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Value = 10 },
+                new { Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.DoesNotContain(
+            result.Issues,
+            issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        Assert.Equal("$B$1:$B$2", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting can be defined under component.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_DefinedOnComponent_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="DetailRow">
+                <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                <grid>
+                  <cell c="2" value="@(data.Value)" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <use component="DetailRow" with="@(it)" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Value = 10 },
+                new { Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formattings = worksheetPart.Worksheet.Elements<ConditionalFormatting>().ToArray();
+
+        Assert.Equal(2, formattings.Length);
+        Assert.Equal("$B$1:$B$1", formattings[0].SequenceOfReferences!.InnerText);
+        Assert.Equal("$B$2:$B$2", formattings[1].SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-level conditional formatting target can resolve to use area named target.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetUseAreaNamedTarget_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="DetailRow">
+                <grid>
+                  <cell c="2" value="10" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <conditionalFormatting at="DetailRowInst" minColor="#112233" maxColor="#AABBCC" />
+                <use component="DetailRow" area="DetailRowInst" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$B$1:$B$1", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-level conditional formatting target can resolve to grid area named target.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetGridAreaNamedTarget_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="GridArea" minColor="#112233" maxColor="#AABBCC" />
+                <grid r="2" c="2" area="GridArea">
+                  <cell value="10" />
+                  <cell r="2" value="20" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$B$2:$B$3", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-level conditional formatting target can resolve formulaRef series inside standalone grid.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetGridStandaloneFormulaRef_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="GridData" minColor="#112233" maxColor="#AABBCC" />
+                <grid>
+                  <cell c="2" value="10" formulaRef="GridData" />
+                  <cell r="2" c="2" value="20" formulaRef="GridData" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$B$1:$B$2", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting target can resolve from formulaRef series name.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_FormulaRefTarget_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="Detail.Value" minColor="#112233" maxColor="#AABBCC" />
+                <cell r="2" c="2" value="100" formulaRef="Detail.Value" />
+                <cell r="3" c="2" value="200" formulaRef="Detail.Value" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$B$2:$B$3", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
     /// Verifies that end-to-end generation emits 3-color scale conditional formatting.
     /// </summary>
     [Fact]
@@ -552,11 +813,9 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
-                <sheetOptions>
-                  <conditionalFormatting at="A2:A4" minColor="#112233" midColor="#445566" maxColor="#AABBCC" />
-                </sheetOptions>
+                <conditionalFormatting at="A2:A4" minColor="#112233" midColor="#445566" maxColor="#AABBCC" />
                 <cell r="2" c="1" value="10" />
                 <cell r="3" c="1" value="20" />
                 <cell r="4" c="1" value="30" />
@@ -585,11 +844,9 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
-                <sheetOptions>
-                  <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" />
-                </sheetOptions>
+                <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" />
                 <cell r="2" c="1" value="1" formulaRef="FlagCell" />
                 <cell r="3" c="1" value="0" />
                 <cell r="4" c="1" value="1" />
@@ -618,11 +875,9 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
-                <sheetOptions>
-                  <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
-                </sheetOptions>
+                <conditionalFormatting at="A2:A4" formulaRef="FlagCell" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
                 <cell r="2" c="1" value="1" formulaRef="FlagCell" />
                 <cell r="3" c="1" value="0" />
                 <cell r="4" c="1" value="1" />
@@ -644,6 +899,198 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
+    /// Verifies that grid-local formulaRef series do not mix across top-level sibling scopes.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetLocalFormulaRefSeries_TopLevelSiblings_DoNotMix()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <grid r="1" c="1">
+                  <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                  <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+                <grid r="10" c="1">
+                  <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                  <cell c="2" value="20" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var targets = worksheetPart.Worksheet
+            .Elements<ConditionalFormatting>()
+            .Select(formatting => formatting.SequenceOfReferences!.InnerText)
+            .ToArray();
+
+        Assert.Equal(2, targets.Length);
+        Assert.Contains("$B$1:$B$1", targets);
+        Assert.Contains("$B$10:$B$10", targets);
+    }
+
+    /// <summary>
+    /// Verifies that repeat-defined conditional formatting resolves local formulaRef series inside nested use scope.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_DefinedOnRepeat_TargetsNestedUseLocalFormulaRef_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="DetailRow">
+                <grid>
+                  <cell c="2" value="@(data.Value)" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                  <use component="DetailRow" with="@(it)" />
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Value = 10 },
+                new { Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var targets = worksheetPart.Worksheet
+            .Elements<ConditionalFormatting>()
+            .Select(formatting => formatting.SequenceOfReferences!.InnerText)
+            .ToArray();
+
+        Assert.Equal(2, targets.Length);
+        Assert.Contains("$B$1:$B$1", targets);
+        Assert.Contains("$B$2:$B$2", targets);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-scope conditional formatting does not resolve local formulaRef targets from repeat scopes.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetLocalFormulaRefSeries_FromSheetScope_DoesNotLeak()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <grid>
+                    <cell value="@(it.Name)" />
+                    <cell c="2" value="@(it.Value)" formulaRef="RowData" formulaRefScope="local" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Name = "A", Value = 10 },
+                new { Name = "B", Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        Assert.Empty(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+    }
+
+    /// <summary>
+    /// Verifies that a direct grid sibling formula can resolve local formulaRef defined inside sibling use.
+    /// </summary>
+    [Fact]
+    public void Generate_GridSiblingFormula_ResolvesNestedSiblingLocalFormulaRef()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="DetailRow">
+                <grid>
+                  <cell c="2" value="@(data.Value)" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <grid>
+                  <use component="DetailRow" with="@(root.Item)" />
+                  <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Item = new { Value = 10 },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var formula = GetCell(document, "Summary", "C1").CellFormula;
+
+        Assert.NotNull(formula);
+        Assert.Equal("SUM(B1:B1)", formula!.Text);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting target can use global formulaRef series range.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_TargetGlobalFormulaRefSeries_EmitsRange()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="Detail.Value" minColor="#112233" maxColor="#AABBCC" />
+                <cell r="2" c="2" value="100" formulaRef="Detail.Value" />
+                <cell r="3" c="2" value="200" formulaRef="Detail.Value" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var formatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+
+        Assert.Equal("$B$2:$B$3", formatting.SequenceOfReferences!.InnerText);
+    }
+
+    /// <summary>
     /// Verifies that generate sheet repeat produces multiple sheets.
     /// </summary>
     [Fact]
@@ -651,7 +1098,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="@(it.Name)" from="@(root.Items)" var="it">
                 <cell r="1" c="1" value="@(it.Name)" />
               </sheet>
@@ -692,7 +1139,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Lines.Where(x => x.Amount >= 150m))" var="it">
                   <grid>
@@ -738,7 +1185,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Lines.Where(x => x.Amount >= 150m))" var="it">
                   <grid>
@@ -784,7 +1231,7 @@ public sealed class ReportGeneratorTests
     {
         const string dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
                 <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
                   <grid>
@@ -821,6 +1268,46 @@ public sealed class ReportGeneratorTests
         Assert.Equal("SUM(B1:B1)", firstFormula!.Text);
         Assert.Equal("SUM(B2:B2)", secondFormula!.Text);
     }
+
+    /// <summary>
+    /// Verifies that worksheet-state fallback warnings are included in result issues and logs.
+    /// </summary>
+    [Fact]
+    public void Generate_WorksheetStateFormulaRefFallbackWarning_IncludedInIssuesAndLogs()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="B1:B2" formulaRef="RowData" fillColor="#FFEEDD" />
+                <grid r="1" c="1">
+                  <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+                <grid r="2" c="1">
+                  <cell c="2" value="20" formulaRef="RowData" formulaRefScope="local" />
+                </grid>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.Contains(
+            result.Issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("target 'RowData'", StringComparison.Ordinal));
+        Assert.Contains(
+            result.LogEntries,
+            entry =>
+                entry.Level == LogLevel.Warning &&
+                entry.Phase == ReportPhase.LayoutExpanding &&
+                entry.Issue?.Kind == IssueKind.FormulaRefResolutionFallback);
+    }
+
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -883,3 +1370,4 @@ public sealed class ReportGeneratorTests
         public decimal Amount { get; init; }
     }
 }
+

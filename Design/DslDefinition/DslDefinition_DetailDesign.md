@@ -2,20 +2,28 @@
 
 ## Status
 
-- As-Is (Implemented): DSL パース対象の主要属性/タグは `instance` / `<styleImport>` / `rowSpan,colSpan` を採用（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/UseAst.cs:37`, `ExcelReport/ExcelReportLib/DSL/AST/StyleImportAst.cs:11`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:65`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:70`）。
+- As-Is (Implemented): DSL パース対象の主要属性/タグは `area` / `<styleImport>` / `rowSpan,colSpan` を採用（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/UseAst.cs:37`, `ExcelReport/ExcelReportLib/DSL/AST/StyleImportAst.cs:11`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:65`, `ExcelReport/ExcelReportLib/DSL/AST/Common.cs:70`）。
 - As-Is (Partial): `cell@styleRef` ショートカット読込は未実装（証跡: `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:12`, `ExcelReport/ExcelReportLib/DSL/AST/LayoutNode/CellAst.cs:17`）。
 - To-Be (Planned): 重複定義ルールを「後勝ち + Warning」へ変更、XSD 検証有効化、DSL 固有検証拡張を実施（証跡: `ExcelReport/ExcelReportLib/DSL/DslParser.cs:87`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:142`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:47`, `ExcelReport/ExcelReportLib/DSL/DslParser.cs:308`）。
 
 ## 1. 概要
 
 - ExcelReport DSL は、C# オブジェクトから Excel (OOXML) を生成するためのテンプレート定義言語である。
-- スキーマファイル: `DslDefinition_v1.xsd`（targetNamespace = `urn:excelreport:v1`）。
-- As-Is 契約（現行実装整合）は `Design/DslDefinition/DslDefinition_v1.xsd` および `Design/DslDefinition/DslDefinition_FullTemplate_Sample_v1.xml` を正とする。
+- スキーマファイル: `DslDefinition_v2.xsd`（targetNamespace = `urn:excelreport:v2`）。
+- As-Is 契約（現行実装整合）は `Design/DslDefinition/DslDefinition_v2.xsd` および `Design/DslDefinition/DslDefinition_FullTemplate_Sample_v2.xml` を正とする。
 - To-Be は As-Is 契約との差分として明示し、実装変更が必要な項目を分離管理する。
 
 ---
 
 ## 2. 変更概要 (Changelog)
+
+- 2026-03-26 (issue #45 follow-up / 設計方針更新):
+  - DSL namespace / schema を v2 へ移行（`urn:excelreport:v2`, `DslDefinition_v2.xsd`）。
+  - v1 namespace / schema（`urn:excelreport:v1`, `DslDefinition_v1.xsd`）は非互換で廃止。
+  - Named target 属性を `area` に統一（`use@area` / `repeat@area` / `grid@area`）。
+  - 旧 `use@instance` / `repeat@name` は完全廃止（breaking）。
+  - `conditionalFormatting@at` の解決で、`formulaRefScope="local"` 系列を親スコープから暗黙参照しない（local 非リーク）方針へ更新。
+  - top-level sibling 間で `formulaRefScope="local"` が混在しないよう、定義スコープを sibling ごとに分離。
 
 ---
 
@@ -195,6 +203,7 @@ XSD 上の型: `WorkbookType`。
 
 - grid 自身は `r` / `c` を持たず、親座標系から見たオフセットは親要素 (sheet/use/repeat) が決める。
 - grid 内部では (r,c) は grid ローカル座標。
+- `grid@area` を指定すると、`repeat@area` / `use@area` と同じ Named Area Key として `at="..."` から参照可能。
 - 子要素:
   - 任意の `styleRef` / `style`。
   - 任意の `cell` / `use` / `grid` / `repeat`。
@@ -202,7 +211,7 @@ XSD 上の型: `WorkbookType`。
 ### 4.4. use
 
 ```xml
-<use component="DetailRow" instance="DetailHeader" r="5" c="1" with="@(root)">
+<use component="DetailRow" area="DetailHeader" r="5" c="1" with="@(root)">
   <styleRef name="GridOuter"/>
 </use>
 ```
@@ -210,7 +219,7 @@ XSD 上の型: `WorkbookType`。
 - 属性:
   - 共通配置属性（r,c,rowSpan,colSpan,when）。
   - `component` : 参照するコンポーネント名。
-  - `instance` : インスタンス名（sheetOptions から参照するために使用）。
+  - `area` : 配置範囲の Named Area Key（`repeat@area` と同義）。
   - `with` : C# 式。コンポーネント内で `data` として参照されるオブジェクトを指定。
 - 子要素:
   - 任意の `styleRef` / `style`。
@@ -218,7 +227,7 @@ XSD 上の型: `WorkbookType`。
 ### 4.5. 2.5 repeat
 
 ```xml
-<repeat name="DetailRows"
+<repeat area="DetailRows"
         r="6" c="1" direction="down"
         from="@(root.Lines)" var="it">
   <styleRef name="DetailRowsGrid"/>
@@ -227,7 +236,7 @@ XSD 上の型: `WorkbookType`。
 ```
 
 ```xml
-<repeat name="DetailRows"
+<repeat area="DetailRows"
         r="6" c="1" direction="down">
   <from>@(root.Lines.Where(x => x.Code != "SKIP"))</from>
   <var>it</var>
@@ -241,7 +250,7 @@ XSD 上の型: `WorkbookType`。
   - `from` : C# 式。**IEnumerable** を返すこと（仕様制約、`<from>` 子要素でも指定可能）。
   - `var` : ループ変数名。省略時 `"item"`（`<var>` 子要素でも指定可能）。
   - `direction` : `"down"`（縦方向）または `"right"`（横方向）。
-  - `name` : インスタンス名。sheetOptions の `@at` などで参照可能。
+  - `area` : 配置範囲の Named Area Key（`use@area` と同義）。`sheetOptions` / `conditionalFormatting` の `@at` などで参照可能。
 - 子要素:
   - 任意で `<from>` / `<var>`（属性 `from` / `var` の代替指定）。
   - 先頭に任意個の `styleRef` / `style`。
@@ -387,7 +396,7 @@ scope 違反例:
 repeat 内 grid の例:
 
 ```xml
-<repeat name="DetailRows"
+<repeat area="DetailRows"
         r="6" c="1" direction="down"
         from="@(root.Lines)" var="it">
   <styleRef name="DetailRowsGrid"/>
@@ -396,7 +405,7 @@ repeat 内 grid の例:
 ```
 
 ```xml
-<repeat name="DetailRows"
+<repeat area="DetailRows"
         r="6" c="1" direction="down">
   <from>@(root.Lines.Where(x => x.Code != "SKIP"))</from>
   <var>it</var>
@@ -416,10 +425,13 @@ repeat 内 grid の例:
 
 ### 7.1. at="..." の解釈
 
-- sheet 内で `use@instance` または `repeat@name` を持つ要素を探索し、レイアウト完了後のセル範囲（外接矩形）を `Area(name)` として定義する:
+- Named Area Key を持つ要素を探索し、レイアウト完了後のセル範囲（外接矩形）を `Area(key)` として定義する:
+  - `use@area`
+  - `repeat@area`
+  - `grid@area`
 
 ```text
-Area(name) = { topRow, bottomRow, leftCol, rightCol }
+Area(key) = { topRow, bottomRow, leftCol, rightCol }
 ```
 
 ### 7.2. freeze
@@ -461,16 +473,22 @@ Area(name) = { topRow, bottomRow, leftCol, rightCol }
 ### 7.5. conditionalFormatting（issue #34）
 
 ```xml
-<sheetOptions>
+<sheet name="Summary">
   <conditionalFormatting at="DetailRows" minColor="#F8696B" maxColor="#63BE7B"/>
-</sheetOptions>
+</sheet>
 ```
 
 - 対応済みルール種別（2026-03-25時点）:
   - **colorScale（2色/3色グラデーション）**
   - **expression（Excel関数式一致時の書式変更）**
+- 定義可能位置:
+  - `<sheet>` 直下
+  - `<component>` 直下
+  - `<grid>` 直下
+  - `<repeat>` 直下
+  - `sheetOptions` 直下での定義は不可（削除済み）
 - 属性:
-  - `at`（必須）: 対象範囲。`A2:C10` のようなセル範囲、または NamedArea 名を指定可能。
+  - `at`（必須）: 対象範囲。`A2:C10` のようなセル範囲、NamedArea 名、または `formulaRef` 系列名を指定可能。
   - `minColor`（任意）: 最小値側カラー（`#RRGGBB`）。省略時は `#F8696B`。
   - `midColor`（任意）: 中央値側カラー（`#RRGGBB`）。指定時は3色グラデーションとして出力。
   - `maxColor`（任意）: 最大値側カラー（`#RRGGBB`）。省略時は `#63BE7B`。
@@ -482,6 +500,11 @@ Area(name) = { topRow, bottomRow, leftCol, rightCol }
   - `borderTop` / `borderBottom` / `borderLeft` / `borderRight` / `borderColor`（任意）: 式一致時の罫線設定。
 - 解決ルール:
   - `at` が NamedArea 名の場合、`WorksheetStateBuilder` が実セル範囲へ変換する。
+    - NamedArea は `use@area` / `repeat@area` / `grid@area` から生成する。
+  - `at` が `formulaRef` 系列名（例: `Detail.Value`）の場合、`<Name>` と `<Name>End` から系列範囲へ解決する。
+  - `formulaRefScope="local"` 系列は定義スコープ外へ暗黙公開しない（local 非リーク）。
+    - 例: `sheet` 直下の `conditionalFormatting@at` から `repeat` 内 local 系列を暗黙解決しない。
+  - 同名の local/global が併存する場合、`at` 解決優先は NamedArea / global / 直接指定の順とし、親スコープから local を優先しない。
   - `formula` 未指定時:
     - Renderer は `conditionalFormatting/cfRule(type=colorScale)` を生成する。
     - `midColor` 未指定なら2色、指定ありなら3色で出力する。
@@ -546,16 +569,16 @@ root.Lines.Select((value, index) => new { value, index });
 
 ### 11.1 同一ディレクトリ内の外部スタイル定義ファイルを読む例
 
-DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDefinition_FullTemplate_SampleExternalStyle_v1.xml` を配置し、
+DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDefinition_FullTemplate_SampleExternalStyle_v2.xml` を配置し、
 相対パスで読み込む。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<workbook xmlns="urn:excelreport:v1">
+<workbook xmlns="urn:excelreport:v2">
 
   <styles>
     <!-- 同一ディレクトリ内の外部スタイル定義をインポート -->
-    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v2.xml"/>
   </styles>
 
   <!-- （component 定義／componentImport／sheet 定義は後述） -->
@@ -567,8 +590,8 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- DslDefinition_FullTemplate_SampleExternalStyle_v1.xml -->
-<styles xmlns="urn:excelreport:v1">
+<!-- DslDefinition_FullTemplate_SampleExternalStyle_v2.xml -->
+<styles xmlns="urn:excelreport:v2">
   <style name="TitleCell" scope="cell">
     <font name="Meiryo" size="16" bold="true"/>
   </style>
@@ -604,7 +627,7 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 ポイント:
 
-- DSL 本体と外部スタイル定義ファイルは **同一 namespace (`urn:excelreport:v1`)**。
+- DSL 本体と外部スタイル定義ファイルは **同一 namespace (`urn:excelreport:v2`)**。
 - `href` には DSL ファイルから見た相対パスを指定する（上記では「同一ディレクトリ」なのでファイル名のみ）。
 - As-Is: 同名 style が複数定義された場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 style が複数定義された場合は「後勝ち + Warning」。
@@ -615,23 +638,23 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<workbook xmlns="urn:excelreport:v1">
+<workbook xmlns="urn:excelreport:v2">
 
   <styles>
-    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v2.xml"/>
   </styles>
 
   <!-- 同一ディレクトリ内の外部コンポーネント定義をインポート -->
-  <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v1.xml"/>
+  <componentImport href="DslDefinition_FullTemplate_SampleExternalComponent_v2.xml"/>
 
   <sheet name="Summary">
     <!-- 以降は従来どおり use/repeat で component を参照 -->
-    <use component="Title"       instance="HeaderTitle" r="1" c="1" with="@(root)"/>
-    <use component="KPI"         instance="KPI"         r="2" c="1" with="@(root.Summary)"/>
-    <use component="TotalsRow"   instance="TotalsRow"   r="4" c="1" with="@(root)"/>
-    <use component="DetailHeader" instance="DetailHeader" r="5" c="1" with="@(root)"/>
+    <use component="Title"       area="HeaderTitle" r="1" c="1" with="@(root)"/>
+    <use component="KPI"         area="KPI"         r="2" c="1" with="@(root.Summary)"/>
+    <use component="TotalsRow"   area="TotalsRow"   r="4" c="1" with="@(root)"/>
+    <use component="DetailHeader" area="DetailHeader" r="5" c="1" with="@(root)"/>
 
-    <repeat name="DetailRows"
+    <repeat area="DetailRows"
             r="6" c="1" direction="down"
             from="@(root.Lines)" var="it">
       <styleRef name="DetailRowsGrid"/>
@@ -646,12 +669,12 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- DslDefinition_FullTemplate_SampleExternalComponent_v1.xml -->
-<components xmlns="urn:excelreport:v1">
+<!-- DslDefinition_FullTemplate_SampleExternalComponent_v2.xml -->
+<components xmlns="urn:excelreport:v2">
 
   <!-- このコンポーネント集で使用するスタイル定義を外部ファイルから読み込む -->
   <styles>
-    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v1.xml"/>
+    <styleImport href="DslDefinition_FullTemplate_SampleExternalStyle_v2.xml"/>
   </styles>
 
   <!-- タイトル -->
@@ -726,7 +749,8 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 
 ポイント:
 
-- コンポーネント定義も DSL 本体と同一 namespace (`urn:excelreport:v1`)。
+- コンポーネント定義も DSL 本体と同一 namespace (`urn:excelreport:v2`)。
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
+
