@@ -8,17 +8,16 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// <summary>
     /// レイアウトノードを繰り返すことを表すASTノード
     /// </summary>
-    public sealed class RepeatAst : LayoutNodeAst
+    public sealed class RepeatAst : LayoutNodeAst, INamedAreaTarget
     {
         /// <summary>
         /// Gets the DSL element tag name.
         /// </summary>
         public static string TagName => "repeat";
         /// <summary>
-        /// ノードの定義名
-        /// (Attribute / Child Element)
+        /// Gets the target area name.
         /// </summary>
-        public string Name { get; init; } = string.Empty;
+        public string? AreaName { get; init; }
         
         /// <summary>
         /// fromの生値
@@ -43,6 +42,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// (Child Element)
         /// </summary>
         public LayoutNodeAst? Body { get; init; }
+        /// <summary>
+        /// Gets conditional formatting rules defined under repeat.
+        /// </summary>
+        public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
         /// XElementからAST構築
@@ -52,7 +55,19 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// <returns>RepeatAST</returns>
         public RepeatAst(XElement repeatElem, List<Issue> issues)
         {
-            var nameStr = repeatElem.Attribute("name")?.Value ?? string.Empty;
+            if (repeatElem.Attribute("name") is not null)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = "<repeat> 要素の name 属性は廃止されました。area 属性を使用してください。",
+                    Span = SourceSpan.CreateSpanAttributes(repeatElem),
+                });
+            }
+
+            var areaRaw = repeatElem.Attribute("area")?.Value;
+            var areaName = string.IsNullOrWhiteSpace(areaRaw) ? null : areaRaw.Trim();
             var fromExprRaw = ResolvePreferredText(
                 repeatElem,
                 repeatElem.Attribute("from"),
@@ -90,6 +105,9 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             
             // 子要素
             var layoutElems = repeatElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
+            var conditionalFormattings = repeatElem.Elements(repeatElem.Name.Namespace + ConditionalFormattingAst.TagName)
+                .Select(element => new ConditionalFormattingAst(element, issues))
+                .ToArray();
             if(layoutElems is null || 1 != layoutElems.Count())
             {
                 issues.Add(new Issue
@@ -102,11 +120,12 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
             }
             LayoutNodeAst? body = layoutElems?.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).FirstOrDefault() ?? null;
             
-            Name = nameStr;
+            AreaName = areaName;
             FromExprRaw = fromExprRaw;
             VarName = varNameStr;
             Direction = repeatDirection;
             Body = body;
+            ConditionalFormattings = conditionalFormattings;
         }
 
         private static string ResolvePreferredText(

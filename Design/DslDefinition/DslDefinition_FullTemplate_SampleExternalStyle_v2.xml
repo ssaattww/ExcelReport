@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<styles xmlns="urn:excelreport:v1">
+<styles xmlns="urn:excelreport:v2">
   <style name="TitleCell" scope="cell">
     <font name="Meiryo" size="16" bold="true"/>
   </style>
@@ -33,3 +33,4 @@
             color="#CCCCCC"/>
   </style>
 </styles>
+

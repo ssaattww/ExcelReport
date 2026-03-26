@@ -1,4 +1,5 @@
 using ExcelReportLib.LayoutEngine;
+using ExcelReportLib.DSL;
 
 namespace ExcelReportLib.WorksheetState;
 
@@ -11,6 +12,7 @@ public interface IWorksheetStateBuilder
     /// Builds worksheet state models from an expanded layout plan.
     /// </summary>
     /// <param name="layoutPlan">The layout plan.</param>
+    /// <param name="issues">Optional issue sink for non-fatal worksheet-state warnings.</param>
     /// <returns>A collection containing the result.</returns>
-    IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan);
+    IReadOnlyList<WorksheetState> Build(LayoutPlan layoutPlan, IList<Issue>? issues = null);
 }

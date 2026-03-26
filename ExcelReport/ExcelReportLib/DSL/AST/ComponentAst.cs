@@ -35,6 +35,10 @@ namespace ExcelReportLib.DSL.AST
         /// Gets or sets the style.
         /// </summary>
         public IReadOnlyList<StyleAst> Style { get; init; }
+        /// <summary>
+        /// Gets conditional formatting rules defined under component.
+        /// </summary>
+        public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
         /// Gets or sets the placement.
@@ -80,9 +84,13 @@ namespace ExcelReportLib.DSL.AST
 
             var styleRefsElem = componentElem.Elements(ns + StyleRefAst.TagName);
             var styleRefs = styleRefsElem.Select(e => new StyleRefAst(e, issues)).ToList();
+            var conditionalFormattings = componentElem.Elements(ns + ConditionalFormattingAst.TagName)
+                .Select(element => new ConditionalFormattingAst(element, issues))
+                .ToArray();
 
             StyleRefs = styleRefs;
             Style = styles;
+            ConditionalFormattings = conditionalFormattings;
             Name = nameAttr.Value;
             Body = bodyAst;
             Span = SourceSpan.CreateSpanAttributes(componentElem);

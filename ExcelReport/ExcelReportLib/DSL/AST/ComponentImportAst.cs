@@ -1,3 +1,4 @@
+using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST.LayoutNode;
 using System;
 using System.Collections.Generic;
@@ -101,6 +102,30 @@ namespace ExcelReportLib.DSL.AST
             {
                 doc = XDocument.Load(stream, LoadOptions.SetLineInfo);
                 var ns = doc.Root!.Name.Namespace;
+                if (!string.Equals(ns.NamespaceName, DslContract.NamespaceUri, StringComparison.Ordinal))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Fatal,
+                        Kind = IssueKind.SchemaViolation,
+                        Message = $"componentImport の namespace は '{DslContract.NamespaceUri}' のみサポートします。入力: '{ns.NamespaceName}' ({PathStr})",
+                        Span = SourceSpan.CreateSpanAttributes(doc.Root!),
+                    });
+                    return;
+                }
+
+                if (!string.Equals(doc.Root!.Name.LocalName, ComponentsAst.TagName, StringComparison.Ordinal))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Fatal,
+                        Kind = IssueKind.SchemaViolation,
+                        Message = $"componentImport のルート要素は <{ComponentsAst.TagName}> である必要があります。入力: <{doc.Root!.Name.LocalName}> ({PathStr})",
+                        Span = SourceSpan.CreateSpanAttributes(doc.Root!),
+                    });
+                    return;
+                }
+
                 var importDir = Path.GetDirectoryName(PathStr) ?? string.Empty;
                 var stylesElem = doc.Root.Element(ns + StylesAst.TagName);
 

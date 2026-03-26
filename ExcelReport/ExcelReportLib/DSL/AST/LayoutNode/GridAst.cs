@@ -8,7 +8,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
     /// <summary>
     /// Represents grid ast.
     /// </summary>
-    public sealed class GridAst : LayoutNodeAst, ICellAst
+    public sealed class GridAst : LayoutNodeAst, ICellAst, INamedAreaTarget
     {
         /// <summary>
         /// Gets the DSL element tag name.
@@ -29,6 +29,14 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// Gets or sets the children.
         /// </summary>
         public IReadOnlyDictionary<Placement, LayoutNodeAst> Children { get; init; } = default!;
+        /// <summary>
+        /// Gets the target area name.
+        /// </summary>
+        public string? AreaName { get; init; }
+        /// <summary>
+        /// Gets conditional formatting rules defined under grid.
+        /// </summary>
+        public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
         /// Initializes a new instance of the grid ast type.
@@ -39,10 +47,30 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         {
             var layoutElems = elem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
+            var conditionalFormattings = elem.Elements(elem.Name.Namespace + ConditionalFormattingAst.TagName)
+                .Select(element => new ConditionalFormattingAst(element, issues))
+                .ToArray();
+            var areaAttr = elem.Attribute("area");
+
+            if (elem.Attribute("name") is not null)
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = "<grid> 要素の name 属性は廃止されました。area 属性を使用してください。",
+                        Span = SourceSpan.CreateSpanAttributes(elem),
+                    });
+            }
 
             Rows = ParseOptionalNonNegativeIntAttribute(elem, "rows", issues);
             Cols = ParseOptionalNonNegativeIntAttribute(elem, "cols", issues);
+            AreaName = string.IsNullOrWhiteSpace(areaAttr?.Value)
+                ? null
+                : areaAttr.Value.Trim();
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
+            ConditionalFormattings = conditionalFormattings;
         }
 
         private static int ParseOptionalNonNegativeIntAttribute(XElement elem, string attrName, List<Issue> issues)

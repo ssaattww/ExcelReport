@@ -14,6 +14,8 @@
 /ExcelReport/ExcelReportLib.Tests/obj
 /.agents
 /.dotnet
+/.dotnet-home
+/.dotnet-*
 
 /.nuget
 /claude-code-workflows

@@ -358,6 +358,9 @@ public sealed class RendererTests
                           <groupRows at="DetailRows" collapsed="true" />
                         </groups>
                         <autoFilter at="DetailHeader" />
+                        """),
+                    conditionalFormattings: CreateConditionalFormattings(
+                        """
                         <conditionalFormatting at="DetailRows" minColor="#112233" midColor="#445566" maxColor="#AABBCC" />
                         <conditionalFormatting at="DetailHeader" formulaRef="DetailHeader" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" numberFormatCode="#,##0" />
                         """)),
@@ -443,10 +446,7 @@ public sealed class RendererTests
                     ],
                     rows: 20,
                     cols: 10,
-                    options: CreateSheetOptions(
-                        """
-                        <conditionalFormatting at="A2:C8" minColor="#112233" maxColor="#AABBCC" />
-                        """)),
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="A2:C8" minColor="#112233" maxColor="#AABBCC" />""")),
             ]);
 
         var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
@@ -482,10 +482,7 @@ public sealed class RendererTests
                     ],
                     rows: 20,
                     cols: 10,
-                    options: CreateSheetOptions(
-                        """
-                        <conditionalFormatting at="A1" minColor="#112233" maxColor="#AABBCC" />
-                        """)),
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="A1" minColor="#112233" maxColor="#AABBCC" />""")),
             ]);
 
         var worksheet = Assert.Single(new WorksheetStateBuilder().Build(plan));
@@ -732,7 +729,7 @@ public sealed class RendererTests
     {
         var issues = new List<Issue>();
         var element = XElement.Parse(
-            "<sheetOptions xmlns=\"urn:excelreport:v1\">" +
+            "<sheetOptions xmlns=\"urn:excelreport:v2\">" +
             innerXml +
             "</sheetOptions>");
 
@@ -740,6 +737,21 @@ public sealed class RendererTests
 
         Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
         return options;
+    }
+
+    private static IReadOnlyList<ConditionalFormattingAst> CreateConditionalFormattings(string innerXml)
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            "<sheet xmlns=\"urn:excelreport:v2\" name=\"Summary\">" +
+            innerXml +
+            "</sheet>");
+
+        var sheet = new SheetAst(sheetElement, issues);
+        var rules = sheet.ConditionalFormattings;
+
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        return rules;
     }
 
     private static ExcelReportLib.WorksheetState.WorksheetState CreateWorksheet(
@@ -876,3 +888,4 @@ public sealed class RendererTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 }
+

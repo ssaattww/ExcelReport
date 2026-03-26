@@ -5,6 +5,10 @@
   - tasks/tasks-status.md にタスク状況を最新に保つ
   - tasks/phases-status.md にフェーズ状況を最新に保つ
   - tasks/feedback-points.md にユーザーからの指摘点をメモする。
+  - 既存の設計書は修正してよい。破壊的変更を伴う場合は、`Design/BreakingChanges.md` に「どのバージョンで動作が変わるか」を必ず追記する。
+  - `Design/BreakingChanges.md` のバージョンは「変更後バージョン(予定)」と「変更後バージョン(確定)」を分けて管理する。
+  - 「変更後バージョン(予定)」は `X.Y.Zより後`（英語表記: `after X.Y.Z`）で統一して記載する。
+  - 変更後バージョン(確定)は GitHub Releases の番号（`tagName`）を正として採用し、Release 後に必ず更新する（例: `1.2.3`）。
   - codexに作業依頼する際には、必ずcodexに作業計画を聞いて確認する。
   - codexの作業後は、必ず作業に不備/不足がないかチェックを行い、指摘を行う
 上記以外にも作業中に以下のような状況に直面した場合は、codexに相談する:

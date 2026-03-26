@@ -38,7 +38,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var cellElement = XElement.Parse(
             """
-            <cell xmlns="urn:excelreport:v1">
+            <cell xmlns="urn:excelreport:v2">
               <value>@(root.Items.Where(x => x.Name != "Machine1").Count())</value>
             </cell>
             """);
@@ -58,7 +58,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var cellElement = XElement.Parse(
             """
-            <cell xmlns="urn:excelreport:v1" value="@(root.AttrValue)">
+            <cell xmlns="urn:excelreport:v2" value="@(root.AttrValue)">
               <value>@(root.ElementValue)</value>
             </cell>
             """);
@@ -80,7 +80,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var cellElement = XElement.Parse(
             """
-            <cell xmlns="urn:excelreport:v1" formulaRef="RowData" formulaRefScope="local" value="1" />
+            <cell xmlns="urn:excelreport:v2" formulaRef="RowData" formulaRefScope="local" value="1" />
             """);
 
         var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
@@ -99,7 +99,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var cellElement = XElement.Parse(
             """
-            <cell xmlns="urn:excelreport:v1" formulaRef="RowData" formulaRefScope="locla" value="1" />
+            <cell xmlns="urn:excelreport:v2" formulaRef="RowData" formulaRefScope="locla" value="1" />
             """);
 
         var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
@@ -134,7 +134,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var repeatElement = XElement.Parse(
             """
-            <repeat xmlns="urn:excelreport:v1" direction="down">
+            <repeat xmlns="urn:excelreport:v2" direction="down">
               <from>@(root.Items.Where(x => x.Name != "Machine1"))</from>
               <var>it</var>
               <cell value="A" />
@@ -157,7 +157,7 @@ public sealed class LayoutNodeTests
         var issues = new List<Issue>();
         var repeatElement = XElement.Parse(
             """
-            <repeat xmlns="urn:excelreport:v1" from="@(root.AttrItems)" var="attrVar" direction="down">
+            <repeat xmlns="urn:excelreport:v2" from="@(root.AttrItems)" var="attrVar" direction="down">
               <from>@(root.ElementItems)</from>
               <var>elementVar</var>
               <cell value="A" />
@@ -173,21 +173,21 @@ public sealed class LayoutNodeTests
     }
 
     /// <summary>
-    /// Verifies that parse use has instance attribute.
+    /// Verifies that parse use has area attribute.
     /// </summary>
     [Fact]
-    public void Parse_Use_HasInstanceAttribute()
+    public void Parse_Use_HasAreaAttribute()
     {
         var issues = new List<Issue>();
         var useElement = DslTestFixtures.GetRequiredDescendant(
             DslTestFixtures.FullTemplateFile,
             UseAst.TagName,
-            element => (string?)element.Attribute("instance") == "HeaderTitle");
+            element => (string?)element.Attribute("area") == "HeaderTitle");
 
         var use = Assert.IsType<UseAst>(LayoutNodeAst.LayoutNodeAstFactory(useElement, issues));
 
         Assert.Empty(issues);
-        Assert.Equal("HeaderTitle", use.InstanceName);
+        Assert.Equal("HeaderTitle", use.AreaName);
         Assert.Equal("Title", use.ComponentName);
     }
 
@@ -210,4 +210,25 @@ public sealed class LayoutNodeTests
         Assert.Equal(4, grid.Children.Count);
         Assert.All(grid.Children.Values, child => Assert.IsType<CellAst>(child));
     }
+
+    /// <summary>
+    /// Verifies that parse grid has area attribute.
+    /// </summary>
+    [Fact]
+    public void Parse_Grid_HasAreaAttribute()
+    {
+        var issues = new List<Issue>();
+        var gridElement = XElement.Parse(
+            """
+            <grid xmlns="urn:excelreport:v2" area="GridArea">
+              <cell value="A" />
+            </grid>
+            """);
+
+        var grid = Assert.IsType<GridAst>(LayoutNodeAst.LayoutNodeAstFactory(gridElement, issues));
+
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        Assert.Equal("GridArea", grid.AreaName);
+    }
 }
+

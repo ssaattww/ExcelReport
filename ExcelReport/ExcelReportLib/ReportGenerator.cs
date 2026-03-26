@@ -185,14 +185,21 @@ public sealed class ReportGenerator
 
         logger.Info("Building worksheet state.", ReportPhase.LayoutExpanding);
         IReadOnlyList<WorksheetStateModel> worksheets;
+        var worksheetStateIssues = new List<Issue>();
         try
         {
-            worksheets = _worksheetStateBuilder.Build(layoutPlan);
+            worksheets = _worksheetStateBuilder.Build(layoutPlan, worksheetStateIssues);
         }
         catch (InvalidOperationException ex)
         {
             var issue = CreateFatalIssue(ex.Message, IssueKind.InvalidAttributeValue);
             return CreateFatalResult(issues, logger, issue, ReportPhase.LayoutExpanding);
+        }
+
+        if (worksheetStateIssues.Count > 0)
+        {
+            issues.AddRange(worksheetStateIssues);
+            LogIssues(logger, worksheetStateIssues, ReportPhase.LayoutExpanding);
         }
 
         logger.Info("Rendering workbook.", ReportPhase.Rendering);

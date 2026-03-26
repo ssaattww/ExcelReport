@@ -1,9 +1,42 @@
 # Phases Status
 
-Last Updated: 2026-03-25
+Last Updated: 2026-03-26
 
 ## Overall Progress
 
+- 2026-03-26: GitHub xunit-tests 失敗（`Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins`）を修正し、`componentImport` 厳格化後のfixture整合を反映
+- 2026-03-26: 回帰として `dotnet test --no-restore` を全件実行し `Passed 179, Failed 0` を確認
+- 2026-03-26: ユーザー指定レビュー指摘3-6に対応し、global/local衝突解決・sheet-scope fallback非リーク化・importルート厳格検証を実装
+- 2026-03-26: 追加テスト（WorksheetState/ReportGenerator/ValidateDsl/ComponentImport/StyleImport）を反映し、関連76件テスト全通過を確認
+- 2026-03-26: PR#47レビュー指摘に対応し、`sheet` 直下 sibling `cell` の local formulaRef 共有スコープ回帰を修正
+- 2026-03-26: `LayoutEngineTests` / `ReportGeneratorTests` に回帰テストを追加し、`WorksheetState/ReportGenerator/LayoutEngine` 関連83件テスト全通過を確認
+- 2026-03-26: local `formulaRef` 曖昧解決時のフォールバック/タイブレークで Warning 必須化（`IssueKind.FormulaRefResolutionFallback`）を実装
+- 2026-03-26: `WorksheetStateBuilder` -> `ReportGenerator` へ worksheet-state warning の集約経路を追加し、`ReportGeneratorResult.Issues` / logger に反映
+- 2026-03-26: 検証として `dotnet test --filter "WorksheetStateTests|ReportGeneratorTests"` を実行し 57件全通過を確認
+- 2026-03-26: `dotnet restore` の権限問題（AppData/NuGet.Config ACL）を昇格実行で回避し、その後通常権限で `dotnet test --no-restore --no-build` 全165件通過を確認
+- 2026-03-26: local可視性方針を最終確定し、同一親siblingでの参照を許可するため `WorksheetStateBuilder.FindNamedArea` に子孫ローカル一意解決を追加
+- 2026-03-26: `local` 可視性仕様を再調整（同一sibling可視・sibling内側不可視）し、`ExpandGrid` の child scope を `cell` とコンテナで分岐
+- 2026-03-26: publish workflowの push版数基準を `VersionPrefix` チャネルタグへ変更し、`X.Y.Z-pre` の patch増分運用を維持
+- 2026-03-26: sub-agentレビューで local formulaRef の nested scope 混線リスク（P1/P2）を受領
+- 2026-03-26: 設計書ファイル名のバージョンサフィックス（`_v1`等）を廃止（XSDは例外）し、Design配下の対象Markdownをリネーム
+- 2026-03-26: 実装後レビューを実施し、`reports/issue45-area-breaking-change-review-2026-03-26.md` に top-level sibling 間の local formulaRef スコープ混在リスク（P1）を記録
+- 2026-03-26: issue#45の破壊的変更として named target 属性を `area` に統一（`repeat@area` / `use@area` / `grid@area`）
+- 2026-03-26: 旧 `repeat@name` / `use@instance` / `grid@name` を非対応化（ASTでError化）
+- 2026-03-26: `INamedAreaTarget.AreaName` による共通解決経路へ統合（DslParser/LayoutEngine）
+- 2026-03-26: `ReportGeneratorTests` を中心に repeat/use/grid/sheet/formulaRef/local non-leak の条件付き書式E2Eを検証（14件通過）
+- 2026-03-26: 追加検証として area移行テスト（LayoutEngine/SheetAst/WorksheetState/ValidateDsl/LayoutNode/FullTemplate）を実施し全件通過
+- 2026-03-26: 広域回帰として Parser/Layout/Renderer/ReportGenerator を横断する 127テストを `--no-build --no-restore` で実行し全通過
+- 2026-03-26: 全体回帰 `dotnet test --no-build --no-restore` を実行し 161件全通過
+- 2026-03-26: repo直下の一時実行痕跡 `.appdata/.nuget/.dotnet` を削除し、以降の test 環境は `%TEMP%` 配下へ分離
+- 2026-03-26: `%TEMP%/excelreport-codex-env` で `dotnet restore` を成功させた上で、`--no-restore` の再ビルド回帰（127件）と全件回帰（161件）を再確認
+- 2026-03-26: sandbox環境制約対応として `APPDATA` / `DOTNET_CLI_HOME` / `NUGET_PACKAGES` をワークスペース配下へ切替えて `dotnet test` を実行
+- 2026-03-26: `Design/BreakingChanges.md` を英語化し、予定バージョン表記を `X.Y.Zより後`（`after X.Y.Z`）へ統一
+- 2026-03-26: `publish-nuget.yml` から BreakingChanges の自動検証ステップを削除（Actionによる強制チェックを廃止）
+- 2026-03-26: issue#45 着手。`gh issue view 45` で要件を取得し、`conditionalFormatting` の範囲ターゲットに formulaRef 系列（global/local）を使えるよう調査を開始
+- 2026-03-26: issue#45 実装として `conditionalFormatting@at` に formulaRef 系列名（global/local）を指定した範囲解決を追加
+- 2026-03-26: local series の複数スコープ展開を追加し、同名の local/global 競合時は local 優先へ統一
+- 2026-03-26: `WorksheetStateTests` 3件 + `ReportGeneratorTests` 2件を追加し、`ConditionalFormatting` フィルタ 15件全通過を確認
+- 2026-03-26: 調査記録 `reports/issue45-conditional-formatting-formularef-target-2026-03-26.md` を追加
 - 2026-03-25: PR#41 inline指摘対応として `conditionalFormatting@at` の単一セル指定（例: `A1`）をレンダラー解決対象に追加
 - 2026-03-25: 回帰テスト `Render_ConditionalFormatting_SingleCellTarget_IsRendered` を追加
 - 2026-03-25: 全体テスト `ExcelReportLib.Tests` 141件全通過を確認、記録 `reports/pr41-inline-single-cell-target-fix-2026-03-25.md` を追加
@@ -106,6 +139,11 @@ Last Updated: 2026-03-25
 - 2026-03-19: DynamicLinqRewriteMap フォールバックを導入し、匿名型入力の template LINQ E2E をGreen化
 - 2026-03-19: GitHub Release の pre-release/release と NuGet publish 版種の同期ロジックを publish-nuget.yml に追加
 - 2026-03-19: READMEからNuGet公開手順を削除し、運用情報をreportsへ移管
+- 2026-03-26: issue #45 の破壊的変更（named target属性の `area` 完全統一）を完了
+- 2026-03-26: 回帰検証として `ExcelReportLib.Tests` 全体を実行し `Passed 161, Failed 0` を確認
+- 2026-03-26: issue #45 の follow-up として DSL namespace/schema を v2（`urn:excelreport:v2`/`DslDefinition_v2.xsd`）へ完全移行
+- 2026-03-26: top-level sibling scope を分離し、local formulaRef の sibling 混在不具合（P1）を修正
+- 2026-03-26: 追加テスト3件 + 主要回帰 + 全体回帰を実施し `Passed 165, Failed 0` を確認
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%

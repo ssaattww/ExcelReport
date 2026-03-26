@@ -18,7 +18,7 @@ namespace ExcelReportExe
         {
 
             //var sampleData = SampleDataFactory.Create();
-            //var parsedResult = DslParser.ParseFromFile(@"C:\Users\taiga\source\repos\ExcelReport\ExcelReport\ExcelReportLibTest\TestDsl\DslDefinition_FullTemplate_Sample_v1.xml");
+            //var parsedResult = DslParser.ParseFromFile(@"C:\Users\taiga\source\repos\ExcelReport\ExcelReport\ExcelReportLibTest\TestDsl\DslDefinition_FullTemplate_Sample_v2.xml");
             //var parsedRoot = parsedResult.Root;
             //if (parsedRoot == null)
             //{
@@ -90,7 +90,7 @@ namespace ExcelReportExe
                     }
                     break;
                 case RepeatAst repeat:
-                    Console.WriteLine($"{indentStr}Repeat: {repeat.Placement.Row},{repeat.Placement.Col} {repeat.Name} From: {repeat.FromExprRaw} Var: {repeat.VarName} Direction: {repeat.Direction}");
+                    Console.WriteLine($"{indentStr}Repeat: {repeat.Placement.Row},{repeat.Placement.Col} {repeat.AreaName} From: {repeat.FromExprRaw} Var: {repeat.VarName} Direction: {repeat.Direction}");
                     if (repeat.Body != null)
                     {
                         WalkLayoutNode(repeat.Body, indent + 1);
@@ -121,7 +121,7 @@ namespace ExcelReportExe
 
         const string Dsl =
             """
-            <workbook xmlns="urn:excelreport:v1">
+            <workbook xmlns="urn:excelreport:v2">
               <styles>
                 <style name="TitleCell" scope="cell">
                   <font name="Meiryo" size="16" bold="true"/>
@@ -205,8 +205,8 @@ namespace ExcelReportExe
               </component>
 
               <sheet name="Summary">
-                <use component="Title" instance="HeaderTitle" r="1" c="1" with="@(root)"/>
-                <use component="KPI" instance="KPI" r="2" c="1" with="@(root.Summary)"/>
+                <use component="Title" area="HeaderTitle" r="1" c="1" with="@(root)"/>
+                <use component="KPI" area="KPI" r="2" c="1" with="@(root.Summary)"/>
                 <cell r="4" c="1" value="=TODAY()">
                   <styleRef name="BaseCell"/>
                 </cell>
@@ -216,9 +216,9 @@ namespace ExcelReportExe
                     <border mode="cell" bottom="thin" color="#000000"/>
                   </style>
                 </cell>
-                <use component="TotalsRow" instance="TotalsRow" r="5" c="1" with="@(root)"/>
-                <use component="DetailHeader" instance="DetailHeader" r="6" c="1" with="@(root)"/>
-                <repeat name="DetailRows" r="7" c="1" direction="down" from="@(root.Lines)" var="it">
+                <use component="TotalsRow" area="TotalsRow" r="5" c="1" with="@(root)"/>
+                <use component="DetailHeader" area="DetailHeader" r="6" c="1" with="@(root)"/>
+                <repeat area="DetailRows" r="7" c="1" direction="down" from="@(root.Lines)" var="it">
                   <styleRef name="DetailRowsGrid"/>
                   <use component="DetailRow" with="@(it)"/>
                 </repeat>
@@ -227,3 +227,4 @@ namespace ExcelReportExe
             """;
     }
 }
+

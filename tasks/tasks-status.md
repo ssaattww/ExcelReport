@@ -1,10 +1,50 @@
 # Tasks Status
 
-Last Updated: 2026-03-25
+Last Updated: 2026-03-26
 Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-26 CI失敗修正: `LayoutEngineTests.Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins` の import fixture を `<workbook>` から `<components>` へ修正し、`componentImport` ルート厳格化と整合
+- 2026-03-26 再検証: `dotnet test --no-restore` 全件実行で `Passed 179, Failed 0` を確認
+- 2026-03-26 PR#47追加レビュー対応(3-6): `FindNamedArea` の global/unique-descendant 衝突時に global優先+Warning化、sheet-scope `conditionalFormatting@formulaRef` は fallback経路のみ local非リーク化
+- 2026-03-26 PR#47追加レビュー対応(3-6): `styleImport`/`componentImport` にルート要素名（`styles`/`components`）のFatal検証を追加
+- 2026-03-26 テスト追加・更新: `WorksheetStateTests`/`ReportGeneratorTests`/`ValidateDslTests`/`ComponentImportTests`/`StyleImportTests` を更新し 76件通過
+- 2026-03-26 PR#47レビュー対応: `sheet` 直下 sibling `cell` の local formulaRef 参照回帰を修正（`LayoutEngine.ExpandSheet` で `cell` は `/sheet` 共有、非`cell` は `/sheet/node-{index}` を維持）
+- 2026-03-26 テスト追加: `Expand_SheetCellSiblings_ShareLocalScopePath` / `Generate_SheetCellSiblingFormula_ResolvesLocalFormulaRef` を追加し、関連83件回帰テスト通過
+- 2026-03-26 仕様追加: local `formulaRef` の曖昧解決でフォールバック（またはタイブレーク選択）した場合は `IssueSeverity.Warning` を必須化
+- 2026-03-26 実装更新: `WorksheetStateBuilder` でフォールバック警告（`IssueKind.FormulaRefResolutionFallback`）を発行し、`ReportGeneratorResult.Issues` / ログへ集約
+- 2026-03-26 テスト追加: `WorksheetStateTests` 3件 + `ReportGeneratorTests` 1件で warning発行を検証（`dotnet test --filter \"WorksheetStateTests|ReportGeneratorTests\"`: Passed 57）
+- 2026-03-26 環境確認: `dotnet restore` は sandbox では `C:\Users\taiga\AppData\Roaming\NuGet\NuGet.Config` ACL で失敗するが、権限昇格実行で復旧し、その後 `dotnet test --no-restore --no-build` は通常実行で `Passed 165` を確認
+- 2026-03-26 仕様確定: local可視性は「同一親の sibling は可視（use/grid/repeat内含む）、別親スコープは不可視」に統一し、`FindNamedArea` に子孫ローカル一意解決を追加
+- 2026-03-26 仕様調整: `local` 可視性を「同一スコープの sibling は可視、sibling の内側スコープは不可視」に合わせて調整（`ExpandGrid` の child scope 付与を `cell` とコンテナで分岐）
+- 2026-03-26 テスト調整: `LayoutEngineTests.Expand_RepeatGridSiblings_ShareLocalScopePath` へ期待値更新、`Generate_GridSiblingFormula_DoesNotResolveNestedSiblingLocalFormulaRef` を追加
+- 2026-03-26 運用改善: `publish-nuget.yml` の push 版数解決を `latest_stable_tag` 基準から `VersionPrefix` チャネル内タグ基準へ変更（`X.Y.Z-pre` の `Z` をタグで継続インクリメント）
+- 2026-03-26 受領レビュー: sub-agent 指摘として local formulaRef の nested scope 混線リスク（P1/P2）を確認
+- 2026-03-26 運用更新: 設計書ファイル名のバージョンサフィックス（`_v1`等）を廃止（XSDは例外）し、`Design/BasicDesign.md` / `Design/DslDefinition/DslDefinition_DetailDesign.md` / `Design/DslParser/DslParser_DetailDesign.md` へリネーム
+- 2026-03-26 レビュー追記: `reports/issue45-area-breaking-change-review-2026-03-26.md` を追加し、top-level sibling 間で local formulaRef スコープが混在し得るリスク（P1）を記録
+- 2026-03-26 issue#45 破壊的変更実装: Named target属性を `area` に統一（`repeat@area` / `use@area` / `grid@area`）。`repeat@name` / `use@instance` / `grid@name` はASTでError化し非対応化
+- 2026-03-26 実装更新: `INamedAreaTarget.AreaName` で named target解決経路を共通化（Parser/LayoutEngine）
+- 2026-03-26 仕様更新: XSDを更新（Design版/TestDsl版）し `UseType@area` / `RepeatType@area` / `GridType@area` を反映
+- 2026-03-26 テスト更新: `ReportGeneratorTests`（repeat/use/grid/sheet/formulaRef/local non-leak）・`LayoutEngineTests`・`SheetAstTests`・`WorksheetStateTests`・`ValidateDslTests` を更新/追加
+- 2026-03-26 検証: `dotnet test --filter \"FullyQualifiedName~ReportGeneratorTests.Generate_ConditionalFormatting_\"` (Passed 14, Failed 0)
+- 2026-03-26 検証: `dotnet test --filter \"...Expand_UseAreaAndRepeatAreaAndGridArea...|...Parse_Sheet_LayoutNodesWithAreaAttributes...|...Build_ConditionalFormatting_Target_NamedArea_PrecedesFormulaRefSeries...|...ValidateDsl_LegacyNamedTargetAttributes...|...ValidateDsl_SheetOptions_TargetGridArea...\"` (Passed 5, Failed 0)
+- 2026-03-26 検証: `dotnet test --filter \"FullyQualifiedName~LayoutNodeTests.Parse_Use_HasAreaAttribute|FullyQualifiedName~LayoutNodeTests.Parse_Grid_HasAreaAttribute\"` (Passed 2, Failed 0)
+- 2026-03-26 検証: `dotnet test --filter \"FullyQualifiedName~FullTemplate\"` (Passed 8, Failed 0)
+- 2026-03-26 回帰検証: `dotnet test --no-build --no-restore --filter \"DslParser/ValidateDsl/LayoutNode/SheetAst/LayoutEngine/WorksheetState/Renderer/ReportGenerator\"` (Passed 127, Failed 0)
+- 2026-03-26 総合検証: `dotnet test --no-build --no-restore` (Passed 161, Failed 0)
+- 2026-03-26 後処理: repo直下の一時実行痕跡 `.appdata/.nuget/.dotnet` を削除し、以降は `%TEMP%` 配下環境変数でテスト実行
+- 2026-03-26 再検証: `%TEMP%/excelreport-codex-env` 環境で `dotnet restore` 成功後、`--no-restore` で再ビルド+回帰 (`Passed 127`, `Passed 161`)
+- 2026-03-26 環境対処: sandbox権限制約により `APPDATA` / `DOTNET_CLI_HOME` / `NUGET_PACKAGES` をワークスペース配下へリダイレクトしてテスト実行
+- 2026-03-26 運用更新: `Design/BreakingChanges.md` を英語化し、予定バージョン表記を `X.Y.Zより後`（`after X.Y.Z`）へ統一
+- 2026-03-26 運用更新: `publish-nuget.yml` から BreakingChanges の自動強制チェックを削除（Actionで失敗させない方針へ変更）
+- 2026-03-26 issue#45 着手: `gh issue view 45` で要件を取得し、`conditionalFormatting` の範囲指定を `at` 直接指定から formulaRef 系列解決まで拡張する方針で調査開始
+- 2026-03-26 issue#45 実装: `conditionalFormatting@at` で `formulaRef` 系列名を範囲ターゲットとして解決できるよう `WorksheetStateBuilder` を拡張
+- 2026-03-26 local対応: `formulaRefScope="local"` 系列名指定時はスコープごとに条件付き書式を展開するよう対応
+- 2026-03-26 競合解決: 同名の local/global 系列が共存する場合、`at` 解決は local を優先する仕様に統一
+- 2026-03-26 テスト追加: `WorksheetStateTests` 3件 + `ReportGeneratorTests` 2件（issue#45向け）
+- 2026-03-26 検証: `dotnet test --filter \"ConditionalFormatting\"` 15件全通過（Failed 0）
+- 2026-03-26 記録: `reports/issue45-conditional-formatting-formularef-target-2026-03-26.md` を作成
 - 2026-03-25 PR#41 inline指摘対応: `conditionalFormatting@at="A1"` 単一セル指定をレンダラーで解決可能に修正
 - 2026-03-25 テスト追加: `RendererTests.Render_ConditionalFormatting_SingleCellTarget_IsRendered`
 - 2026-03-25 検証: `ExcelReportLib.Tests` 141件全通過（Failed 0）
@@ -137,6 +177,14 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 
 ## Additional Work (2026-03-19)
+
+- 2026-03-26 issue #45: named target属性の完全破壊変更（`area` 統一）を実装完了（`repeat@area`/`use@area`/`grid@area`）
+- 2026-03-26 issue #45: `INamedAreaTarget.AreaName` による共通解決へ統一し、legacy属性（`name`/`instance`）拒否をテストで担保
+- 2026-03-26 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --no-restore` 実行結果 `Passed 161, Failed 0`
+- 2026-03-26 issue #45: DSL namespace/schema を v2 へ完全移行（`urn:excelreport:v2` / `DslDefinition_v2.xsd` / `*_v2.xml`）
+- 2026-03-26 issue #45: parser/import に v2 namespace 強制チェックを追加し、v1互換を明示的に拒否
+- 2026-03-26 issue #45(P1): top-level sibling ごとに scopePath を分離し、local formulaRef の sibling 混在を防止
+- 2026-03-26 検証: 追加テスト3件 + 影響範囲回帰 + 全体回帰を実行し `Passed 165, Failed 0` を確認
 
 - 2026-03-25 #35 E2E追加: `ReportGeneratorTests` に repeat + `formulaRefScope="local"` の実xlsx生成テストを追加
 - 2026-03-25 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj` で追加E2E含む全件通過

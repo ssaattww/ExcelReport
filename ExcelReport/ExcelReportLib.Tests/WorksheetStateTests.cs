@@ -233,6 +233,9 @@ public sealed class WorksheetStateTests
                           <groupCols at="DetailHeader" collapsed="false" />
                         </groups>
                         <autoFilter at="DetailHeader" />
+                        """),
+                    conditionalFormattings: CreateConditionalFormattings(
+                        """
                         <conditionalFormatting at="DetailRows" minColor="#112233" maxColor="#AABBCC" />
                         <conditionalFormatting at="DetailHeader" formula="A5&gt;0" formulaRef="DetailHeader" fillColor="#FFEEDD" fontBold="true" borderBottom="thin" borderColor="#222222" />
                         """)),
@@ -475,6 +478,33 @@ public sealed class WorksheetStateTests
     }
 
     /// <summary>
+    /// Verifies that local formula series do not cross top-level sibling scopes.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaPlaceholder_LocalSeries_DoesNotCrossTopLevelSiblings()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 1, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/node-0"),
+                        CreateCell(row: 1, col: 3, value: null, formula: "=SUM(#{RowData:RowDataEnd})", scopePath: "/sheet/node-0"),
+                        CreateCell(row: 10, col: 2, value: 20, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/node-1"),
+                        CreateCell(row: 10, col: 3, value: null, formula: "=SUM(#{RowData:RowDataEnd})", scopePath: "/sheet/node-1"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        Assert.Equal("=SUM(B1:B1)", sheet.Cells[(1, 3)].Formula);
+        Assert.Equal("=SUM(B10:B10)", sheet.Cells[(10, 3)].Formula);
+    }
+
+    /// <summary>
     /// Verifies that conditional formatting formula refs resolve from local scope using the target range.
     /// </summary>
     [Fact]
@@ -490,7 +520,7 @@ public sealed class WorksheetStateTests
                     ],
                     rows: 20,
                     cols: 10,
-                    options: CreateSheetOptions(
+                    conditionalFormattings: CreateConditionalFormattings(
                         """
                         <conditionalFormatting at="B5:D5" formulaRef="RowData" />
                         <conditionalFormatting at="B10:D10" formulaRef="RowData" />
@@ -503,6 +533,287 @@ public sealed class WorksheetStateTests
         Assert.Equal(2, sheet.Options.ConditionalFormattings.Count);
         Assert.Equal("B5", sheet.Options.ConditionalFormattings[0].FormulaRef);
         Assert.Equal("B10", sheet.Options.ConditionalFormattings[1].FormulaRef);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting target can resolve from global formulaRef series.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_Target_GlobalFormulaRefSeries_ResolvesRange()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 6, col: 2, value: 100, formulaRef: "Detail.Value"),
+                        CreateCell(row: 7, col: 2, value: 200, formulaRef: "Detail.Value"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="Detail.Value" minColor="#112233" maxColor="#AABBCC" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B6:B7", rule.Target);
+    }
+
+    /// <summary>
+    /// Verifies that conditional formatting target resolves named area before formulaRef series.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_Target_NamedArea_PrecedesFormulaRefSeries()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 6, col: 2, value: 100, formulaRef: "RowData"),
+                        CreateCell(row: 7, col: 2, value: 200, formulaRef: "RowData"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("RowData", topRow: 1, leftColumn: 1, bottomRow: 1, rightColumn: 1),
+                    ],
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("A1:A1", rule.Target);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-scope conditional formatting target does not resolve local formulaRef series from child scopes.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_Target_LocalFormulaRefSeries_FromSheetScope_DoesNotExpand()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 5, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 6, col: 2, value: 20, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 30, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                        CreateCell(row: 11, col: 2, value: 40, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("RowData", rule.Target);
+    }
+
+    /// <summary>
+    /// Verifies that global formulaRef series is used when sheet-scope target collides with local series names.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_Target_FormulaRefNameCollision_UsesGlobalSeriesOutsideLocalScope()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 6, col: 2, value: 20, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 30, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                        CreateCell(row: 11, col: 2, value: 40, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="RowData" minColor="#112233" maxColor="#AABBCC" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B2:B2", rule.Target);
+    }
+
+    /// <summary>
+    /// Verifies that ambiguous descendant local formulaRef lookup emits warning and falls back.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_AmbiguousDescendantLocalMatch_EmitsWarningAndFallsBack()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 20, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                        CreateCell(row: 3, col: 4, value: null, formula: "=#{RowData}", scopePath: "/sheet/0"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        Assert.Equal("=B2", sheet.Cells[(3, 4)].Formula);
+        Assert.Contains(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("target 'RowData'", StringComparison.Ordinal) &&
+                issue.Message.Contains("descendant candidates", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that global formulaRef is preferred when unique descendant local uses the same name.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_UniqueDescendantLocalWithExistingGlobal_PrefersGlobalWithWarning()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 3, col: 4, value: null, formula: "=#{RowData}", scopePath: "/sheet/0"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        Assert.Equal("=B2", sheet.Cells[(3, 4)].Formula);
+        Assert.Contains(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("preferring global lookup", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that conditional formulaRef deterministic tie-break emits warning.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_AmbiguousScopedCandidates_EmitsWarningAndUsesDeterministicTieBreak()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 6, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="B5:B6" formulaRef="RowData" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B5", rule.FormulaRef);
+        Assert.Contains(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("target 'RowData'", StringComparison.Ordinal) &&
+                issue.Message.Contains("deterministic tie-break", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that sheet-scope conditional formulaRef falls back to global without descendant local leak.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_MultipleUniqueLocalCandidates_FallsBackToGlobalWithoutWarning()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="UnknownTarget" formulaRef="RowData" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B2", rule.FormulaRef);
+        Assert.DoesNotContain(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("scope '/sheet'", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that sheet-scope conditional formulaRef does not resolve descendant local candidates.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_FromSheetScope_DoesNotResolveDescendantLocal()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="A1:A1" formulaRef="RowData" fillColor="#FFEEDD" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B2", rule.FormulaRef);
+        Assert.DoesNotContain(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("scope '/sheet'", StringComparison.Ordinal));
     }
 
     private static LayoutCell CreateCell(
@@ -532,7 +843,7 @@ public sealed class WorksheetStateTests
         var issues = new List<Issue>();
         var element = XElement.Parse(
             $$"""
-            <sheetOptions xmlns="urn:excelreport:v1">
+            <sheetOptions xmlns="urn:excelreport:v2">
               {{innerXml}}
             </sheetOptions>
             """);
@@ -541,6 +852,23 @@ public sealed class WorksheetStateTests
 
         Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
         return options;
+    }
+
+    private static IReadOnlyList<ConditionalFormattingAst> CreateConditionalFormattings(string innerXml)
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            $$"""
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              {{innerXml}}
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+        var rules = sheet.ConditionalFormattings;
+
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+        return rules;
     }
 
     private static StylePlan CreateStylePlan()
@@ -567,3 +895,4 @@ public sealed class WorksheetStateTests
             borderTraces: []);
     }
 }
+

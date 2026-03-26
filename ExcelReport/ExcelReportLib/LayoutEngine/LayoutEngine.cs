@@ -137,12 +137,17 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var cells = new List<LayoutCell>();
         var namedAreas = new List<LayoutNamedArea>();
+        var conditionalFormattings = new List<LayoutConditionalFormatting>();
         var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
+        conditionalFormattings.AddRange(CreateScopedConditionalFormattings(sheet.ConditionalFormattings, "/sheet"));
 
         var sheetChildren = sheet.Children.Values.ToArray();
         for (var childIndex = 0; childIndex < sheetChildren.Length; childIndex++)
         {
             var child = sheetChildren[childIndex];
+            var childScopePath = child is CellAst
+                ? "/sheet"
+                : $"/sheet/node-{childIndex}";
             var result = ExpandNode(
                 child,
                 baseRow: 1,
@@ -150,7 +155,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
-                scopePath: "/sheet",
+                scopePath: childScopePath,
                 inheritedStyles,
                 componentIndex,
                 styleResolver,
@@ -165,6 +170,11 @@ public sealed class LayoutEngine : ILayoutEngine
             {
                 namedAreas.AddRange(result.NamedAreas);
             }
+
+            if (result.ConditionalFormattings.Count > 0)
+            {
+                conditionalFormattings.AddRange(result.ConditionalFormattings);
+            }
         }
 
         var maxUsedRow = GetMaxUsedRow(cells);
@@ -173,7 +183,15 @@ public sealed class LayoutEngine : ILayoutEngine
         var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
 
         ValidateCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, cells, issues);
-        sheets.Add(new LayoutSheet(sheetName, cells, resolvedSheetRows, resolvedSheetCols, namedAreas, sheet.Options));
+        sheets.Add(
+            LayoutSheet.CreateWithScopedConditionalFormattings(
+                sheetName,
+                cells,
+                resolvedSheetRows,
+                resolvedSheetCols,
+                namedAreas,
+                sheet.Options,
+                conditionalFormattings));
     }
 
     private string ResolveSheetName(
@@ -311,7 +329,8 @@ public sealed class LayoutEngine : ILayoutEngine
             [layoutCell],
             cell.Placement.RowSpan,
             cell.Placement.ColSpan,
-            Array.Empty<LayoutNamedArea>());
+            Array.Empty<LayoutNamedArea>(),
+            Array.Empty<LayoutConditionalFormatting>());
     }
 
     private ExpandResult ExpandGrid(
@@ -330,13 +349,19 @@ public sealed class LayoutEngine : ILayoutEngine
         var styleScope = inheritedStyles.Append(grid.StyleRefs, grid.Style);
         var cells = new List<LayoutCell>();
         var namedAreas = new List<LayoutNamedArea>();
+        var conditionalFormattings = new List<LayoutConditionalFormatting>();
         var maxHeight = 0;
         var maxWidth = 0;
+        conditionalFormattings.AddRange(CreateScopedConditionalFormattings(grid.ConditionalFormattings, scopePath));
 
         var gridChildren = grid.Children.Values.ToArray();
         for (var childIndex = 0; childIndex < gridChildren.Length; childIndex++)
         {
             var child = gridChildren[childIndex];
+            // Keep direct cell siblings in the same local scope, while isolating nested containers.
+            var childScopePath = child is CellAst
+                ? scopePath
+                : $"{scopePath}/node-{childIndex}";
             var childResult = ExpandNode(
                 child,
                 baseRow,
@@ -344,7 +369,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 rootData,
                 dataContext,
                 vars,
-                scopePath,
+                childScopePath,
                 styleScope,
                 componentIndex,
                 styleResolver,
@@ -353,6 +378,11 @@ public sealed class LayoutEngine : ILayoutEngine
             if (childResult.NamedAreas.Count > 0)
             {
                 namedAreas.AddRange(childResult.NamedAreas);
+            }
+
+            if (childResult.ConditionalFormattings.Count > 0)
+            {
+                conditionalFormattings.AddRange(childResult.ConditionalFormattings);
             }
 
             if (childResult.Cells.Count == 0)
@@ -367,11 +397,13 @@ public sealed class LayoutEngine : ILayoutEngine
             maxWidth = Math.Max(maxWidth, childWidthWithOffset);
         }
 
+        TryAddNamedAreaFromTarget(namedAreas, grid, cells);
         var result = new ExpandResult(
             cells,
             ResolveContainerSize(grid.Rows, maxHeight, grid.Placement.RowSpan),
             ResolveContainerSize(grid.Cols, maxWidth, grid.Placement.ColSpan),
-            namedAreas);
+            namedAreas,
+            conditionalFormattings);
 
         return ApplyGridBorders(result, styleScope, styleResolver);
     }
@@ -403,6 +435,7 @@ public sealed class LayoutEngine : ILayoutEngine
         var styleScope = inheritedStyles.Append(repeat.StyleRefs, repeat.Style);
         var cells = new List<LayoutCell>();
         var namedAreas = new List<LayoutNamedArea>();
+        var conditionalFormattings = new List<LayoutConditionalFormatting>();
         var nextRow = baseRow;
         var nextCol = baseCol;
         var totalHeight = 0;
@@ -428,6 +461,10 @@ public sealed class LayoutEngine : ILayoutEngine
                 componentIndex,
                 styleResolver,
                 issues);
+            conditionalFormattings.AddRange(
+                CreateScopedConditionalFormattings(
+                    repeat.ConditionalFormattings,
+                    $"{scopePath}/repeat-{iterationIndex}"));
             iterationIndex++;
 
             if (result.Cells.Count > 0)
@@ -438,6 +475,11 @@ public sealed class LayoutEngine : ILayoutEngine
             if (result.NamedAreas.Count > 0)
             {
                 namedAreas.AddRange(result.NamedAreas);
+            }
+
+            if (result.ConditionalFormattings.Count > 0)
+            {
+                conditionalFormattings.AddRange(result.ConditionalFormattings);
             }
 
             if (repeat.Direction == RepeatDirection.Down)
@@ -458,14 +500,14 @@ public sealed class LayoutEngine : ILayoutEngine
         {
             totalHeight = Math.Max(totalHeight, repeat.Placement.RowSpan);
             maxWidth = Math.Max(maxWidth, repeat.Placement.ColSpan);
-            TryAddNamedArea(namedAreas, repeat.Name, cells);
-            return new ExpandResult(cells, totalHeight, maxWidth, namedAreas);
+            TryAddNamedAreaFromTarget(namedAreas, repeat, cells);
+            return new ExpandResult(cells, totalHeight, maxWidth, namedAreas, conditionalFormattings);
         }
 
         totalWidth = Math.Max(totalWidth, repeat.Placement.ColSpan);
         maxHeight = Math.Max(maxHeight, repeat.Placement.RowSpan);
-        TryAddNamedArea(namedAreas, repeat.Name, cells);
-        return new ExpandResult(cells, maxHeight, totalWidth, namedAreas);
+        TryAddNamedAreaFromTarget(namedAreas, repeat, cells);
+        return new ExpandResult(cells, maxHeight, totalWidth, namedAreas, conditionalFormattings);
     }
 
     private ExpandResult ExpandUse(
@@ -522,17 +564,23 @@ public sealed class LayoutEngine : ILayoutEngine
             componentIndex,
             styleResolver,
             issues);
+        var conditionalFormattings = new List<LayoutConditionalFormatting>(result.ConditionalFormattings);
+        conditionalFormattings.AddRange(
+            CreateScopedConditionalFormattings(
+                component.ConditionalFormattings,
+                $"{scopePath}/use"));
 
         var heightOffset = ResolveOffset(component.Placement.Row);
         var widthOffset = ResolveOffset(component.Placement.Col);
         var namedAreas = new List<LayoutNamedArea>(result.NamedAreas);
-        TryAddNamedArea(namedAreas, use.InstanceName, result.Cells);
+        TryAddNamedAreaFromTarget(namedAreas, use, result.Cells);
 
         return new ExpandResult(
             result.Cells,
             Math.Max(result.Height + heightOffset, use.Placement.RowSpan),
             Math.Max(result.Width + widthOffset, use.Placement.ColSpan),
-            namedAreas);
+            namedAreas,
+            conditionalFormattings);
     }
 
     private object? EvaluateExpressionValue(
@@ -728,6 +776,12 @@ public sealed class LayoutEngine : ILayoutEngine
     private static int ResolveContainerSize(int declaredSize, int contentSize, int minimumSize) =>
         Math.Max(declaredSize > 0 ? declaredSize : contentSize, minimumSize);
 
+    private static void TryAddNamedAreaFromTarget(
+        ICollection<LayoutNamedArea> areas,
+        INamedAreaTarget target,
+        IReadOnlyList<LayoutCell> cells) =>
+        TryAddNamedArea(areas, target.AreaName, cells);
+
     private static void TryAddNamedArea(
         ICollection<LayoutNamedArea> areas,
         string? name,
@@ -765,6 +819,20 @@ public sealed class LayoutEngine : ILayoutEngine
         vars.Count == 0
             ? new Dictionary<string, object?>(StringComparer.Ordinal)
             : new Dictionary<string, object?>(vars, StringComparer.Ordinal);
+
+    private static IReadOnlyList<LayoutConditionalFormatting> CreateScopedConditionalFormattings(
+        IEnumerable<ConditionalFormattingAst>? rules,
+        string scopePath)
+    {
+        if (rules is null)
+        {
+            return Array.Empty<LayoutConditionalFormatting>();
+        }
+
+        return rules
+            .Select(rule => new LayoutConditionalFormatting(rule, scopePath))
+            .ToArray();
+    }
 
     private static bool LooksLikeExpression(string value)
     {
@@ -1034,7 +1102,7 @@ public sealed class LayoutEngine : ILayoutEngine
             expandedCells.Add(expandedBorders.Count == 0 ? cell : AppendBordersToCell(cell, expandedBorders));
         }
 
-        return new ExpandResult(expandedCells, result.Height, result.Width, result.NamedAreas);
+        return new ExpandResult(expandedCells, result.Height, result.Width, result.NamedAreas, result.ConditionalFormattings);
     }
 
     /// <summary>
@@ -1295,7 +1363,8 @@ public sealed class LayoutEngine : ILayoutEngine
         IReadOnlyList<LayoutCell> Cells,
         int Height,
         int Width,
-        IReadOnlyList<LayoutNamedArea> NamedAreas)
+        IReadOnlyList<LayoutNamedArea> NamedAreas,
+        IReadOnlyList<LayoutConditionalFormatting> ConditionalFormattings)
     {
         /// <summary>
         /// Represents an empty expansion result with no cells, size, or named areas.
@@ -1304,7 +1373,8 @@ public sealed class LayoutEngine : ILayoutEngine
             Array.Empty<LayoutCell>(),
             0,
             0,
-            Array.Empty<LayoutNamedArea>());
+            Array.Empty<LayoutNamedArea>(),
+            Array.Empty<LayoutConditionalFormatting>());
     }
 
     private sealed record RenderedValue(object? Value, string? Formula)
