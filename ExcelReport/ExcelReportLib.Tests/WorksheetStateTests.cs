@@ -683,6 +683,38 @@ public sealed class WorksheetStateTests
     }
 
     /// <summary>
+    /// Verifies that global formulaRef is preferred when unique descendant local uses the same name.
+    /// </summary>
+    [Fact]
+    public void Build_FormulaRefPlaceholders_UniqueDescendantLocalWithExistingGlobal_PrefersGlobalWithWarning()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 10, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 3, col: 4, value: null, formula: "=#{RowData}", scopePath: "/sheet/0"),
+                    ],
+                    rows: 20,
+                    cols: 10),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        Assert.Equal("=B2", sheet.Cells[(3, 4)].Formula);
+        Assert.Contains(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("preferring global lookup", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// Verifies that conditional formulaRef deterministic tie-break emits warning.
     /// </summary>
     [Fact]
@@ -717,10 +749,10 @@ public sealed class WorksheetStateTests
     }
 
     /// <summary>
-    /// Verifies that conditional formulaRef fallback to global emits warning when local candidates are ambiguous.
+    /// Verifies that sheet-scope conditional formulaRef falls back to global without descendant local leak.
     /// </summary>
     [Fact]
-    public void Build_ConditionalFormatting_FormulaRef_MultipleUniqueLocalCandidates_FallsBackToGlobalWithWarning()
+    public void Build_ConditionalFormatting_FormulaRef_MultipleUniqueLocalCandidates_FallsBackToGlobalWithoutWarning()
     {
         var plan = new LayoutPlan(
             [
@@ -742,13 +774,46 @@ public sealed class WorksheetStateTests
 
         var rule = Assert.Single(sheet.Options.ConditionalFormattings);
         Assert.Equal("B2", rule.FormulaRef);
-        Assert.Contains(
+        Assert.DoesNotContain(
             issues,
             issue =>
                 issue.Severity == IssueSeverity.Warning &&
                 issue.Kind == IssueKind.FormulaRefResolutionFallback &&
-                issue.Message.Contains("target 'RowData'", StringComparison.Ordinal) &&
-                issue.Message.Contains("falling back to global lookup", StringComparison.Ordinal));
+                issue.Message.Contains("scope '/sheet'", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that sheet-scope conditional formulaRef does not resolve descendant local candidates.
+    /// </summary>
+    [Fact]
+    public void Build_ConditionalFormatting_FormulaRef_FromSheetScope_DoesNotResolveDescendantLocal()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 2, value: 999, formulaRef: "RowData", formulaRefScope: "global", scopePath: "/sheet/0"),
+                        CreateCell(row: 5, col: 2, value: 100, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-0"),
+                        CreateCell(row: 10, col: 2, value: 200, formulaRef: "RowData", formulaRefScope: "local", scopePath: "/sheet/0/repeat-1"),
+                    ],
+                    rows: 20,
+                    cols: 10,
+                    conditionalFormattings: CreateConditionalFormattings("""<conditionalFormatting at="A1:A1" formulaRef="RowData" fillColor="#FFEEDD" />""")),
+            ]);
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+
+        var rule = Assert.Single(sheet.Options.ConditionalFormattings);
+        Assert.Equal("B2", rule.FormulaRef);
+        Assert.DoesNotContain(
+            issues,
+            issue =>
+                issue.Severity == IssueSeverity.Warning &&
+                issue.Kind == IssueKind.FormulaRefResolutionFallback &&
+                issue.Message.Contains("scope '/sheet'", StringComparison.Ordinal));
     }
 
     private static LayoutCell CreateCell(

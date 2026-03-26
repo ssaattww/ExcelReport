@@ -1024,6 +1024,49 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
+    /// Verifies that sheet-scope conditional formulaRef does not resolve descendant local formulaRef.
+    /// </summary>
+    [Fact]
+    public void Generate_ConditionalFormatting_FormulaRef_FromSheetScope_DoesNotResolveDescendantLocal_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <conditionalFormatting at="A1:A1" formulaRef="RowData" fillColor="#FFEEDD" />
+                <cell r="20" c="2" value="999" formulaRef="RowData" />
+                <repeat r="1" c="1" direction="down" from="@(root.Items)" var="it">
+                  <grid>
+                    <cell c="2" value="@(it.Value)" formulaRef="RowData" formulaRefScope="local" />
+                  </grid>
+                </repeat>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Value = 10 },
+                new { Value = 20 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var conditionalFormatting = Assert.Single(worksheetPart.Worksheet.Elements<ConditionalFormatting>());
+        var rule = Assert.Single(conditionalFormatting.Elements<ConditionalFormattingRule>());
+
+        Assert.Equal(ConditionalFormatValues.Expression, rule.Type!.Value);
+        Assert.Equal("NOT(ISBLANK(B20))", Assert.Single(rule.Elements<Formula>()).Text);
+    }
+
+    /// <summary>
     /// Verifies that a direct grid sibling formula can resolve local formulaRef defined inside sibling use.
     /// </summary>
     [Fact]
@@ -1306,13 +1349,11 @@ public sealed class ReportGeneratorTests
             """
             <workbook xmlns="urn:excelreport:v2">
               <sheet name="Summary">
-                <conditionalFormatting at="B1:B2" formulaRef="RowData" fillColor="#FFEEDD" />
-                <grid r="1" c="1">
+                <cell r="2" c="2" value="999" formulaRef="RowData" />
+                <grid r="5" c="1">
                   <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
                 </grid>
-                <grid r="2" c="1">
-                  <cell c="2" value="20" formulaRef="RowData" formulaRefScope="local" />
-                </grid>
+                <cell c="3" value="=#{RowData}" />
               </sheet>
             </workbook>
             """;
@@ -1326,13 +1367,18 @@ public sealed class ReportGeneratorTests
             issue =>
                 issue.Severity == IssueSeverity.Warning &&
                 issue.Kind == IssueKind.FormulaRefResolutionFallback &&
-                issue.Message.Contains("target 'RowData'", StringComparison.Ordinal));
+                issue.Message.Contains("preferring global lookup", StringComparison.Ordinal));
         Assert.Contains(
             result.LogEntries,
             entry =>
                 entry.Level == LogLevel.Warning &&
                 entry.Phase == ReportPhase.LayoutExpanding &&
                 entry.Issue?.Kind == IssueKind.FormulaRefResolutionFallback);
+
+        using var document = OpenWorkbook(result);
+        var formula = GetCell(document, "Summary", "C1").CellFormula;
+        Assert.NotNull(formula);
+        Assert.Equal("B2", formula!.Text);
     }
 
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>

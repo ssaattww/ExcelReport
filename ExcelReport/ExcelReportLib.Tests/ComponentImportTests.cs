@@ -1,5 +1,6 @@
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
+using System.Xml.Linq;
 
 namespace ExcelReportLib.Tests;
 
@@ -34,6 +35,38 @@ public sealed class ComponentImportTests
 
         Assert.Equal(6, importedStyles.Count);
         Assert.Contains(importedStyles, style => style.Name == "HeaderCell");
+    }
+
+    /// <summary>
+    /// Verifies that component import requires components root element.
+    /// </summary>
+    [Fact]
+    public void Parse_ComponentImport_InvalidRoot_ReturnsFatalSchemaViolation()
+    {
+        var tempPath = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempPath, """<workbook xmlns="urn:excelreport:v2"><sheet name="Summary" /></workbook>""");
+            var issues = new List<Issue>();
+            var element = new XElement(
+                XName.Get(ComponentImportAst.TagName, "urn:excelreport:v2"),
+                new XAttribute("href", tempPath));
+
+            _ = new ComponentImportAst(element, issues, Path.GetDirectoryName(tempPath)!);
+
+            Assert.Contains(
+                issues,
+                issue => issue.Severity == IssueSeverity.Fatal
+                         && issue.Kind == IssueKind.SchemaViolation
+                         && issue.Message.Contains("<components>", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
     private static ComponentImportAst CreateComponentImport()

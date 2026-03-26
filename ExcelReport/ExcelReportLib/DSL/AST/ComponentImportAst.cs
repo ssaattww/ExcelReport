@@ -114,6 +114,18 @@ namespace ExcelReportLib.DSL.AST
                     return;
                 }
 
+                if (!string.Equals(doc.Root!.Name.LocalName, ComponentsAst.TagName, StringComparison.Ordinal))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Fatal,
+                        Kind = IssueKind.SchemaViolation,
+                        Message = $"componentImport のルート要素は <{ComponentsAst.TagName}> である必要があります。入力: <{doc.Root!.Name.LocalName}> ({PathStr})",
+                        Span = SourceSpan.CreateSpanAttributes(doc.Root!),
+                    });
+                    return;
+                }
+
                 var importDir = Path.GetDirectoryName(PathStr) ?? string.Empty;
                 var stylesElem = doc.Root.Element(ns + StylesAst.TagName);
 

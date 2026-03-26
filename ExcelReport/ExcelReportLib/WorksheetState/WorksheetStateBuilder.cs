@@ -326,9 +326,19 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             currentScope = currentScope[..separatorIndex];
         }
 
+        var hasGlobalArea = context.GlobalAreas.TryGetValue(name, out var globalArea);
+
         // Allow sibling visibility by resolving a unique descendant local area under the current scope.
         if (TryResolveUniqueDescendantLocalArea(name, scopePath, context.LocalAreasByScope, out var descendantArea, out var descendantMatchCount))
         {
+            if (hasGlobalArea)
+            {
+                AddFormulaRefResolutionWarning(
+                    issues,
+                    $"Local formulaRef resolution for target '{name}' in scope '{scopePath}' found both global and unique descendant local candidates; preferring global lookup.");
+                return globalArea;
+            }
+
             return descendantArea;
         }
 
@@ -339,7 +349,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 $"Ambiguous local formulaRef resolution for target '{name}' in scope '{scopePath}': found {descendantMatchCount} descendant candidates, falling back to global/named lookup.");
         }
 
-        return context.GlobalAreas.TryGetValue(name, out var area) ? area : null;
+        return hasGlobalArea ? globalArea : null;
     }
 
     private static bool TryResolveUniqueDescendantLocalArea(
@@ -584,7 +594,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         var uniqueLocalArea = formulaPlaceholderContext.LocalAreasByScope
-            .Where(pair => IsScopeWithinDefinitionScope(pair.Key, definitionScopePath))
+            .Where(pair => ShouldResolveLocalScopeCandidate(pair.Key, definitionScopePath))
             .Select(pair => pair.Value)
             .Select(areasByName => areasByName.TryGetValue(formulaRef, out var localArea) ? localArea : null)
             .Where(localArea => localArea is not null)

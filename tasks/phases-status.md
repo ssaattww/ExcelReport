@@ -4,6 +4,8 @@ Last Updated: 2026-03-26
 
 ## Overall Progress
 
+- 2026-03-26: ユーザー指定レビュー指摘3-6に対応し、global/local衝突解決・sheet-scope fallback非リーク化・importルート厳格検証を実装
+- 2026-03-26: 追加テスト（WorksheetState/ReportGenerator/ValidateDsl/ComponentImport/StyleImport）を反映し、関連76件テスト全通過を確認
 - 2026-03-26: PR#47レビュー指摘に対応し、`sheet` 直下 sibling `cell` の local formulaRef 共有スコープ回帰を修正
 - 2026-03-26: `LayoutEngineTests` / `ReportGeneratorTests` に回帰テストを追加し、`WorksheetState/ReportGenerator/LayoutEngine` 関連83件テスト全通過を確認
 - 2026-03-26: local `formulaRef` 曖昧解決時のフォールバック/タイブレークで Warning 必須化（`IssueKind.FormulaRefResolutionFallback`）を実装

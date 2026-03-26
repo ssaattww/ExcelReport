@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-26 PR#47追加レビュー対応(3-6): `FindNamedArea` の global/unique-descendant 衝突時に global優先+Warning化、sheet-scope `conditionalFormatting@formulaRef` は fallback経路のみ local非リーク化
+- 2026-03-26 PR#47追加レビュー対応(3-6): `styleImport`/`componentImport` にルート要素名（`styles`/`components`）のFatal検証を追加
+- 2026-03-26 テスト追加・更新: `WorksheetStateTests`/`ReportGeneratorTests`/`ValidateDslTests`/`ComponentImportTests`/`StyleImportTests` を更新し 76件通過
 - 2026-03-26 PR#47レビュー対応: `sheet` 直下 sibling `cell` の local formulaRef 参照回帰を修正（`LayoutEngine.ExpandSheet` で `cell` は `/sheet` 共有、非`cell` は `/sheet/node-{index}` を維持）
 - 2026-03-26 テスト追加: `Expand_SheetCellSiblings_ShareLocalScopePath` / `Generate_SheetCellSiblingFormula_ResolvesLocalFormulaRef` を追加し、関連83件回帰テスト通過
 - 2026-03-26 仕様追加: local `formulaRef` の曖昧解決でフォールバック（またはタイブレーク選択）した場合は `IssueSeverity.Warning` を必須化

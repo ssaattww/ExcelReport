@@ -166,6 +166,35 @@ public sealed class ValidateDslTests
             result.Issues,
             issue => issue.Severity == IssueSeverity.Error
                      && issue.Kind == IssueKind.SheetOptionsTargetNotFound);
+        Assert.DoesNotContain(
+            result.Issues,
+            issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
+    /// Verifies that sheet options target missing area returns not-found issue.
+    /// </summary>
+    [Fact]
+    public void ValidateDsl_SheetOptions_TargetMissingArea_ReturnsSheetOptionsTargetNotFound()
+    {
+        var result = ParseDsl(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <grid area="GridArea">
+                  <cell value="A" />
+                </grid>
+                <sheetOptions>
+                  <freeze at="MissingArea" />
+                </sheetOptions>
+              </sheet>
+            </workbook>
+            """);
+
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Severity == IssueSeverity.Error
+                     && issue.Kind == IssueKind.SheetOptionsTargetNotFound);
     }
 
     /// <summary>
