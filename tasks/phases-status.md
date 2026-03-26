@@ -4,6 +4,8 @@ Last Updated: 2026-03-26
 
 ## Overall Progress
 
+- 2026-03-26: PR#47レビュー指摘に対応し、`sheet` 直下 sibling `cell` の local formulaRef 共有スコープ回帰を修正
+- 2026-03-26: `LayoutEngineTests` / `ReportGeneratorTests` に回帰テストを追加し、`WorksheetState/ReportGenerator/LayoutEngine` 関連83件テスト全通過を確認
 - 2026-03-26: local `formulaRef` 曖昧解決時のフォールバック/タイブレークで Warning 必須化（`IssueKind.FormulaRefResolutionFallback`）を実装
 - 2026-03-26: `WorksheetStateBuilder` -> `ReportGenerator` へ worksheet-state warning の集約経路を追加し、`ReportGeneratorResult.Issues` / logger に反映
 - 2026-03-26: 検証として `dotnet test --filter "WorksheetStateTests|ReportGeneratorTests"` を実行し 57件全通過を確認

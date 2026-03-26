@@ -78,6 +78,7 @@ Last Updated: 2026-03-26
 | FP84 | local可視性は「同一スコープ sibling は可視、sibling の内側スコープは不可視」を維持する | 対応済み | 2026-03-26 |
 | FP85 | local可視性は「同一親siblingは可視（sibling内のuse/grid/repeat配下localを含む）」へ確定し、衝突時は一意解決のみ許可する | 対応済み | 2026-03-26 |
 | FP86 | local `formulaRef` 解決で曖昧性によりフォールバック/タイブレークした場合は必ず Warning を記録する | 対応済み | 2026-03-26 |
+| FP87 | PRレビュー指摘: `sheet` 直下 sibling `cell` 同士の local formulaRef 共有回帰を出さない（`/sheet` 共有維持） | 対応済み | 2026-03-26 |
 ---
 
 ## 対応履歴

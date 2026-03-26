@@ -145,7 +145,9 @@ public sealed class LayoutEngine : ILayoutEngine
         for (var childIndex = 0; childIndex < sheetChildren.Length; childIndex++)
         {
             var child = sheetChildren[childIndex];
-            var childScopePath = $"/sheet/node-{childIndex}";
+            var childScopePath = child is CellAst
+                ? "/sheet"
+                : $"/sheet/node-{childIndex}";
             var result = ExpandNode(
                 child,
                 baseRow: 1,

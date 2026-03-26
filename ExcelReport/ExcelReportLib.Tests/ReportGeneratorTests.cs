@@ -1063,6 +1063,33 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
+    /// Verifies that top-level sheet cell sibling formula can resolve local formulaRef.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetCellSiblingFormula_ResolvesLocalFormulaRef()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        using var document = OpenWorkbook(result);
+        var formula = GetCell(document, "Summary", "C1").CellFormula;
+
+        Assert.NotNull(formula);
+        Assert.Equal("SUM(B1:B1)", formula!.Text);
+    }
+
+    /// <summary>
     /// Verifies that conditional formatting target can use global formulaRef series range.
     /// </summary>
     [Fact]

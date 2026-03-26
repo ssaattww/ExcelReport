@@ -155,6 +155,31 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that top-level sheet cell siblings share local scope paths.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetCellSiblings_ShareLocalScopePath()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var rowDataCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.FormulaRef, "RowData", StringComparison.Ordinal)));
+        var formulaCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.Formula, "=SUM(#{RowData:RowDataEnd})", StringComparison.Ordinal)));
+
+        Assert.Equal(rowDataCell.ScopePath, formulaCell.ScopePath);
+        Assert.Equal("/sheet", rowDataCell.ScopePath);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that top-level siblings isolate local scope paths.
     /// </summary>
     [Fact]

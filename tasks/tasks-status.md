@@ -5,6 +5,8 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 
 ## Progress Summary
 
+- 2026-03-26 PR#47レビュー対応: `sheet` 直下 sibling `cell` の local formulaRef 参照回帰を修正（`LayoutEngine.ExpandSheet` で `cell` は `/sheet` 共有、非`cell` は `/sheet/node-{index}` を維持）
+- 2026-03-26 テスト追加: `Expand_SheetCellSiblings_ShareLocalScopePath` / `Generate_SheetCellSiblingFormula_ResolvesLocalFormulaRef` を追加し、関連83件回帰テスト通過
 - 2026-03-26 仕様追加: local `formulaRef` の曖昧解決でフォールバック（またはタイブレーク選択）した場合は `IssueSeverity.Warning` を必須化
 - 2026-03-26 実装更新: `WorksheetStateBuilder` でフォールバック警告（`IssueKind.FormulaRefResolutionFallback`）を発行し、`ReportGeneratorResult.Issues` / ログへ集約
 - 2026-03-26 テスト追加: `WorksheetStateTests` 3件 + `ReportGeneratorTests` 1件で warning発行を検証（`dotnet test --filter \"WorksheetStateTests|ReportGeneratorTests\"`: Passed 57）
