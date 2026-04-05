@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Validation;
+using A = DocumentFormat.OpenXml.Drawing;
 using C = DocumentFormat.OpenXml.Drawing.Charts;
 using ExcelReportLib;
 using ExcelReportLib.DSL;
@@ -1383,21 +1384,39 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
-    /// Verifies that end-to-end generation renders chart parts.
+    /// Verifies that end-to-end generation renders chart parts with per-point colors.
     /// </summary>
     [Fact]
-    public void Generate_SheetChart_RendersChartParts()
+    public void Generate_SheetChart_RendersChartParts_WithColorByPointColors()
     {
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v2">
+              <chartPalette>
+                <color key="Done" value="#4CAF50" />
+                <color key="Doing" value="#FF9800" />
+                <color key="Todo" value="#BDBDBD" />
+              </chartPalette>
               <sheet name="Summary">
                 <cell r="2" c="1" value="Task1" />
                 <cell r="3" c="1" value="Task2" />
+                <cell r="4" c="1" value="Task3" />
+                <cell r="5" c="1" value="Task4" />
                 <cell r="2" c="2" value="10" />
                 <cell r="3" c="2" value="20" />
-                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="A2:A3">
-                  <series name="Done" value="B2:B3" color="#4CAF50" />
+                <cell r="4" c="2" value="15" />
+                <cell r="5" c="2" value="30" />
+                <cell r="2" c="3" value="Done" />
+                <cell r="3" c="3" value="Doing" />
+                <cell r="4" c="3" value="Todo" />
+                <cell r="5" c="3" value="Doing" />
+                <cell r="2" c="4" value="7" />
+                <cell r="3" c="4" value="5" />
+                <cell r="4" c="4" value="9" />
+                <cell r="5" c="4" value="4" />
+                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="A2:A5">
+                  <series name="Workload" value="B2:B5" colorBy="C2:C5" />
+                  <series name="Blocked" value="D2:D5" color="#1E88E5" />
                 </chart>
               </sheet>
             </workbook>
@@ -1411,11 +1430,26 @@ public sealed class ReportGeneratorTests
 
         using var document = OpenWorkbook(result);
         var worksheetPart = GetWorksheetPart(document, "Summary");
-        var drawingsPart = worksheetPart.DrawingsPart;
+        var drawingsPart = Assert.IsType<DrawingsPart>(worksheetPart.DrawingsPart);
+        var chartPart = Assert.Single(drawingsPart.ChartParts);
+        var barChart = Assert.Single(chartPart.ChartSpace.Descendants<C.BarChart>());
+        var chartSeries = barChart.Elements<C.BarChartSeries>().ToArray();
 
-        Assert.NotNull(drawingsPart);
-        Assert.Equal(1, drawingsPart!.ChartParts.Count());
-        Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.BarChart>().Any());
+        Assert.Equal(2, chartSeries.Length);
+
+        var firstSeriesColors = chartSeries[0]
+            .Elements<C.DataPoint>()
+            .Select(ExtractPointColor)
+            .ToArray();
+        var expectedFirstSeriesColors = new[] { "4CAF50", "FF9800", "BDBDBD", "FF9800" };
+        Assert.Equal(expectedFirstSeriesColors, firstSeriesColors);
+
+        var secondSeriesColors = chartSeries[1]
+            .Elements<C.DataPoint>()
+            .Select(ExtractPointColor)
+            .ToArray();
+        Assert.Equal(4, secondSeriesColors.Length);
+        Assert.All(secondSeriesColors, color => Assert.Equal("1E88E5", color));
     }
 
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
@@ -1466,6 +1500,14 @@ public sealed class ReportGeneratorTests
         }
 
         return cell.CellValue?.Text ?? string.Empty;
+    }
+
+    private static string ExtractPointColor(C.DataPoint dataPoint)
+    {
+        var shapeProperties = Assert.IsType<C.ChartShapeProperties>(dataPoint.GetFirstChild<C.ChartShapeProperties>());
+        var solidFill = Assert.IsType<A.SolidFill>(shapeProperties.GetFirstChild<A.SolidFill>());
+        var rgb = Assert.IsType<A.RgbColorModelHex>(solidFill.GetFirstChild<A.RgbColorModelHex>());
+        return Assert.IsType<string>(rgb.Val?.Value);
     }
 
     public sealed class LinqTemplateRoot
