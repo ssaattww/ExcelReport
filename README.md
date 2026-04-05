@@ -107,19 +107,27 @@ dotnet build ExcelReport.sln
     </style>
   </styles>
 
+  <component name="ItemHeader">
+    <grid rows="1" cols="2">
+      <cell r="1" c="1" value="Item" styleRef="HeaderCell" />
+      <cell r="1" c="2" value="Value" styleRef="HeaderCell" />
+    </grid>
+  </component>
+
+  <component name="ItemRow">
+    <grid rows="1" cols="2">
+      <cell r="1" c="1" value="@(data.Name)" />
+      <cell r="1" c="2" value="@(data.Value)" />
+    </grid>
+  </component>
+
   <sheet name="Summary">
     <cell r="1" c="1" value="@(root.Title)" />
 
-    <grid rows="1" cols="2">
-      <cell r="1" c="1" value="Item" />
-      <cell r="1" c="2" value="Value" />
-    </grid>
+    <use component="ItemHeader" r="2" c="1" />
 
     <repeat r="3" c="1" direction="down" from="@(root.Items)" var="it">
-      <grid rows="1" cols="2">
-        <cell r="1" c="1" value="@(it.Name)" />
-        <cell r="1" c="2" value="@(it.Value)" />
-      </grid>
+      <use component="ItemRow" with="@(it)" />
     </repeat>
   </sheet>
 </workbook>
@@ -136,8 +144,9 @@ var data = new
     Title = "Sales Report",
     Items = new[]
     {
-        new { Name = "A", Value = 100 },
-        new { Name = "B", Value = 200 }
+        new { Name = "Laptop", Value = 1200 },
+        new { Name = "Display", Value = 450 },
+        new { Name = "Keyboard", Value = 120 }
     }
 };
 
