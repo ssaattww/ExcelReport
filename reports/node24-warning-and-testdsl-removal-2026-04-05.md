@@ -1,4 +1,4 @@
-# Node24 Warning 대응 + TestDsl整理
+# Node24 Warning 対応 + TestDsl整理
 
 Date: 2026-04-05
 Branch: feature/issue-43-async-api
