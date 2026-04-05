@@ -148,21 +148,33 @@ public sealed class AsyncReportGeneratorTests
             </workbook>
             """;
 
-        var reportGenerator = new ReportGenerator(renderer: new ProgressReportingSlowRenderer(totalUnits: 200, sleepMilliseconds: 3));
+        var renderer = new GatedProgressReportingRenderer(totalUnits: 200);
+        var reportGenerator = new ReportGenerator(renderer: renderer);
         var asyncGenerator = new AsyncReportGenerator(() => reportGenerator);
         var jobId = asyncGenerator.StartGenerate(dsl, data: null);
 
-        var intermediate = WaitForRenderingUnits(asyncGenerator, jobId);
-        Assert.Equal(ReportPhase.Rendering, intermediate.CurrentPhase);
-        Assert.True(intermediate.RenderingTotalUnits is > 0);
-        Assert.True(intermediate.RenderingCompletedUnits is > 0);
-        Assert.True(intermediate.RenderingCompletedUnits < intermediate.RenderingTotalUnits);
-        Assert.True(intermediate.RenderingProgressPercent is > 0 and < 100);
+        try
+        {
+            Assert.True(renderer.WaitForIntermediateProgressPublished(timeoutMilliseconds: 5_000));
 
-        var terminal = WaitForTerminalState(asyncGenerator, jobId);
-        Assert.Equal(AsyncReportJobState.Succeeded, terminal.State);
-        Assert.Equal(terminal.RenderingTotalUnits, terminal.RenderingCompletedUnits);
-        Assert.Equal(100, terminal.RenderingProgressPercent);
+            var intermediate = WaitForRenderingUnits(asyncGenerator, jobId);
+            Assert.Equal(ReportPhase.Rendering, intermediate.CurrentPhase);
+            Assert.True(intermediate.RenderingTotalUnits is > 0);
+            Assert.True(intermediate.RenderingCompletedUnits is > 0);
+            Assert.True(intermediate.RenderingCompletedUnits < intermediate.RenderingTotalUnits);
+            Assert.True(intermediate.RenderingProgressPercent is >= 0 and < 100);
+            Assert.True(intermediate.ProgressPercent >= 90);
+
+            renderer.Release();
+            var terminal = WaitForTerminalState(asyncGenerator, jobId);
+            Assert.Equal(AsyncReportJobState.Succeeded, terminal.State);
+            Assert.Equal(terminal.RenderingTotalUnits, terminal.RenderingCompletedUnits);
+            Assert.Equal(100, terminal.RenderingProgressPercent);
+        }
+        finally
+        {
+            renderer.Release();
+        }
     }
 
     /// <summary>
@@ -315,16 +327,21 @@ public sealed class AsyncReportGeneratorTests
         }
     }
 
-    private sealed class ProgressReportingSlowRenderer : IRenderer
+    private sealed class GatedProgressReportingRenderer : IRenderer
     {
         private readonly int _totalUnits;
-        private readonly int _sleepMilliseconds;
+        private readonly ManualResetEventSlim _intermediateProgressPublished = new(initialState: false);
+        private readonly ManualResetEventSlim _releaseGate = new(initialState: false);
 
-        public ProgressReportingSlowRenderer(int totalUnits, int sleepMilliseconds)
+        public GatedProgressReportingRenderer(int totalUnits)
         {
             _totalUnits = totalUnits;
-            _sleepMilliseconds = sleepMilliseconds;
         }
+
+        public bool WaitForIntermediateProgressPublished(int timeoutMilliseconds) =>
+            _intermediateProgressPublished.Wait(timeoutMilliseconds);
+
+        public void Release() => _releaseGate.Set();
 
         public RenderResult Render(
             IReadOnlyList<WorksheetStateModel> worksheets,
@@ -341,10 +358,25 @@ public sealed class AsyncReportGeneratorTests
                     Message = "Rendering workbook.",
                 });
 
-            for (var unit = 1; unit <= _totalUnits; unit++)
+            options?.ProgressReporter?.Invoke(
+                new RenderProgressInfo
+                {
+                    CompletedUnits = 1,
+                    TotalUnits = _totalUnits,
+                    Percent = (int)Math.Floor(100d / _totalUnits),
+                    Message = $"Rendering unit 1/{_totalUnits}",
+                });
+            _intermediateProgressPublished.Set();
+
+            while (!_releaseGate.IsSet)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Thread.Sleep(_sleepMilliseconds);
+                Thread.Sleep(10);
+            }
+
+            for (var unit = 2; unit <= _totalUnits; unit++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 var percent = (int)Math.Floor((double)unit * 100 / _totalUnits);
                 options?.ProgressReporter?.Invoke(
                     new RenderProgressInfo
