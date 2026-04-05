@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - issue #43 非同期api対応
 
 ## Progress Summary
 
+- 2026-04-05 PR#51 Codexレビュー対応: `TryGetResult` を終端状態ゲート化し、結果公開と終端状態遷移を原子的に統合
+- 2026-04-05 PR#51 Codexレビュー対応: `Cancel` の `CancellationTokenSource` 破棄競合を防御し、`ObjectDisposedException` を `false` 返却へ変換
+- 2026-04-05 PR#51 検証: `AsyncReportGeneratorTests` 7件 + Release全体198件通過を確認
+- 2026-04-05 PR#51 記録: `reports/pr51-codex-review-fixes-2026-04-05.md` を追加
 - 2026-04-05 issue#43 フォローアップ: 遅延箇所可視化のため `AsyncReportJobStatus` に総経過時間/フェーズ別経過時間を追加
 - 2026-04-05 issue#43 フォローアップ: `RenderingCompletedUnits/RenderingTotalUnits` を追加し、Rendering中の細粒度進捗を取得可能化
 - 2026-04-05 issue#43 フォローアップ: `AsyncReportGenerator` で `phase + timestamp` ベースの時間集計を実装し、`TryGetStatus` で実行中スナップショットを返却
@@ -204,6 +208,8 @@ Scope: ExcelReport開発 - issue #43 非同期api対応
 
 ## Additional Work
 
+- 2026-04-05 PR #51: Codexレビュー2件（`TryGetResult` 完了競合 / `Cancel` dispose競合）を実装修正
+- 2026-04-05 PR #51: 実施記録 `reports/pr51-codex-review-fixes-2026-04-05.md` を追加
 - 2026-04-05 issue #43 follow-up: `AsyncReportJobStatus` に `ElapsedMilliseconds` / `CurrentPhaseElapsedMilliseconds` / `PhaseElapsedMilliseconds` を追加し、遅延箇所可視化を可能化
 - 2026-04-05 issue #43 follow-up: `RenderingCompletedUnits` / `RenderingTotalUnits` を追加し、描画予定数ベースの細粒度進捗を取得可能化
 - 2026-04-05 issue #43 follow-up: `RenderOptions.ProgressReporter` を追加し、レンダラー進捗を `AsyncReportGenerator` へ連携

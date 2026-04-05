@@ -164,12 +164,14 @@ public sealed class AsyncReportGeneratorTests
             Assert.True(intermediate.RenderingCompletedUnits < intermediate.RenderingTotalUnits);
             Assert.True(intermediate.RenderingProgressPercent is >= 0 and < 100);
             Assert.True(intermediate.ProgressPercent >= 90);
+            Assert.False(asyncGenerator.TryGetResult(jobId, out _));
 
             renderer.Release();
             var terminal = WaitForTerminalState(asyncGenerator, jobId);
             Assert.Equal(AsyncReportJobState.Succeeded, terminal.State);
             Assert.Equal(terminal.RenderingTotalUnits, terminal.RenderingCompletedUnits);
             Assert.Equal(100, terminal.RenderingProgressPercent);
+            Assert.True(asyncGenerator.TryGetResult(jobId, out _));
         }
         finally
         {

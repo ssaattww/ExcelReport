@@ -4,6 +4,10 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: PR #51 Codexレビュー対応として、`TryGetResult` を終端状態ゲート化し、結果公開と終端状態遷移を同一ロックで原子的に実施するよう修正
+- 2026-04-05: PR #51 Codexレビュー対応として、`Cancel` の dispose競合で `ObjectDisposedException` が外部へ漏れないよう防御
+- 2026-04-05: PR #51 対応検証として `AsyncReportGeneratorTests` 7件 + Release全体198件通過を確認
+- 2026-04-05: PR #51 記録 `reports/pr51-codex-review-fixes-2026-04-05.md` を追加
 - 2026-04-05: issue #43 follow-up として、`AsyncReportJobStatus` に総経過時間/フェーズ別経過時間/現在フェーズ経過時間を追加
 - 2026-04-05: issue #43 follow-up として、`RenderingCompletedUnits` / `RenderingTotalUnits` を追加し、描画予定数ベースの細粒度進捗を追加
 - 2026-04-05: issue #43 follow-up として、`AsyncReportGenerator` に `phase + timestamp` ベースの時間集計を実装し、実行中スナップショットを返却

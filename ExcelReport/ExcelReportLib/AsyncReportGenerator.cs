@@ -73,7 +73,7 @@ public sealed class AsyncReportGenerator
     /// <returns><c>true</c> when found and completed.</returns>
     public bool TryGetResult(string jobId, out ReportGeneratorResult result)
     {
-        if (_jobs.TryGetValue(jobId, out var record) && record.TryGetResult(out result))
+        if (_jobs.TryGetValue(jobId, out var record) && record.TryGetCompletedResult(out result))
         {
             return true;
         }
@@ -94,14 +94,7 @@ public sealed class AsyncReportGenerator
             return false;
         }
 
-        var updatedAt = DateTimeOffset.UtcNow;
-        if (!record.TryMarkCancellationRequested(updatedAt))
-        {
-            return false;
-        }
-
-        record.Cancellation.Cancel();
-        return true;
+        return record.TryCancel(DateTimeOffset.UtcNow);
     }
 
     /// <summary>
@@ -196,21 +189,13 @@ public sealed class AsyncReportGenerator
                 unhandledException: ex);
         }
 
-        record.SetResult(result);
-
         var completedAt = DateTimeOffset.UtcNow;
         var terminalState = ResolveTerminalState(record.IsCancellationRequested(), result);
-        record.UpdateStatus(
-            status =>
-                status with
-                {
-                    State = terminalState,
-                    ProgressPercent = 100,
-                    IssueCount = result.Issues.Count,
-                    UpdatedAt = completedAt,
-                    CompletedAt = completedAt,
-                    Message = ResolveTerminalMessage(terminalState, result),
-                });
+        record.Complete(
+            result,
+            terminalState,
+            completedAt,
+            ResolveTerminalMessage(terminalState, result));
     }
 
     private static ReportGeneratorOptions CloneOptions(
@@ -489,7 +474,7 @@ public sealed class AsyncReportGenerator
             }
         }
 
-        public bool TryMarkCancellationRequested(DateTimeOffset updatedAt)
+        public bool TryCancel(DateTimeOffset updatedAt)
         {
             lock (_gate)
             {
@@ -504,7 +489,16 @@ public sealed class AsyncReportGenerator
                     UpdatedAt = updatedAt,
                     Message = "Cancellation requested.",
                 };
-                return true;
+
+                try
+                {
+                    Cancellation.Cancel();
+                    return true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
             }
         }
 
@@ -538,21 +532,35 @@ public sealed class AsyncReportGenerator
             }
         }
 
-        public void SetResult(ReportGeneratorResult result)
+        public void Complete(
+            ReportGeneratorResult result,
+            AsyncReportJobState terminalState,
+            DateTimeOffset completedAt,
+            string terminalMessage)
         {
             ArgumentNullException.ThrowIfNull(result);
+            ArgumentException.ThrowIfNullOrWhiteSpace(terminalMessage);
 
             lock (_gate)
             {
                 _result = result;
+                _status = _status with
+                {
+                    State = terminalState,
+                    ProgressPercent = 100,
+                    IssueCount = result.Issues.Count,
+                    UpdatedAt = completedAt,
+                    CompletedAt = completedAt,
+                    Message = terminalMessage,
+                };
             }
         }
 
-        public bool TryGetResult(out ReportGeneratorResult result)
+        public bool TryGetCompletedResult(out ReportGeneratorResult result)
         {
             lock (_gate)
             {
-                if (_result is null)
+                if (_result is null || !IsTerminal(_status.State))
                 {
                     result = default!;
                     return false;
