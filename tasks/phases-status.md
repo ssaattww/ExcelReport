@@ -4,6 +4,18 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: issue #43 follow-up として、`AsyncReportJobStatus` に総経過時間/フェーズ別経過時間/現在フェーズ経過時間を追加
+- 2026-04-05: issue #43 follow-up として、`RenderingCompletedUnits` / `RenderingTotalUnits` を追加し、描画予定数ベースの細粒度進捗を追加
+- 2026-04-05: issue #43 follow-up として、`AsyncReportGenerator` に `phase + timestamp` ベースの時間集計を実装し、実行中スナップショットを返却
+- 2026-04-05: issue #43 follow-up として、`RenderOptions.ProgressReporter` を追加し、レンダラー進捗を非同期ステータスへ連携
+- 2026-04-05: issue #43 follow-up として、`Remove` を終端状態のみ許可に統一し、削除時 `CancellationTokenSource` をDispose
+- 2026-04-05: issue #43 follow-up 検証として `AsyncReportGeneratorTests` 7件 + 全体198件通過を確認
+- 2026-04-05: issue #43 設計書へポーリング取得例（実行時間/フェーズ時間/Rendering細粒度進捗）を追記
+- 2026-04-05: issue #43 設計書へGUI（WinForms/WPF）でUIを固めない利用例を追記
+- 2026-04-05: issue #43 follow-up 記録 `reports/issue43-progress-timing-followup-2026-04-05.md` を追加
+- 2026-04-05: issue #43 非同期API（non-blocking job + status/result/cancel）を設計→方針確定→実装の順で完了
+- 2026-04-05: 設計書 `Design/ReportGenerator/ReportGenerator_AsyncApi_DetailDesign.md` を追加
+- 2026-04-05: 調査記録 `reports/issue43-async-api-design-and-implementation-2026-04-05.md` を追加
 - 2026-04-05: issue#37 のSubAgentレビューを3分割で実施し、各レビュー結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` に出力
 - 2026-04-05: レビュー統合サマリー `reports/subagent-review-issue37-summary-2026-04-05.md` を追加
 - 2026-04-05: レビューHigh指摘対応として chart series OpenXML子要素順を修正し、chart XMLスキーマ妥当性テストを追加

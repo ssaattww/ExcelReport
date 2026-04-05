@@ -1,10 +1,23 @@
 # Tasks Status
 
 Last Updated: 2026-04-05
-Scope: ExcelReport開発 - issue #37 chart作成対応
+Scope: ExcelReport開発 - issue #43 非同期api対応
 
 ## Progress Summary
 
+- 2026-04-05 issue#43 フォローアップ: 遅延箇所可視化のため `AsyncReportJobStatus` に総経過時間/フェーズ別経過時間を追加
+- 2026-04-05 issue#43 フォローアップ: `RenderingCompletedUnits/RenderingTotalUnits` を追加し、Rendering中の細粒度進捗を取得可能化
+- 2026-04-05 issue#43 フォローアップ: `AsyncReportGenerator` で `phase + timestamp` ベースの時間集計を実装し、`TryGetStatus` で実行中スナップショットを返却
+- 2026-04-05 issue#43 フォローアップ: `RenderOptions.ProgressReporter` を追加し、レンダラーから進捗ユニット通知を受け取る方式へ拡張
+- 2026-04-05 issue#43 フォローアップ: `Remove` を終端状態のみ許可に統一し、削除時に `CancellationTokenSource` を破棄
+- 2026-04-05 issue#43 フォローアップ検証: `AsyncReportGeneratorTests` 7件 + 全体198件通過を確認
+- 2026-04-05 issue#43 ドキュメント追記: 設計書へポーリングで実行時間/進捗を取得するC#例を追加
+- 2026-04-05 issue#43 ドキュメント追記: 設計書へGUI（WinForms/WPF）でUIを固めない非同期ポーリング例を追加
+- 2026-04-05 issue#43 記録: `reports/issue43-progress-timing-followup-2026-04-05.md` を追加
+- 2026-04-05 issue#43 対応: 非同期API（job起動/進捗取得/結果取得/キャンセル）を設計書作成後に実装
+- 2026-04-05 issue#43 設計: `Design/ReportGenerator/ReportGenerator_AsyncApi_DetailDesign.md` を追加
+- 2026-04-05 issue#43 検証: `AsyncReportGeneratorTests` 4件 + 全体195件通過を確認
+- 2026-04-05 issue#43 記録: `reports/issue43-async-api-design-and-implementation-2026-04-05.md` を追加
 - 2026-04-05 issue#37 レビュー実施: SubAgentレビューを3チャンク（DSL/AST/XSD, Layout/WorksheetState, Renderer/Tests/Docs）に分割し、各結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` へ出力
 - 2026-04-05 issue#37 レビュー統合: `reports/subagent-review-issue37-summary-2026-04-05.md` を作成し、指摘を重大度別に集約
 - 2026-04-05 issue#37 指摘対応: chart series OpenXML子要素順（`dPt`/`spPr`）を修正し、`RendererTests`/`ReportGeneratorTests` に schema妥当性検証を追加
@@ -191,6 +204,11 @@ Scope: ExcelReport開発 - issue #37 chart作成対応
 
 ## Additional Work
 
+- 2026-04-05 issue #43 follow-up: `AsyncReportJobStatus` に `ElapsedMilliseconds` / `CurrentPhaseElapsedMilliseconds` / `PhaseElapsedMilliseconds` を追加し、遅延箇所可視化を可能化
+- 2026-04-05 issue #43 follow-up: `RenderingCompletedUnits` / `RenderingTotalUnits` を追加し、描画予定数ベースの細粒度進捗を取得可能化
+- 2026-04-05 issue #43 follow-up: `RenderOptions.ProgressReporter` を追加し、レンダラー進捗を `AsyncReportGenerator` へ連携
+- 2026-04-05 issue #43 follow-up: `AsyncReportGeneratorTests` を拡張し、slow rendererのフェーズ時間と途中ユニット進捗を検証
+- 2026-04-05 issue #43 follow-up: 実施記録 `reports/issue43-progress-timing-followup-2026-04-05.md` を追加
 - 2026-04-05 issue #37: グラフ作成機能（chart）を実装完了（DSL/AST/XSD/Layout/State/Renderer）
 - 2026-04-05 issue #37: 設計レビュー -> 実装方針策定 -> SubAgentレビュー -> 実装の順で実施し、レビュー指摘を反映
 - 2026-04-05 issue #37: Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡内容へ追加
