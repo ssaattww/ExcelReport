@@ -18,7 +18,7 @@ namespace ExcelReportExe
         {
 
             //var sampleData = SampleDataFactory.Create();
-            //var parsedResult = DslParser.ParseFromFile(@"C:\Users\taiga\source\repos\ExcelReport\ExcelReport\ExcelReportLibTest\TestDsl\DslDefinition_FullTemplate_Sample_v2.xml");
+            //var parsedResult = DslParser.ParseFromFile(@"C:\Users\taiga\source\repos\ExcelReport\ExcelReport\ExcelReportLib.Tests\TestDsl\DslDefinition_FullTemplate_Sample_v2.xml");
             //var parsedRoot = parsedResult.Root;
             //if (parsedRoot == null)
             //{
@@ -227,4 +227,3 @@ namespace ExcelReportExe
             """;
     }
 }
-
