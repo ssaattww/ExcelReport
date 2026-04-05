@@ -215,6 +215,41 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that chart with invalid coordinates is reported and excluded from layout sheet.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetChart_InvalidCoordinates_IsExcludedFromLayoutSheet()
+    {
+        var parseResult = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary" rows="10" cols="10">
+                <chart type="barStacked" r="1" c="10" width="2" height="1" category="A1:A1">
+                  <series name="Done" value="B1:B1" />
+                </chart>
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = false,
+            });
+
+        Assert.NotNull(parseResult.Root);
+        var plan = new LayoutEngine.LayoutEngine().Expand(parseResult.Root!, rootData: null);
+
+        var sheet = Assert.Single(plan.Sheets);
+        Assert.Empty(sheet.Charts);
+        Assert.Contains(
+            plan.Issues,
+            issue =>
+                issue.Kind == IssueKind.CoordinateOutOfRange &&
+                issue.Severity == IssueSeverity.Error &&
+                (issue.Message.Contains("グラフ配置がシート範囲外", StringComparison.Ordinal) ||
+                 issue.Message.Contains("chart の配置がシートまたは Excel の上限を超えています", StringComparison.Ordinal)));
+    }
+
+    /// <summary>
     /// Verifies that top-level siblings isolate local scope paths.
     /// </summary>
     [Fact]
@@ -1108,4 +1143,3 @@ public sealed class LayoutEngineTests
         public string Right { get; init; } = string.Empty;
     }
 }
-

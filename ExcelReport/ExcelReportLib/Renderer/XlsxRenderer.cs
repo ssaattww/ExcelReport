@@ -267,9 +267,7 @@ public sealed class XlsxRenderer : IRenderer
             var barSeries = new C.BarChartSeries(
                 new C.Index { Val = (uint)index },
                 new C.Order { Val = (uint)index },
-                CreateSeriesText(series.Name, index),
-                new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))),
-                new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
+                CreateSeriesText(series.Name, index));
 
             if (series.PointColors is not null)
             {
@@ -279,6 +277,8 @@ public sealed class XlsxRenderer : IRenderer
                 }
             }
 
+            barSeries.Append(new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))));
+            barSeries.Append(new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
             barChart.Append(barSeries);
         }
 
@@ -302,9 +302,7 @@ public sealed class XlsxRenderer : IRenderer
             var lineSeries = new C.LineChartSeries(
                 new C.Index { Val = (uint)index },
                 new C.Order { Val = (uint)index },
-                CreateSeriesText(series.Name, index),
-                new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))),
-                new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
+                CreateSeriesText(series.Name, index));
 
             if (series.PointColors is not null && series.PointColors.Count > 0)
             {
@@ -328,6 +326,8 @@ public sealed class XlsxRenderer : IRenderer
                 }
             }
 
+            lineSeries.Append(new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))));
+            lineSeries.Append(new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
             lineChart.Append(lineSeries);
         }
 

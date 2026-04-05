@@ -500,7 +500,7 @@ public sealed class RendererTests
     }
 
     /// <summary>
-    /// Verifies that chart states are rendered into drawing/chart parts.
+    /// Verifies that chart states are rendered into drawing/chart parts with schema-valid chart XML.
     /// </summary>
     [Fact]
     public void Render_Charts_AreRenderedIntoDrawingAndChartParts()
@@ -560,6 +560,12 @@ public sealed class RendererTests
         Assert.Equal(2, drawingsPart!.ChartParts.Count());
         Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.BarChart>().Any());
         Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.LineChart>().Any());
+
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description}")
+            .ToArray();
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
     }
 
     /// <summary>

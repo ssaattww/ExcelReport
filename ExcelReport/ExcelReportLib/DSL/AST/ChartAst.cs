@@ -498,8 +498,8 @@ namespace ExcelReportLib.DSL.AST
             Name = element.Attribute("name")?.Value;
             ValueRef = valueRef;
             Color = color;
-            ColorKey = element.Attribute("colorKey")?.Value;
-            ColorByRef = element.Attribute("colorBy")?.Value;
+            ColorKey = element.Attribute("colorKey")?.Value.Trim();
+            ColorByRef = element.Attribute("colorBy")?.Value.Trim();
             Span = SourceSpan.CreateSpanAttributes(element);
         }
     }

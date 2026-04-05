@@ -191,7 +191,7 @@ public sealed class LayoutEngine : ILayoutEngine
         var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
 
         ValidateCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, cells, issues);
-        ValidateChartCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, charts, issues);
+        var validCharts = ValidateChartCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, charts, issues);
         sheets.Add(
             LayoutSheet.CreateWithScopedConditionalFormattings(
                 sheetName,
@@ -201,7 +201,7 @@ public sealed class LayoutEngine : ILayoutEngine
                 namedAreas,
                 sheet.Options,
                 conditionalFormattings,
-                charts));
+                validCharts));
     }
 
     private string ResolveSheetName(
@@ -838,13 +838,14 @@ public sealed class LayoutEngine : ILayoutEngine
         }
     }
 
-    private static void ValidateChartCoordinates(
+    private static IReadOnlyList<LayoutChart> ValidateChartCoordinates(
         string sheetName,
         int sheetRows,
         int sheetCols,
         IEnumerable<LayoutChart> charts,
         IList<Issue> issues)
     {
+        var validCharts = new List<LayoutChart>();
         foreach (var chart in charts)
         {
             var endRow = chart.TopRow + chart.HeightRows - 1;
@@ -864,8 +865,14 @@ public sealed class LayoutEngine : ILayoutEngine
                     Message = $"グラフ配置がシート範囲外です: sheet={sheetName}, r={chart.TopRow}, c={chart.LeftColumn}, width={chart.WidthColumns}, height={chart.HeightRows}",
                     Span = null,
                 });
+
+                continue;
             }
+
+            validCharts.Add(chart);
         }
+
+        return validCharts;
     }
 
     private static int GetMaxUsedRow(IReadOnlyCollection<LayoutCell> cells) =>

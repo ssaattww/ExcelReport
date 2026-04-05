@@ -156,8 +156,19 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     {
         var globalAreas = new Dictionary<string, NamedAreaState>(namedAreas, StringComparer.Ordinal);
         var localAreasByScope = new Dictionary<string, Dictionary<string, NamedAreaState>>(StringComparer.Ordinal);
-        AddFormulaReferenceNamedAreas(layoutSheet, globalAreas, localAreasByScope);
-        return new FormulaPlaceholderContext(globalAreas, localAreasByScope);
+        var globalSeriesAreas = new Dictionary<string, NamedAreaState>(StringComparer.Ordinal);
+        var localSeriesAreasByScope = new Dictionary<string, Dictionary<string, NamedAreaState>>(StringComparer.Ordinal);
+        AddFormulaReferenceNamedAreas(
+            layoutSheet,
+            globalAreas,
+            localAreasByScope,
+            globalSeriesAreas,
+            localSeriesAreasByScope);
+        return new FormulaPlaceholderContext(
+            globalAreas,
+            localAreasByScope,
+            globalSeriesAreas,
+            localSeriesAreasByScope);
     }
 
     private static IReadOnlyDictionary<(int Row, int Column), CellState> ResolveFormulaPlaceholders(
@@ -250,7 +261,9 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     private static void AddFormulaReferenceNamedAreas(
         LayoutSheet layoutSheet,
         IDictionary<string, NamedAreaState> globalNamedAreas,
-        IDictionary<string, Dictionary<string, NamedAreaState>> localNamedAreasByScope)
+        IDictionary<string, Dictionary<string, NamedAreaState>> localNamedAreasByScope,
+        IDictionary<string, NamedAreaState> globalFormulaSeriesAreas,
+        IDictionary<string, Dictionary<string, NamedAreaState>> localFormulaSeriesAreasByScope)
     {
         var globalSeriesByName = new Dictionary<string, List<LayoutCell>>(StringComparer.Ordinal);
         var localSeriesByScopeAndName = new Dictionary<string, Dictionary<string, List<LayoutCell>>>(StringComparer.Ordinal);
@@ -302,11 +315,13 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
             TryAddFormulaReferenceNamedArea(globalNamedAreas, name, firstCell);
             TryAddFormulaReferenceNamedArea(globalNamedAreas, $"{name}End", lastCell);
+            globalFormulaSeriesAreas[name] = CreateSeriesNamedArea(name, firstCell, lastCell);
         }
 
         foreach (var (scopePath, scopedSeriesByName) in localSeriesByScopeAndName)
         {
             var scopedNamedAreas = new Dictionary<string, NamedAreaState>(StringComparer.Ordinal);
+            var scopedSeriesAreas = new Dictionary<string, NamedAreaState>(StringComparer.Ordinal);
 
             foreach (var (name, seriesCells) in scopedSeriesByName)
             {
@@ -319,9 +334,11 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
                 TryAddFormulaReferenceNamedArea(scopedNamedAreas, name, firstCell);
                 TryAddFormulaReferenceNamedArea(scopedNamedAreas, $"{name}End", lastCell);
+                scopedSeriesAreas[name] = CreateSeriesNamedArea(name, firstCell, lastCell);
             }
 
             localNamedAreasByScope[scopePath] = scopedNamedAreas;
+            localFormulaSeriesAreasByScope[scopePath] = scopedSeriesAreas;
         }
     }
 
@@ -415,7 +432,9 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private sealed record FormulaPlaceholderContext(
         IReadOnlyDictionary<string, NamedAreaState> GlobalAreas,
-        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> LocalAreasByScope);
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> LocalAreasByScope,
+        IReadOnlyDictionary<string, NamedAreaState> GlobalFormulaSeriesAreas,
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> LocalFormulaSeriesAreasByScope);
 
     private static void TryAddFormulaReferenceNamedArea(
         IDictionary<string, NamedAreaState> namedAreas,
@@ -437,6 +456,14 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             cell.Col,
             cell.Row + cell.RowSpan - 1,
             cell.Col + cell.ColSpan - 1);
+
+    private static NamedAreaState CreateSeriesNamedArea(string name, LayoutCell firstCell, LayoutCell lastCell) =>
+        new(
+            name,
+            Math.Min(firstCell.Row, lastCell.Row),
+            Math.Min(firstCell.Col, lastCell.Col),
+            Math.Max(firstCell.Row + firstCell.RowSpan - 1, lastCell.Row + lastCell.RowSpan - 1),
+            Math.Max(firstCell.Col + firstCell.ColSpan - 1, lastCell.Col + lastCell.ColSpan - 1));
 
     private static WorksheetOptionsState BuildOptions(
         SheetOptionsAst? options,
@@ -723,7 +750,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
         var localFormulaRefAreas = ResolveLocalFormulaRefSeriesAreas(
             rawReference,
-            formulaPlaceholderContext.LocalAreasByScope,
+            formulaPlaceholderContext.LocalFormulaSeriesAreasByScope,
             "/sheet");
         if (localFormulaRefAreas.Count == 1)
         {
@@ -745,7 +772,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             return false;
         }
 
-        if (TryResolveFormulaRefSeriesArea(rawReference, formulaPlaceholderContext.GlobalAreas, out var formulaRefArea))
+        if (formulaPlaceholderContext.GlobalFormulaSeriesAreas.TryGetValue(rawReference, out var formulaRefArea))
         {
             return TryResolveChartReferenceFromArea(
                 formulaRefArea,
@@ -969,23 +996,24 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         IDictionary<string, string> keyColorAssignments,
         ref int nextPaletteIndex)
     {
-        if (string.IsNullOrWhiteSpace(key))
+        var normalizedKey = key.Trim();
+        if (normalizedKey.Length == 0)
         {
             return DefaultChartPalette[nextPaletteIndex++ % DefaultChartPalette.Length];
         }
 
-        if (chartPalette.TryGetValue(key, out var paletteColor))
+        if (chartPalette.TryGetValue(normalizedKey, out var paletteColor))
         {
             return paletteColor;
         }
 
-        if (keyColorAssignments.TryGetValue(key, out var assignedColor))
+        if (keyColorAssignments.TryGetValue(normalizedKey, out var assignedColor))
         {
             return assignedColor;
         }
 
         var nextColor = DefaultChartPalette[nextPaletteIndex++ % DefaultChartPalette.Length];
-        keyColorAssignments[key] = nextColor;
+        keyColorAssignments[normalizedKey] = nextColor;
         return nextColor;
     }
 
@@ -1105,7 +1133,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             return [ToRangeReference(namedArea)];
         }
 
-        var localSeriesAreas = ResolveLocalFormulaRefSeriesAreas(target, formulaPlaceholderContext.LocalAreasByScope, definitionScopePath);
+        var localSeriesAreas = ResolveLocalFormulaRefSeriesAreas(target, formulaPlaceholderContext.LocalFormulaSeriesAreasByScope, definitionScopePath);
         if (localSeriesAreas.Count > 0)
         {
             return localSeriesAreas
@@ -1113,7 +1141,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                 .ToArray();
         }
 
-        if (TryResolveFormulaRefSeriesArea(target, formulaPlaceholderContext.GlobalAreas, out var globalSeriesArea))
+        if (formulaPlaceholderContext.GlobalFormulaSeriesAreas.TryGetValue(target, out var globalSeriesArea))
         {
             return [ToRangeReference(globalSeriesArea)];
         }
@@ -1256,17 +1284,12 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
 
     private static IReadOnlyList<NamedAreaState> ResolveLocalFormulaRefSeriesAreas(
         string formulaRefName,
-        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> localAreasByScope,
+        IReadOnlyDictionary<string, Dictionary<string, NamedAreaState>> localSeriesAreasByScope,
         string definitionScopePath) =>
-        localAreasByScope
+        localSeriesAreasByScope
             // local は sheet 直下定義では漏らさず、それ以外は定義配下スコープを解決する。
             .Where(pair => ShouldResolveLocalScopeCandidate(pair.Key, definitionScopePath))
-            .Select(pair => pair.Value)
-            .Select(
-                localAreas =>
-                    TryResolveFormulaRefSeriesArea(formulaRefName, localAreas, out var seriesArea)
-                        ? seriesArea
-                        : null)
+            .Select(pair => pair.Value.TryGetValue(formulaRefName, out var seriesArea) ? seriesArea : null)
             .Where(seriesArea => seriesArea is not null)
             .Select(seriesArea => seriesArea!)
             .DistinctBy(
@@ -1301,32 +1324,6 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         }
 
         return candidateScopePath.StartsWith(definitionScopePath + "/", StringComparison.Ordinal);
-    }
-
-    private static bool TryResolveFormulaRefSeriesArea(
-        string formulaRefName,
-        IReadOnlyDictionary<string, NamedAreaState> areasByName,
-        out NamedAreaState seriesArea)
-    {
-        if (!areasByName.TryGetValue(formulaRefName, out var startArea))
-        {
-            seriesArea = default!;
-            return false;
-        }
-
-        if (!areasByName.TryGetValue($"{formulaRefName}End", out var endArea))
-        {
-            seriesArea = startArea;
-            return true;
-        }
-
-        seriesArea = new NamedAreaState(
-            formulaRefName,
-            Math.Min(startArea.TopRow, endArea.TopRow),
-            Math.Min(startArea.LeftColumn, endArea.LeftColumn),
-            Math.Max(startArea.BottomRow, endArea.BottomRow),
-            Math.Max(startArea.RightColumn, endArea.RightColumn));
-        return true;
     }
 
     private static int CalculateIntersectionArea(NamedAreaState left, NamedAreaState right)

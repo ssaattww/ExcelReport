@@ -63,6 +63,29 @@ public sealed class DslParserTests
     }
 
     /// <summary>
+    /// Verifies that parse from text with invalid root local name returns fatal schema violation.
+    /// </summary>
+    [Fact]
+    public void ParseFromText_InvalidRootLocalName_ReturnsFatalSchemaViolation()
+    {
+        var result = DslParser.ParseFromText(
+            """
+            <styles xmlns="urn:excelreport:v2">
+              <style name="Base" scope="cell" />
+            </styles>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = false,
+            });
+
+        Assert.True(result.HasFatal);
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Severity == IssueSeverity.Fatal && issue.Kind == IssueKind.SchemaViolation);
+    }
+
+    /// <summary>
     /// Verifies that parse from file full template resolves all imports.
     /// </summary>
     [Fact]
@@ -230,6 +253,30 @@ public sealed class DslParserTests
             result.Issues,
             issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
     }
+
+    /// <summary>
+    /// Verifies that static chart bounds validation checks Excel limits even when sheet rows and cols are omitted.
+    /// </summary>
+    [Fact]
+    public void ParseFromText_ChartOutOfExcelBounds_WhenSheetRowsColsOmitted_EmitsCoordinateOutOfRange()
+    {
+        var result = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <chart type="barStacked" title="Progress" r="1" c="16384" width="2" height="1" category="A1:A1">
+                  <series name="Done" value="B1:B1" color="#4CAF50" />
+                </chart>
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = true,
+            });
+
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Kind == IssueKind.CoordinateOutOfRange && issue.Severity == IssueSeverity.Error);
+    }
 }
-
-

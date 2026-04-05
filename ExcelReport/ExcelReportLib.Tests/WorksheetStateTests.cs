@@ -817,6 +817,65 @@ public sealed class WorksheetStateTests
     }
 
     /// <summary>
+    /// Verifies that chart formulaRef series resolution does not use colliding named-area *End targets.
+    /// </summary>
+    [Fact]
+    public void Build_Charts_GlobalFormulaRefSeries_IgnoresNamedAreaEndCollision()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 1, value: "Task1", formulaRef: "Task.Name"),
+                        CreateCell(row: 3, col: 1, value: "Task2", formulaRef: "Task.Name"),
+                        CreateCell(row: 2, col: 2, value: 10, formulaRef: "Task.Workload"),
+                        CreateCell(row: 3, col: 2, value: 20, formulaRef: "Task.Workload"),
+                    ],
+                    rows: 20,
+                    cols: 20,
+                    namedAreas:
+                    [
+                        new LayoutNamedArea("Task.WorkloadEnd", topRow: 2, leftColumn: 5, bottomRow: 2, rightColumn: 5),
+                    ],
+                    charts:
+                    [
+                        new LayoutChart(
+                            chartType: "barStacked",
+                            title: "Progress",
+                            name: "ProgressChart",
+                            topRow: 2,
+                            leftColumn: 8,
+                            widthColumns: 10,
+                            heightRows: 16,
+                            categoryReference: "Task.Name",
+                            legendPosition: "right",
+                            showDataLabels: true,
+                            series:
+                            [
+                                new LayoutChartSeries(name: "Workload", valueReference: "Task.Workload", color: null, colorKey: "Done", colorByReference: null),
+                            ]),
+                    ]),
+            ],
+            chartPalette: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Done"] = "#4CAF50",
+            });
+
+        var builder = new WorksheetStateBuilder();
+        var issues = new List<Issue>();
+        var sheet = Assert.Single(builder.Build(plan, issues));
+        var chart = Assert.Single(sheet.Charts);
+
+        Assert.Equal("'Summary'!$B$2:$B$3", chart.Series[0].ValueFormula);
+        Assert.DoesNotContain(
+            issues,
+            issue =>
+                issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal &&
+                issue.Message.Contains("系列長が不一致", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// Verifies that chart references and colors are resolved into chart states.
     /// </summary>
     [Fact]
@@ -855,7 +914,7 @@ public sealed class WorksheetStateTests
                             series:
                             [
                                 new LayoutChartSeries(name: "ByColor", valueReference: "B2:B4", color: null, colorKey: null, colorByReference: "C2:C4"),
-                                new LayoutChartSeries(name: "FixedKey", valueReference: "B2:B4", color: null, colorKey: "Done", colorByReference: null),
+                                new LayoutChartSeries(name: "FixedKey", valueReference: "B2:B4", color: null, colorKey: "Done ", colorByReference: null),
                             ]),
                     ]),
             ],

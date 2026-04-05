@@ -1456,6 +1456,12 @@ public sealed class ReportGeneratorTests
             .ToArray();
         Assert.Equal(4, secondSeriesColors.Length);
         Assert.All(secondSeriesColors, color => Assert.Equal("1E88E5", color));
+
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description}")
+            .ToArray();
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
     }
 
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
