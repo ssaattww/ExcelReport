@@ -180,6 +180,41 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that chart expansion keeps cell scope path behavior and captures chart metadata.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetChart_KeepsCellScopePathAndCapturesChart()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell c="2" value="10" formulaRef="RowData" formulaRefScope="local" />
+                <cell c="3" value="=SUM(#{RowData:RowDataEnd})" />
+                <chart type="barStacked" r="2" c="8" width="10" height="16" category="A2:A4">
+                  <series name="Done" value="B2:B4" />
+                </chart>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var rowDataCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.FormulaRef, "RowData", StringComparison.Ordinal)));
+        var formulaCell = Assert.Single(sheet.Cells.Where(cell => string.Equals(cell.Formula, "=SUM(#{RowData:RowDataEnd})", StringComparison.Ordinal)));
+        var chart = Assert.Single(sheet.Charts);
+
+        Assert.Equal("/sheet", rowDataCell.ScopePath);
+        Assert.Equal(rowDataCell.ScopePath, formulaCell.ScopePath);
+        Assert.Equal("barStacked", chart.ChartType);
+        Assert.Equal(2, chart.TopRow);
+        Assert.Equal(8, chart.LeftColumn);
+        Assert.Equal("A2:A4", chart.CategoryReference);
+        Assert.Single(chart.Series);
+        Assert.Equal("B2:B4", chart.Series[0].ValueReference);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that top-level siblings isolate local scope paths.
     /// </summary>
     [Fact]
@@ -1073,5 +1108,4 @@ public sealed class LayoutEngineTests
         public string Right { get; init; } = string.Empty;
     }
 }
-
 

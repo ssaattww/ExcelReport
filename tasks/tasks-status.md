@@ -1,10 +1,16 @@
 # Tasks Status
 
-Last Updated: 2026-03-26
-Scope: ExcelReport開発 - Phase 10: sheet repeat対応
+Last Updated: 2026-04-05
+Scope: ExcelReport開発 - issue #37 chart作成対応
 
 ## Progress Summary
 
+- 2026-04-05 追跡更新: `Design/Chart/Chart_DetailDesign.md` を追跡対象に追加し、tasks/phases の進捗記録に明示
+- 2026-04-05 issue#37 設計レビュー: `Design/Chart/Chart_DetailDesign.md` をレビューし、実装方針を策定
+- 2026-04-05 issue#37 方針レビュー: SubAgent（Socrates）に実装方針レビューを依頼し、指摘を反映した方針v2で確定
+- 2026-04-05 issue#37 実装: chart DSL/AST/XSD・LayoutEngine・WorksheetState・Renderer（barStacked/line）まで一気通貫で実装
+- 2026-04-05 issue#37 テスト: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --no-restore` 実行で `Passed 185, Failed 0`
+- 2026-04-05 記録: `reports/issue37-chart-design-and-plan-review-2026-04-05.md` を作成
 - 2026-03-26 CI失敗修正: `LayoutEngineTests.Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins` の import fixture を `<workbook>` から `<components>` へ修正し、`componentImport` ルート厳格化と整合
 - 2026-03-26 再検証: `dotnet test --no-restore` 全件実行で `Passed 179, Failed 0` を確認
 - 2026-03-26 PR#47追加レビュー対応(3-6): `FindNamedArea` の global/unique-descendant 衝突時に global優先+Warning化、sheet-scope `conditionalFormatting@formulaRef` は fallback経路のみ local非リーク化
@@ -176,7 +182,13 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 | 23 | sheet repeat 実装 (DSL/AST/ValidateDsl/LayoutEngine/Renderer互換確認) | Done | Codex + PM | 22 | 10 |
 
 
-## Additional Work (2026-03-19)
+## Additional Work
+
+- 2026-04-05 issue #37: グラフ作成機能（chart）を実装完了（DSL/AST/XSD/Layout/State/Renderer）
+- 2026-04-05 issue #37: 設計レビュー -> 実装方針策定 -> SubAgentレビュー -> 実装の順で実施し、レビュー指摘を反映
+- 2026-04-05 issue #37: Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡内容へ追加
+- 2026-04-05 issue #37: `ExcelReportLib.Tests` 全体回帰を実施し `Passed 185, Failed 0` を確認
+- 2026-04-05 issue #37: 実施記録 `reports/issue37-chart-design-and-plan-review-2026-04-05.md` を追加
 
 - 2026-03-26 issue #45: named target属性の完全破壊変更（`area` 統一）を実装完了（`repeat@area`/`use@area`/`grid@area`）
 - 2026-03-26 issue #45: `INamedAreaTarget.AreaName` による共通解決へ統一し、legacy属性（`name`/`instance`）拒否をテストで担保

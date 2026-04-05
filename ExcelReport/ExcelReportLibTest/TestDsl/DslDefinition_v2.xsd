@@ -67,6 +67,7 @@
   <xs:complexType name="WorkbookType">
     <xs:sequence>
       <xs:element name="styles" type="StylesType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="chartPalette" type="ChartPaletteType" minOccurs="0" maxOccurs="1"/>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element name="component"       type="ComponentType"/>
         <xs:element name="componentImport" type="ComponentImportType"/>
@@ -166,6 +167,59 @@
     <xs:attribute name="name" type="xs:string" use="required"/>
   </xs:complexType>
 
+  <xs:simpleType name="ChartTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="barStacked"/>
+      <xs:enumeration value="line"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ChartLegendEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="right"/>
+      <xs:enumeration value="left"/>
+      <xs:enumeration value="top"/>
+      <xs:enumeration value="bottom"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ChartPaletteType">
+    <xs:sequence>
+      <xs:element name="color" type="ChartPaletteColorType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ChartPaletteColorType">
+    <xs:attribute name="key" type="xs:string" use="required"/>
+    <xs:attribute name="value" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ChartSeriesType">
+    <xs:attribute name="name" type="xs:string" use="optional"/>
+    <xs:attribute name="value" type="xs:string" use="required"/>
+    <xs:attribute name="color" type="xs:string" use="optional"/>
+    <xs:attribute name="colorKey" type="xs:string" use="optional"/>
+    <xs:attribute name="colorBy" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="ChartType">
+    <xs:sequence>
+      <xs:element name="series" type="ChartSeriesType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="ChartTypeEnum" use="required"/>
+    <xs:attribute name="title" type="xs:string" use="optional"/>
+    <xs:attribute name="name" type="xs:string" use="optional"/>
+    <xs:attribute name="r" type="PositiveInt1" use="required"/>
+    <xs:attribute name="c" type="PositiveInt1" use="required"/>
+    <xs:attribute name="width" type="PositiveInt1" use="optional" default="8"/>
+    <xs:attribute name="height" type="PositiveInt1" use="optional" default="15"/>
+    <xs:attribute name="category" type="xs:string" use="required"/>
+    <xs:attribute name="legend" type="ChartLegendEnum" use="optional"/>
+    <xs:attribute name="showDataLabels" type="xs:boolean" use="optional" default="false"/>
+    <xs:attribute name="when" type="BoolExpr" use="optional"/>
+  </xs:complexType>
+
   <!-- sheet（特殊な grid） -->
   <xs:complexType name="SheetType">
     <xs:sequence>
@@ -176,6 +230,7 @@
         <xs:element name="use"         type="UseType"/>
         <xs:element name="grid"        type="GridType"/>
         <xs:element name="repeat"      type="RepeatType"/>
+        <xs:element name="chart"       type="ChartType"/>
         <xs:element name="conditionalFormatting" type="ConditionalFormattingType"/>
       </xs:choice>
       <xs:element name="sheetOptions" type="SheetOptionsType" minOccurs="0" maxOccurs="1"/>
@@ -360,4 +415,3 @@
   </xs:complexType>
 
 </xs:schema>
-

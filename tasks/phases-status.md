@@ -1,9 +1,13 @@
 # Phases Status
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: issue#37 Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡対象へ追加し、tasks/phases の進捗管理に反映
+- 2026-04-05: issue#37 設計レビューを実施し、実装方針を策定（chart DSL/AST/XSD -> Layout -> WorksheetState -> Renderer）
+- 2026-04-05: SubAgent（Socrates）に実装方針レビューを依頼し、scopePath維持・責務分離・異常系方針の指摘を反映
+- 2026-04-05: issue#37 の実装と回帰検証を完了し、`dotnet test --no-restore` で `Passed 185, Failed 0` を確認
 - 2026-03-26: GitHub xunit-tests 失敗（`Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins`）を修正し、`componentImport` 厳格化後のfixture整合を反映
 - 2026-03-26: 回帰として `dotnet test --no-restore` を全件実行し `Passed 179, Failed 0` を確認
 - 2026-03-26: ユーザー指定レビュー指摘3-6に対応し、global/local衝突解決・sheet-scope fallback非リーク化・importルート厳格検証を実装

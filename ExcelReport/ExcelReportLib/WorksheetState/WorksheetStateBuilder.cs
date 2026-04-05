@@ -14,6 +14,24 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         "#\\{(?<start>[^}:]+)(:(?<end>[^}]+))?\\}",
         RegexOptions.Compiled);
 
+    private static readonly Regex ChartCellReferenceRegex = new(
+        "^\\$?(?<col>[A-Za-z]+)\\$?(?<row>[0-9]+)$",
+        RegexOptions.Compiled);
+
+    private static readonly string[] DefaultChartPalette =
+    [
+        "#4472C4",
+        "#ED7D31",
+        "#A5A5A5",
+        "#FFC000",
+        "#5B9BD5",
+        "#70AD47",
+        "#264478",
+        "#9E480E",
+        "#636363",
+        "#997300",
+    ];
+
     /// <summary>
     /// Builds worksheet state models from an expanded layout plan.
     /// </summary>
@@ -25,11 +43,14 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         ArgumentNullException.ThrowIfNull(layoutPlan);
 
         return layoutPlan.Sheets
-            .Select(layoutSheet => BuildSheet(layoutSheet, issues))
+            .Select(layoutSheet => BuildSheet(layoutSheet, layoutPlan.ChartPalette, issues))
             .ToArray();
     }
 
-    private static WorksheetState BuildSheet(LayoutSheet layoutSheet, IList<Issue>? issues)
+    private static WorksheetState BuildSheet(
+        LayoutSheet layoutSheet,
+        IReadOnlyDictionary<string, string> chartPalette,
+        IList<Issue>? issues)
     {
         ValidateSheetBounds(layoutSheet.Rows, layoutSheet.Cols, layoutSheet.Name);
 
@@ -96,6 +117,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
         var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas, issues);
+        var charts = BuildCharts(layoutSheet, resolvedCells, namedAreas, formulaPlaceholderAreas, chartPalette, issues);
         var options = BuildOptions(layoutSheet.Options, layoutSheet.ConditionalFormattings, namedAreas, formulaPlaceholderAreas, issues);
 
         return new WorksheetState(
@@ -105,6 +127,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
             resolvedCells,
             mergedRanges,
             namedAreas,
+            charts,
             options);
     }
 
@@ -470,6 +493,558 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                                 scopedRule.Rule.BorderColor)))
                 .ToArray());
     }
+
+    private static IReadOnlyList<ChartState> BuildCharts(
+        LayoutSheet layoutSheet,
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        IReadOnlyDictionary<string, string> chartPalette,
+        IList<Issue>? issues)
+    {
+        if (layoutSheet.Charts.Count == 0)
+        {
+            return Array.Empty<ChartState>();
+        }
+
+        var normalizedPalette = chartPalette.ToDictionary(
+            pair => pair.Key,
+            pair => NormalizeRgbColor(pair.Value),
+            StringComparer.Ordinal);
+        var keyColorAssignments = new Dictionary<string, string>(normalizedPalette, StringComparer.Ordinal);
+        var nextPaletteIndex = 0;
+        var results = new List<ChartState>();
+
+        foreach (var chart in layoutSheet.Charts)
+        {
+            if (!TryResolveChartReference(
+                    chart.CategoryReference,
+                    layoutSheet.Name,
+                    cells,
+                    namedAreas,
+                    formulaPlaceholderContext,
+                    requireValues: false,
+                    issues,
+                    out var categoryReference))
+            {
+                AddChartIssue(
+                    issues,
+                    $"chart '{chart.Name ?? chart.ChartType}' の category 参照解決に失敗しました: {chart.CategoryReference}");
+                continue;
+            }
+
+            var resolvedSeries = new List<ChartSeriesState>();
+            var seriesIndex = 0;
+            foreach (var series in chart.Series)
+            {
+                if (!TryResolveChartReference(
+                        series.ValueReference,
+                        layoutSheet.Name,
+                        cells,
+                        namedAreas,
+                        formulaPlaceholderContext,
+                        requireValues: false,
+                        issues,
+                        out var valueReference))
+                {
+                    AddChartIssue(
+                        issues,
+                        $"chart '{chart.Name ?? chart.ChartType}' の series 参照解決に失敗しました: {series.ValueReference}");
+                    seriesIndex++;
+                    continue;
+                }
+
+                if (valueReference.Length != categoryReference.Length)
+                {
+                    AddChartIssue(
+                        issues,
+                        $"chart '{chart.Name ?? chart.ChartType}' の系列長が不一致です: category={categoryReference.Length}, value={valueReference.Length}");
+                    seriesIndex++;
+                    continue;
+                }
+
+                if (!TryResolveSeriesPointColors(
+                        series,
+                        categoryReference.Length,
+                        layoutSheet.Name,
+                        cells,
+                        namedAreas,
+                        formulaPlaceholderContext,
+                        normalizedPalette,
+                        keyColorAssignments,
+                        ref nextPaletteIndex,
+                        seriesIndex,
+                        issues,
+                        out var pointColors))
+                {
+                    seriesIndex++;
+                    continue;
+                }
+
+                resolvedSeries.Add(
+                    new ChartSeriesState(
+                        series.Name,
+                        valueReference.Formula,
+                        pointColors));
+                seriesIndex++;
+            }
+
+            if (resolvedSeries.Count == 0)
+            {
+                AddChartIssue(
+                    issues,
+                    $"chart '{chart.Name ?? chart.ChartType}' に有効な series が存在しないためスキップしました。");
+                continue;
+            }
+
+            results.Add(
+                new ChartState(
+                    chart.ChartType,
+                    chart.Title,
+                    chart.Name,
+                    chart.TopRow,
+                    chart.LeftColumn,
+                    chart.WidthColumns,
+                    chart.HeightRows,
+                    categoryReference.Formula,
+                    chart.LegendPosition,
+                    chart.ShowDataLabels,
+                    resolvedSeries));
+        }
+
+        return results;
+    }
+
+    private static bool TryResolveSeriesPointColors(
+        LayoutChartSeries series,
+        int pointCount,
+        string currentSheetName,
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        IReadOnlyDictionary<string, string> chartPalette,
+        IDictionary<string, string> keyColorAssignments,
+        ref int nextPaletteIndex,
+        int seriesIndex,
+        IList<Issue>? issues,
+        out IReadOnlyList<string>? pointColors)
+    {
+        if (!string.IsNullOrWhiteSpace(series.Color))
+        {
+            pointColors = Enumerable.Repeat(NormalizeRgbColor(series.Color), pointCount).ToArray();
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(series.ColorByReference))
+        {
+            if (!TryResolveChartReference(
+                    series.ColorByReference,
+                    currentSheetName,
+                    cells,
+                    namedAreas,
+                    formulaPlaceholderContext,
+                    requireValues: true,
+                    issues,
+                    out var colorByReference))
+            {
+                AddChartIssue(
+                    issues,
+                    $"series '{series.Name ?? series.ValueReference}' の colorBy 参照解決に失敗しました: {series.ColorByReference}");
+                pointColors = null;
+                return false;
+            }
+
+            if (colorByReference.Length != pointCount || colorByReference.Values is null)
+            {
+                AddChartIssue(
+                    issues,
+                    $"series '{series.Name ?? series.ValueReference}' の colorBy 系列長が不一致です: expected={pointCount}, actual={colorByReference.Length}");
+                pointColors = null;
+                return false;
+            }
+
+            var resolved = new string[colorByReference.Values.Count];
+            for (var index = 0; index < colorByReference.Values.Count; index++)
+            {
+                var key = colorByReference.Values[index]?.ToString()?.Trim() ?? string.Empty;
+                resolved[index] = ResolveColorByKey(
+                    key,
+                    chartPalette,
+                    keyColorAssignments,
+                    ref nextPaletteIndex);
+            }
+
+            pointColors = resolved;
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(series.ColorKey))
+        {
+            var resolvedColor = ResolveColorByKey(
+                series.ColorKey,
+                chartPalette,
+                keyColorAssignments,
+                ref nextPaletteIndex);
+            pointColors = Enumerable.Repeat(resolvedColor, pointCount).ToArray();
+            return true;
+        }
+
+        var defaultColor = DefaultChartPalette[seriesIndex % DefaultChartPalette.Length];
+        pointColors = Enumerable.Repeat(defaultColor, pointCount).ToArray();
+        return true;
+    }
+
+    private static bool TryResolveChartReference(
+        string rawReference,
+        string currentSheetName,
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        FormulaPlaceholderContext formulaPlaceholderContext,
+        bool requireValues,
+        IList<Issue>? issues,
+        out ChartReferenceResolution resolution)
+    {
+        if (string.IsNullOrWhiteSpace(rawReference))
+        {
+            resolution = default!;
+            return false;
+        }
+
+        if (namedAreas.TryGetValue(rawReference, out var namedArea))
+        {
+            return TryResolveChartReferenceFromArea(
+                namedArea,
+                currentSheetName,
+                cells,
+                requireValues,
+                issues,
+                out resolution);
+        }
+
+        var localFormulaRefAreas = ResolveLocalFormulaRefSeriesAreas(
+            rawReference,
+            formulaPlaceholderContext.LocalAreasByScope,
+            "/sheet");
+        if (localFormulaRefAreas.Count == 1)
+        {
+            return TryResolveChartReferenceFromArea(
+                localFormulaRefAreas[0],
+                currentSheetName,
+                cells,
+                requireValues,
+                issues,
+                out resolution);
+        }
+
+        if (localFormulaRefAreas.Count > 1)
+        {
+            AddChartIssue(
+                issues,
+                $"chart 参照 '{rawReference}' は local formulaRef の候補が複数あるため解決できません。");
+            resolution = default!;
+            return false;
+        }
+
+        if (TryResolveFormulaRefSeriesArea(rawReference, formulaPlaceholderContext.GlobalAreas, out var formulaRefArea))
+        {
+            return TryResolveChartReferenceFromArea(
+                formulaRefArea,
+                currentSheetName,
+                cells,
+                requireValues,
+                issues,
+                out resolution);
+        }
+
+        if (!TryParseChartRangeReference(rawReference, out var targetSheetName, out var topRow, out var leftColumn, out var bottomRow, out var rightColumn))
+        {
+            resolution = default!;
+            return false;
+        }
+
+        if (!IsOneDimensionalRange(topRow, leftColumn, bottomRow, rightColumn))
+        {
+            issues?.Add(new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = IssueKind.FormulaRefSeriesNot1DContinuous,
+                Message = $"chart 参照は 1 次元連続範囲である必要があります: {rawReference}",
+            });
+            resolution = default!;
+            return false;
+        }
+
+        var sheetName = string.IsNullOrWhiteSpace(targetSheetName) ? currentSheetName : targetSheetName;
+        var values = default(IReadOnlyList<object?>);
+        if (requireValues)
+        {
+            if (!string.Equals(sheetName, currentSheetName, StringComparison.Ordinal))
+            {
+                AddChartIssue(
+                    issues,
+                    $"chart の colorBy で cross-sheet 直接範囲はサポートしていません: {rawReference}");
+                resolution = default!;
+                return false;
+            }
+
+            values = EnumerateRangeValues(cells, topRow, leftColumn, bottomRow, rightColumn);
+        }
+
+        var length = CalculateRangeLength(topRow, leftColumn, bottomRow, rightColumn);
+        resolution = new ChartReferenceResolution(
+            ToAbsoluteRangeFormula(sheetName, topRow, leftColumn, bottomRow, rightColumn),
+            length,
+            values);
+        return true;
+    }
+
+    private static bool TryResolveChartReferenceFromArea(
+        NamedAreaState area,
+        string currentSheetName,
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        bool requireValues,
+        IList<Issue>? issues,
+        out ChartReferenceResolution resolution)
+    {
+        if (!IsOneDimensionalRange(area.TopRow, area.LeftColumn, area.BottomRow, area.RightColumn))
+        {
+            issues?.Add(new Issue
+            {
+                Severity = IssueSeverity.Error,
+                Kind = IssueKind.FormulaRefSeriesNot1DContinuous,
+                Message = $"chart 参照は 1 次元連続範囲である必要があります: {area.Name}",
+            });
+            resolution = default!;
+            return false;
+        }
+
+        var values = requireValues
+            ? EnumerateRangeValues(cells, area.TopRow, area.LeftColumn, area.BottomRow, area.RightColumn)
+            : null;
+        var length = CalculateRangeLength(area.TopRow, area.LeftColumn, area.BottomRow, area.RightColumn);
+        resolution = new ChartReferenceResolution(
+            ToAbsoluteRangeFormula(currentSheetName, area.TopRow, area.LeftColumn, area.BottomRow, area.RightColumn),
+            length,
+            values);
+        return true;
+    }
+
+    private static IReadOnlyList<object?> EnumerateRangeValues(
+        IReadOnlyDictionary<(int Row, int Column), CellState> cells,
+        int topRow,
+        int leftColumn,
+        int bottomRow,
+        int rightColumn)
+    {
+        var values = new List<object?>();
+        if (leftColumn == rightColumn)
+        {
+            for (var row = topRow; row <= bottomRow; row++)
+            {
+                values.Add(cells.TryGetValue((row, leftColumn), out var cell) ? cell.Value : null);
+            }
+
+            return values;
+        }
+
+        for (var column = leftColumn; column <= rightColumn; column++)
+        {
+            values.Add(cells.TryGetValue((topRow, column), out var cell) ? cell.Value : null);
+        }
+
+        return values;
+    }
+
+    private static bool TryParseChartRangeReference(
+        string reference,
+        out string? sheetName,
+        out int topRow,
+        out int leftColumn,
+        out int bottomRow,
+        out int rightColumn)
+    {
+        sheetName = null;
+        topRow = leftColumn = bottomRow = rightColumn = 0;
+
+        var trimmed = reference.Trim();
+        if (trimmed.Length == 0)
+        {
+            return false;
+        }
+
+        var separatorIndex = trimmed.LastIndexOf('!');
+        var rangeToken = trimmed;
+        if (separatorIndex >= 0)
+        {
+            sheetName = UnescapeSheetName(trimmed[..separatorIndex]);
+            rangeToken = trimmed[(separatorIndex + 1)..];
+        }
+
+        var parts = rangeToken.Split(':', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length is < 1 or > 2)
+        {
+            return false;
+        }
+
+        if (!TryParseChartCellReference(parts[0], out var firstRow, out var firstColumn))
+        {
+            return false;
+        }
+
+        var lastRow = firstRow;
+        var lastColumn = firstColumn;
+        if (parts.Length == 2 && !TryParseChartCellReference(parts[1], out lastRow, out lastColumn))
+        {
+            return false;
+        }
+
+        topRow = Math.Min(firstRow, lastRow);
+        bottomRow = Math.Max(firstRow, lastRow);
+        leftColumn = Math.Min(firstColumn, lastColumn);
+        rightColumn = Math.Max(firstColumn, lastColumn);
+        return true;
+    }
+
+    private static bool TryParseChartCellReference(string token, out int row, out int column)
+    {
+        row = 0;
+        column = 0;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return false;
+        }
+
+        var match = ChartCellReferenceRegex.Match(token.Trim());
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(match.Groups["row"].Value, out row) || row <= 0)
+        {
+            return false;
+        }
+
+        var letters = match.Groups["col"].Value.ToUpperInvariant();
+        foreach (var letter in letters)
+        {
+            if (letter is < 'A' or > 'Z')
+            {
+                return false;
+            }
+
+            column = (column * 26) + (letter - 'A' + 1);
+        }
+
+        return column > 0;
+    }
+
+    private static string? UnescapeSheetName(string token)
+    {
+        var trimmed = token.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.StartsWith('\'') && trimmed.EndsWith('\'') && trimmed.Length >= 2)
+        {
+            return trimmed[1..^1].Replace("''", "'", StringComparison.Ordinal);
+        }
+
+        return trimmed;
+    }
+
+    private static bool IsOneDimensionalRange(int topRow, int leftColumn, int bottomRow, int rightColumn) =>
+        topRow == bottomRow || leftColumn == rightColumn;
+
+    private static int CalculateRangeLength(int topRow, int leftColumn, int bottomRow, int rightColumn) =>
+        leftColumn == rightColumn
+            ? (bottomRow - topRow + 1)
+            : (rightColumn - leftColumn + 1);
+
+    private static string ResolveColorByKey(
+        string key,
+        IReadOnlyDictionary<string, string> chartPalette,
+        IDictionary<string, string> keyColorAssignments,
+        ref int nextPaletteIndex)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return DefaultChartPalette[nextPaletteIndex++ % DefaultChartPalette.Length];
+        }
+
+        if (chartPalette.TryGetValue(key, out var paletteColor))
+        {
+            return paletteColor;
+        }
+
+        if (keyColorAssignments.TryGetValue(key, out var assignedColor))
+        {
+            return assignedColor;
+        }
+
+        var nextColor = DefaultChartPalette[nextPaletteIndex++ % DefaultChartPalette.Length];
+        keyColorAssignments[key] = nextColor;
+        return nextColor;
+    }
+
+    private static string NormalizeRgbColor(string? color)
+    {
+        if (string.IsNullOrWhiteSpace(color))
+        {
+            return "#000000";
+        }
+
+        var trimmed = color.Trim();
+        if (!trimmed.StartsWith('#'))
+        {
+            trimmed = $"#{trimmed}";
+        }
+
+        return trimmed.ToUpperInvariant();
+    }
+
+    private static string ToAbsoluteRangeFormula(
+        string sheetName,
+        int topRow,
+        int leftColumn,
+        int bottomRow,
+        int rightColumn)
+    {
+        var escapedSheetName = EscapeSheetName(sheetName);
+        var start = ToAbsoluteCellReference(topRow, leftColumn);
+        var end = ToAbsoluteCellReference(bottomRow, rightColumn);
+        return start == end
+            ? $"{escapedSheetName}!{start}"
+            : $"{escapedSheetName}!{start}:{end}";
+    }
+
+    private static string EscapeSheetName(string sheetName) =>
+        $"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'";
+
+    private static string ToAbsoluteCellReference(int row, int column) =>
+        $"${ColumnIndexToName(column)}${row}";
+
+    private static void AddChartIssue(IList<Issue>? issues, string message)
+    {
+        if (issues is null)
+        {
+            return;
+        }
+
+        issues.Add(new Issue
+        {
+            Severity = IssueSeverity.Error,
+            Kind = IssueKind.InvalidAttributeValue,
+            Message = message,
+        });
+    }
+
+    private sealed record ChartReferenceResolution(
+        string Formula,
+        int Length,
+        IReadOnlyList<object?>? Values);
 
     private static string ResolveFreezeTarget(
         string target,

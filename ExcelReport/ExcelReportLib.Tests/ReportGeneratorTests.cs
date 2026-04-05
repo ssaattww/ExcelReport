@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Validation;
+using C = DocumentFormat.OpenXml.Drawing.Charts;
 using ExcelReportLib;
 using ExcelReportLib.DSL;
 using ExcelReportLib.Logger;
@@ -1381,6 +1382,42 @@ public sealed class ReportGeneratorTests
         Assert.Equal("B2", formula!.Text);
     }
 
+    /// <summary>
+    /// Verifies that end-to-end generation renders chart parts.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetChart_RendersChartParts()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell r="2" c="1" value="Task1" />
+                <cell r="3" c="1" value="Task2" />
+                <cell r="2" c="2" value="10" />
+                <cell r="3" c="2" value="20" />
+                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="A2:A3">
+                  <series name="Done" value="B2:B3" color="#4CAF50" />
+                </chart>
+              </sheet>
+            </workbook>
+            """;
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data: null, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.DoesNotContain(result.Issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var drawingsPart = worksheetPart.DrawingsPart;
+
+        Assert.NotNull(drawingsPart);
+        Assert.Equal(1, drawingsPart!.ChartParts.Count());
+        Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.BarChart>().Any());
+    }
+
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -1443,4 +1480,3 @@ public sealed class ReportGeneratorTests
         public decimal Amount { get; init; }
     }
 }
-

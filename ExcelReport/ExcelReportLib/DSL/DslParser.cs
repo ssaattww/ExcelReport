@@ -681,6 +681,42 @@ namespace ExcelReportLib.DSL
                 {
                     ValidateStaticLayoutNode(node, issues, sheet.Rows, sheet.Cols, parentRow: 1, parentCol: 1, recurseIntoChildren: true);
                 }
+
+                foreach (var chart in sheet.Charts)
+                {
+                    ValidateStaticChart(
+                        chart,
+                        issues,
+                        sheet.Rows,
+                        sheet.Cols);
+                }
+            }
+        }
+
+        private static void ValidateStaticChart(
+            ChartAst chart,
+            List<Issue> issues,
+            int sheetRows,
+            int sheetCols)
+        {
+            var endRow = chart.Row + chart.Height - 1;
+            var endCol = chart.Column + chart.Width - 1;
+            if (chart.Row < 1 ||
+                chart.Column < 1 ||
+                chart.Width <= 0 ||
+                chart.Height <= 0 ||
+                endRow > sheetRows ||
+                endCol > sheetCols ||
+                endRow > MaxExcelRows ||
+                endCol > MaxExcelColumns)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.CoordinateOutOfRange,
+                    Message = $"chart の配置がシートまたは Excel の上限を超えています: r={chart.Row}, c={chart.Column}, width={chart.Width}, height={chart.Height}",
+                    Span = chart.Span,
+                });
             }
         }
 
@@ -1059,5 +1095,4 @@ namespace ExcelReportLib.DSL
         public bool HasFatal => Issues.Any(i => i.Severity == IssueSeverity.Fatal);
     }
 }
-
 

@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Validation;
+using C = DocumentFormat.OpenXml.Drawing.Charts;
 using System.Xml.Linq;
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
@@ -499,6 +500,69 @@ public sealed class RendererTests
     }
 
     /// <summary>
+    /// Verifies that chart states are rendered into drawing/chart parts.
+    /// </summary>
+    [Fact]
+    public void Render_Charts_AreRenderedIntoDrawingAndChartParts()
+    {
+        var sheet = CreateWorksheet(
+            "Summary",
+            cells:
+            [
+                CreateCell(2, 1, "Task1"),
+                CreateCell(3, 1, "Task2"),
+                CreateCell(2, 2, 10),
+                CreateCell(3, 2, 20),
+            ],
+            charts:
+            [
+                new ChartState(
+                    chartType: "barStacked",
+                    title: "Progress",
+                    name: "BarChart",
+                    topRow: 2,
+                    leftColumn: 8,
+                    widthColumns: 10,
+                    heightRows: 16,
+                    categoryFormula: "'Summary'!$A$2:$A$3",
+                    legendPosition: "right",
+                    showDataLabels: true,
+                    series:
+                    [
+                        new ChartSeriesState("Done", "'Summary'!$B$2:$B$3", ["#4CAF50", "#BDBDBD"]),
+                    ]),
+                new ChartState(
+                    chartType: "line",
+                    title: "Trend",
+                    name: "LineChart",
+                    topRow: 20,
+                    leftColumn: 8,
+                    widthColumns: 10,
+                    heightRows: 16,
+                    categoryFormula: "'Summary'!$A$2:$A$3",
+                    legendPosition: "bottom",
+                    showDataLabels: false,
+                    series:
+                    [
+                        new ChartSeriesState("Done", "'Summary'!$B$2:$B$3", ["#4CAF50", "#4CAF50"]),
+                    ]),
+            ]);
+
+        var renderer = CreateRenderer();
+        var result = renderer.Render([sheet], CreateOptions());
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var drawingsPart = worksheetPart.DrawingsPart;
+
+        Assert.NotNull(worksheetPart.Worksheet.GetFirstChild<Drawing>());
+        Assert.NotNull(drawingsPart);
+        Assert.Equal(2, drawingsPart!.ChartParts.Count());
+        Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.BarChart>().Any());
+        Assert.Contains(drawingsPart.ChartParts, part => part.ChartSpace.Descendants<C.LineChart>().Any());
+    }
+
+    /// <summary>
     /// Verifies that render nested row and column groups produce calculated outline levels.
     /// </summary>
     [Fact]
@@ -758,6 +822,7 @@ public sealed class RendererTests
         string name,
         IReadOnlyList<CellState> cells,
         IReadOnlyList<MergedCellRange>? mergedRanges = null,
+        IReadOnlyList<ChartState>? charts = null,
         WorksheetOptionsState? options = null)
     {
         var dictionary = cells.ToDictionary(cell => (cell.Row, cell.Column));
@@ -769,6 +834,7 @@ public sealed class RendererTests
             cells: dictionary,
             mergedRanges: mergedRanges ?? [],
             namedAreas: new Dictionary<string, NamedAreaState>(StringComparer.Ordinal),
+            charts: charts ?? [],
             options: options ?? WorksheetOptionsState.Empty);
     }
 
@@ -888,4 +954,3 @@ public sealed class RendererTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 }
-

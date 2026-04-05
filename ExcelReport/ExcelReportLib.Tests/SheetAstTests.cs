@@ -189,6 +189,43 @@ public sealed class SheetAstTests
     }
 
     /// <summary>
+    /// Verifies that parse sheet chart parses chart definitions.
+    /// </summary>
+    [Fact]
+    public void Parse_Sheet_Chart_ParsesDefinitions()
+    {
+        var issues = new List<Issue>();
+        var sheetElement = XElement.Parse(
+            """
+            <sheet xmlns="urn:excelreport:v2" name="Summary">
+              <chart type="barStacked" title="Progress" name="MainChart" r="2" c="8" width="10" height="16" category="Task.Name" legend="right" showDataLabels="true">
+                <series name="Done" value="Task.Done" colorKey="Done" />
+                <series name="Todo" value="Task.Todo" color="#BDBDBD" />
+              </chart>
+            </sheet>
+            """);
+
+        var sheet = new SheetAst(sheetElement, issues);
+        var chart = Assert.Single(sheet.Charts);
+
+        Assert.Equal("barStacked", chart.ChartType);
+        Assert.Equal("Progress", chart.Title);
+        Assert.Equal("MainChart", chart.Name);
+        Assert.Equal(2, chart.Row);
+        Assert.Equal(8, chart.Column);
+        Assert.Equal(10, chart.Width);
+        Assert.Equal(16, chart.Height);
+        Assert.Equal("Task.Name", chart.CategoryRef);
+        Assert.Equal("right", chart.Legend);
+        Assert.True(chart.ShowDataLabels);
+        Assert.Equal(2, chart.Series.Count);
+        Assert.Equal("Task.Done", chart.Series[0].ValueRef);
+        Assert.Equal("Done", chart.Series[0].ColorKey);
+        Assert.Equal("#BDBDBD", chart.Series[1].Color);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
     /// Verifies that conditional formatting under sheetOptions is rejected.
     /// </summary>
     [Fact]
@@ -256,4 +293,3 @@ public sealed class SheetAstTests
         return sheet;
     }
 }
-

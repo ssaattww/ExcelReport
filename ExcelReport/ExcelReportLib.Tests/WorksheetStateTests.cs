@@ -816,6 +816,70 @@ public sealed class WorksheetStateTests
                 issue.Message.Contains("scope '/sheet'", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Verifies that chart references and colors are resolved into chart states.
+    /// </summary>
+    [Fact]
+    public void Build_Charts_ResolvesReferencesAndColors()
+    {
+        var plan = new LayoutPlan(
+            [
+                new LayoutSheet(
+                    "Summary",
+                    [
+                        CreateCell(row: 2, col: 1, value: "Task1"),
+                        CreateCell(row: 3, col: 1, value: "Task2"),
+                        CreateCell(row: 4, col: 1, value: "Task3"),
+                        CreateCell(row: 2, col: 2, value: 10),
+                        CreateCell(row: 3, col: 2, value: 20),
+                        CreateCell(row: 4, col: 2, value: 30),
+                        CreateCell(row: 2, col: 3, value: "Done"),
+                        CreateCell(row: 3, col: 3, value: "Todo"),
+                        CreateCell(row: 4, col: 3, value: "Done"),
+                    ],
+                    rows: 20,
+                    cols: 20,
+                    charts:
+                    [
+                        new LayoutChart(
+                            chartType: "barStacked",
+                            title: "Progress",
+                            name: "ProgressChart",
+                            topRow: 2,
+                            leftColumn: 8,
+                            widthColumns: 10,
+                            heightRows: 16,
+                            categoryReference: "A2:A4",
+                            legendPosition: "right",
+                            showDataLabels: true,
+                            series:
+                            [
+                                new LayoutChartSeries(name: "ByColor", valueReference: "B2:B4", color: null, colorKey: null, colorByReference: "C2:C4"),
+                                new LayoutChartSeries(name: "FixedKey", valueReference: "B2:B4", color: null, colorKey: "Done", colorByReference: null),
+                            ]),
+                    ]),
+            ],
+            chartPalette: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Done"] = "#4CAF50",
+                ["Todo"] = "#BDBDBD",
+            });
+
+        var builder = new WorksheetStateBuilder();
+        var sheet = Assert.Single(builder.Build(plan));
+        var chart = Assert.Single(sheet.Charts);
+
+        Assert.Equal("barStacked", chart.ChartType);
+        Assert.Equal("'Summary'!$A$2:$A$4", chart.CategoryFormula);
+        Assert.Equal("right", chart.LegendPosition);
+        Assert.True(chart.ShowDataLabels);
+        Assert.Equal(2, chart.Series.Count);
+
+        Assert.Equal("'Summary'!$B$2:$B$4", chart.Series[0].ValueFormula);
+        Assert.Equal(["#4CAF50", "#BDBDBD", "#4CAF50"], chart.Series[0].PointColors);
+        Assert.Equal(["#4CAF50", "#4CAF50", "#4CAF50"], chart.Series[1].PointColors);
+    }
+
     private static LayoutCell CreateCell(
         int row,
         int col,
@@ -895,4 +959,3 @@ public sealed class WorksheetStateTests
             borderTraces: []);
     }
 }
-

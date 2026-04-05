@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.Text;
 using DocumentFormat.OpenXml;
+using A = DocumentFormat.OpenXml.Drawing;
+using C = DocumentFormat.OpenXml.Drawing.Charts;
+using Xdr = DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelReportLib.DSL;
@@ -56,6 +59,7 @@ public sealed class XlsxRenderer : IRenderer
 
                 var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
                 worksheetPart.Worksheet = BuildWorksheet(worksheet, styleCatalog, cancellationToken);
+                AppendChartsToWorksheet(worksheetPart, worksheet, cancellationToken);
                 worksheetPart.Worksheet.Save();
 
                 sheets.Append(
@@ -163,6 +167,324 @@ public sealed class XlsxRenderer : IRenderer
         }
 
         return worksheet;
+    }
+
+    private static void AppendChartsToWorksheet(
+        WorksheetPart worksheetPart,
+        WorksheetStateModel sheetState,
+        CancellationToken cancellationToken)
+    {
+        if (sheetState.Charts.Count == 0)
+        {
+            return;
+        }
+
+        var drawingsPart = worksheetPart.DrawingsPart ?? worksheetPart.AddNewPart<DrawingsPart>();
+        var worksheetDrawing = drawingsPart.WorksheetDrawing ?? new Xdr.WorksheetDrawing();
+        var nextDrawingObjectId = GetNextDrawingObjectId(worksheetDrawing);
+
+        foreach (var chart in sheetState.Charts)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (chart.Series.Count == 0 || string.IsNullOrWhiteSpace(chart.CategoryFormula))
+            {
+                continue;
+            }
+
+            var chartPart = drawingsPart.AddNewPart<ChartPart>();
+            chartPart.ChartSpace = BuildChartSpace(chart);
+            chartPart.ChartSpace.Save();
+
+            var chartRelationId = drawingsPart.GetIdOfPart(chartPart);
+            worksheetDrawing.Append(CreateChartAnchor(chart, chartRelationId, nextDrawingObjectId++));
+        }
+
+        drawingsPart.WorksheetDrawing = worksheetDrawing;
+        drawingsPart.WorksheetDrawing.Save();
+
+        if (worksheetPart.Worksheet.GetFirstChild<Drawing>() is null)
+        {
+            worksheetPart.Worksheet.Append(
+                new Drawing
+                {
+                    Id = worksheetPart.GetIdOfPart(drawingsPart),
+                });
+        }
+    }
+
+    private static C.ChartSpace BuildChartSpace(ChartState chart)
+    {
+        var chartSpace = new C.ChartSpace();
+        chartSpace.Append(new C.EditingLanguage { Val = "en-US" });
+
+        var chartRoot = new C.Chart();
+        if (!string.IsNullOrWhiteSpace(chart.Title))
+        {
+            chartRoot.Append(CreateChartTitle(chart.Title));
+        }
+
+        var plotArea = new C.PlotArea(new C.Layout());
+        var categoryAxisId = 48672768U;
+        var valueAxisId = 48650112U;
+
+        if (string.Equals(chart.ChartType, "line", StringComparison.OrdinalIgnoreCase))
+        {
+            plotArea.Append(CreateLineChart(chart, categoryAxisId, valueAxisId));
+            plotArea.Append(CreateCategoryAxis(categoryAxisId, valueAxisId, C.AxisPositionValues.Bottom));
+            plotArea.Append(CreateValueAxis(valueAxisId, categoryAxisId, C.AxisPositionValues.Left));
+        }
+        else
+        {
+            plotArea.Append(CreateBarStackedChart(chart, categoryAxisId, valueAxisId));
+            plotArea.Append(CreateCategoryAxis(categoryAxisId, valueAxisId, C.AxisPositionValues.Left));
+            plotArea.Append(CreateValueAxis(valueAxisId, categoryAxisId, C.AxisPositionValues.Bottom));
+        }
+
+        chartRoot.Append(plotArea);
+
+        var legend = CreateLegend(chart.LegendPosition);
+        if (legend is not null)
+        {
+            chartRoot.Append(legend);
+        }
+
+        chartRoot.Append(new C.PlotVisibleOnly { Val = true });
+        chartSpace.Append(chartRoot);
+        return chartSpace;
+    }
+
+    private static C.BarChart CreateBarStackedChart(ChartState chart, uint categoryAxisId, uint valueAxisId)
+    {
+        var barChart = new C.BarChart(
+            new C.BarDirection { Val = C.BarDirectionValues.Bar },
+            new C.BarGrouping { Val = C.BarGroupingValues.Stacked },
+            new C.VaryColors { Val = false });
+
+        for (var index = 0; index < chart.Series.Count; index++)
+        {
+            var series = chart.Series[index];
+            var barSeries = new C.BarChartSeries(
+                new C.Index { Val = (uint)index },
+                new C.Order { Val = (uint)index },
+                CreateSeriesText(series.Name, index),
+                new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))),
+                new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
+
+            if (series.PointColors is not null)
+            {
+                for (var pointIndex = 0; pointIndex < series.PointColors.Count; pointIndex++)
+                {
+                    barSeries.Append(CreateDataPoint(pointIndex, series.PointColors[pointIndex]));
+                }
+            }
+
+            barChart.Append(barSeries);
+        }
+
+        if (chart.ShowDataLabels)
+        {
+            barChart.Append(CreateDataLabels());
+        }
+
+        barChart.Append(new C.AxisId { Val = categoryAxisId });
+        barChart.Append(new C.AxisId { Val = valueAxisId });
+        return barChart;
+    }
+
+    private static C.LineChart CreateLineChart(ChartState chart, uint categoryAxisId, uint valueAxisId)
+    {
+        var lineChart = new C.LineChart(new C.Grouping { Val = C.GroupingValues.Standard });
+
+        for (var index = 0; index < chart.Series.Count; index++)
+        {
+            var series = chart.Series[index];
+            var lineSeries = new C.LineChartSeries(
+                new C.Index { Val = (uint)index },
+                new C.Order { Val = (uint)index },
+                CreateSeriesText(series.Name, index),
+                new C.CategoryAxisData(new C.StringReference(new C.Formula(chart.CategoryFormula))),
+                new C.Values(new C.NumberReference(new C.Formula(series.ValueFormula))));
+
+            if (series.PointColors is not null && series.PointColors.Count > 0)
+            {
+                var uniqueColors = series.PointColors
+                    .Select(NormalizeChartColor)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+
+                lineSeries.Append(CreateChartShapeProperties(series.PointColors[0]));
+                if (uniqueColors.Length > 1)
+                {
+                    lineSeries.Append(
+                        new C.Marker(
+                            new C.Symbol { Val = C.MarkerStyleValues.Circle },
+                            new C.Size { Val = 6 }));
+                }
+
+                for (var pointIndex = 0; pointIndex < series.PointColors.Count; pointIndex++)
+                {
+                    lineSeries.Append(CreateDataPoint(pointIndex, series.PointColors[pointIndex]));
+                }
+            }
+
+            lineChart.Append(lineSeries);
+        }
+
+        if (chart.ShowDataLabels)
+        {
+            lineChart.Append(CreateDataLabels());
+        }
+
+        lineChart.Append(new C.AxisId { Val = categoryAxisId });
+        lineChart.Append(new C.AxisId { Val = valueAxisId });
+        return lineChart;
+    }
+
+    private static C.SeriesText CreateSeriesText(string? seriesName, int seriesIndex)
+    {
+        var text = string.IsNullOrWhiteSpace(seriesName) ? $"Series {seriesIndex + 1}" : seriesName!;
+        return new C.SeriesText(new C.NumericValue(text));
+    }
+
+    private static C.DataPoint CreateDataPoint(int pointIndex, string color) =>
+        new(
+            new C.Index { Val = (uint)pointIndex },
+            CreateChartShapeProperties(color));
+
+    private static C.ChartShapeProperties CreateChartShapeProperties(string color) =>
+        new(
+            new A.SolidFill(
+                new A.RgbColorModelHex
+                {
+                    Val = NormalizeChartColor(color),
+                }));
+
+    private static string NormalizeChartColor(string color)
+    {
+        var normalized = color.Trim();
+        if (normalized.StartsWith("#", StringComparison.Ordinal))
+        {
+            normalized = normalized[1..];
+        }
+
+        return normalized.ToUpperInvariant();
+    }
+
+    private static C.Title CreateChartTitle(string title) =>
+        new(
+            new C.ChartText(
+                new C.RichText(
+                    new A.BodyProperties(),
+                    new A.ListStyle(),
+                    new A.Paragraph(
+                        new A.Run(new A.Text(title)),
+                        new A.EndParagraphRunProperties()))),
+            new C.Overlay { Val = false });
+
+    private static C.Legend? CreateLegend(string? legendPosition)
+    {
+        if (string.Equals(legendPosition, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var mapped = legendPosition?.ToLowerInvariant() switch
+        {
+            "left" => C.LegendPositionValues.Left,
+            "top" => C.LegendPositionValues.Top,
+            "bottom" => C.LegendPositionValues.Bottom,
+            _ => C.LegendPositionValues.Right,
+        };
+
+        return new C.Legend(
+            new C.LegendPosition { Val = mapped },
+            new C.Layout());
+    }
+
+    private static C.DataLabels CreateDataLabels() =>
+        new(
+            new C.ShowLegendKey { Val = false },
+            new C.ShowValue { Val = true },
+            new C.ShowCategoryName { Val = false },
+            new C.ShowSeriesName { Val = false },
+            new C.ShowPercent { Val = false },
+            new C.ShowBubbleSize { Val = false });
+
+    private static C.CategoryAxis CreateCategoryAxis(uint axisId, uint crossingAxisId, C.AxisPositionValues position) =>
+        new(
+            new C.AxisId { Val = axisId },
+            new C.Scaling(new C.Orientation { Val = C.OrientationValues.MinMax }),
+            new C.Delete { Val = false },
+            new C.AxisPosition { Val = position },
+            new C.TickLabelPosition { Val = C.TickLabelPositionValues.NextTo },
+            new C.CrossingAxis { Val = crossingAxisId },
+            new C.Crosses { Val = C.CrossesValues.AutoZero },
+            new C.AutoLabeled { Val = true },
+            new C.LabelAlignment { Val = C.LabelAlignmentValues.Center },
+            new C.LabelOffset { Val = 100 });
+
+    private static C.ValueAxis CreateValueAxis(uint axisId, uint crossingAxisId, C.AxisPositionValues position) =>
+        new(
+            new C.AxisId { Val = axisId },
+            new C.Scaling(new C.Orientation { Val = C.OrientationValues.MinMax }),
+            new C.Delete { Val = false },
+            new C.AxisPosition { Val = position },
+            new C.MajorGridlines(),
+            new C.NumberingFormat { FormatCode = "General", SourceLinked = true },
+            new C.TickLabelPosition { Val = C.TickLabelPositionValues.NextTo },
+            new C.CrossingAxis { Val = crossingAxisId },
+            new C.Crosses { Val = C.CrossesValues.AutoZero },
+            new C.CrossBetween { Val = C.CrossBetweenValues.Between });
+
+    private static uint GetNextDrawingObjectId(Xdr.WorksheetDrawing worksheetDrawing)
+    {
+        var existingIds = worksheetDrawing
+            .Descendants<Xdr.NonVisualDrawingProperties>()
+            .Select(property => property.Id?.Value ?? 0U)
+            .DefaultIfEmpty(0U);
+        return existingIds.Max() + 1U;
+    }
+
+    private static Xdr.TwoCellAnchor CreateChartAnchor(ChartState chart, string chartRelationId, uint drawingObjectId)
+    {
+        var fromRow = (uint)Math.Max(chart.TopRow - 1, 0);
+        var fromColumn = (uint)Math.Max(chart.LeftColumn - 1, 0);
+        var toRow = (uint)Math.Max(fromRow + chart.HeightRows, fromRow + 1);
+        var toColumn = (uint)Math.Max(fromColumn + chart.WidthColumns, fromColumn + 1);
+
+        return new Xdr.TwoCellAnchor(
+            new Xdr.FromMarker(
+                new Xdr.ColumnId(fromColumn.ToString(CultureInfo.InvariantCulture)),
+                new Xdr.ColumnOffset("0"),
+                new Xdr.RowId(fromRow.ToString(CultureInfo.InvariantCulture)),
+                new Xdr.RowOffset("0")),
+            new Xdr.ToMarker(
+                new Xdr.ColumnId(toColumn.ToString(CultureInfo.InvariantCulture)),
+                new Xdr.ColumnOffset("0"),
+                new Xdr.RowId(toRow.ToString(CultureInfo.InvariantCulture)),
+                new Xdr.RowOffset("0")),
+            new Xdr.GraphicFrame(
+                new Xdr.NonVisualGraphicFrameProperties(
+                    new Xdr.NonVisualDrawingProperties
+                    {
+                        Id = drawingObjectId,
+                        Name = chart.Name ?? "Chart",
+                    },
+                    new Xdr.NonVisualGraphicFrameDrawingProperties()),
+                new Xdr.Transform(
+                    new A.Offset { X = 0L, Y = 0L },
+                    new A.Extents { Cx = 0L, Cy = 0L }),
+                new A.Graphic(
+                    new A.GraphicData(
+                        new C.ChartReference
+                        {
+                            Id = chartRelationId,
+                        })
+                    {
+                        Uri = "http://schemas.openxmlformats.org/drawingml/2006/chart",
+                    })),
+            new Xdr.ClientData());
     }
 
     private static SheetViews? BuildSheetViews(WorksheetStateModel sheetState)

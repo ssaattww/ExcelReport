@@ -46,6 +46,7 @@ public sealed class LayoutEngine : ILayoutEngine
         ArgumentNullException.ThrowIfNull(workbook);
 
         var issues = new List<Issue>();
+        var chartPalette = BuildChartPalette(workbook.ChartPalette);
         var styleResolver = new StyleResolver(workbook.Styles);
         var componentIndex = BuildComponentIndex(workbook);
         var sheets = new List<LayoutSheet>(workbook.Sheets.Count);
@@ -97,7 +98,7 @@ public sealed class LayoutEngine : ILayoutEngine
             }
         }
 
-        return new LayoutPlan(sheets, issues);
+        return new LayoutPlan(sheets, issues, chartPalette);
     }
 
     private void ExpandSheet(
@@ -138,6 +139,7 @@ public sealed class LayoutEngine : ILayoutEngine
         var cells = new List<LayoutCell>();
         var namedAreas = new List<LayoutNamedArea>();
         var conditionalFormattings = new List<LayoutConditionalFormatting>();
+        var charts = CreateLayoutCharts(sheet, rootData, dataContext, vars, issues);
         var inheritedStyles = StyleScope.From(sheet.StyleRefs, null);
         conditionalFormattings.AddRange(CreateScopedConditionalFormattings(sheet.ConditionalFormattings, "/sheet"));
 
@@ -179,10 +181,17 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var maxUsedRow = GetMaxUsedRow(cells);
         var maxUsedCol = GetMaxUsedCol(cells);
+        if (charts.Count > 0)
+        {
+            maxUsedRow = Math.Max(maxUsedRow, charts.Max(chart => chart.TopRow + chart.HeightRows - 1));
+            maxUsedCol = Math.Max(maxUsedCol, charts.Max(chart => chart.LeftColumn + chart.WidthColumns - 1));
+        }
+
         var resolvedSheetRows = ResolveContainerSize(sheet.Rows, maxUsedRow, minimumSize: 1);
         var resolvedSheetCols = ResolveContainerSize(sheet.Cols, maxUsedCol, minimumSize: 1);
 
         ValidateCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, cells, issues);
+        ValidateChartCoordinates(sheetName, resolvedSheetRows, resolvedSheetCols, charts, issues);
         sheets.Add(
             LayoutSheet.CreateWithScopedConditionalFormattings(
                 sheetName,
@@ -191,7 +200,8 @@ public sealed class LayoutEngine : ILayoutEngine
                 resolvedSheetCols,
                 namedAreas,
                 sheet.Options,
-                conditionalFormattings));
+                conditionalFormattings,
+                charts));
     }
 
     private string ResolveSheetName(
@@ -721,6 +731,71 @@ public sealed class LayoutEngine : ILayoutEngine
         return index;
     }
 
+    private static IReadOnlyDictionary<string, string> BuildChartPalette(ChartPaletteAst? palette)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (palette is null)
+        {
+            return result;
+        }
+
+        foreach (var color in palette.Colors)
+        {
+            if (string.IsNullOrWhiteSpace(color.Key) || string.IsNullOrWhiteSpace(color.Value))
+            {
+                continue;
+            }
+
+            result[color.Key] = color.Value;
+        }
+
+        return result;
+    }
+
+    private IReadOnlyList<LayoutChart> CreateLayoutCharts(
+        SheetAst sheet,
+        object? rootData,
+        object? dataContext,
+        IReadOnlyDictionary<string, object?> vars,
+        IList<Issue> issues)
+    {
+        var result = new List<LayoutChart>();
+        foreach (var chart in sheet.Charts)
+        {
+            if (!ShouldRender(chart.WhenExprRaw, rootData, dataContext, vars, issues))
+            {
+                continue;
+            }
+
+            var series = chart.Series
+                .Select(
+                    seriesAst =>
+                        new LayoutChartSeries(
+                            seriesAst.Name,
+                            seriesAst.ValueRef,
+                            seriesAst.Color,
+                            seriesAst.ColorKey,
+                            seriesAst.ColorByRef))
+                .ToArray();
+
+            result.Add(
+                new LayoutChart(
+                    chart.ChartType,
+                    chart.Title,
+                    chart.Name,
+                    chart.Row,
+                    chart.Column,
+                    chart.Width,
+                    chart.Height,
+                    chart.CategoryRef,
+                    chart.Legend,
+                    chart.ShowDataLabels,
+                    series));
+        }
+
+        return result;
+    }
+
     private static void IndexComponents(
         IReadOnlyList<ComponentAst>? components,
         IDictionary<string, ComponentAst> index)
@@ -757,6 +832,36 @@ public sealed class LayoutEngine : ILayoutEngine
                     Severity = IssueSeverity.Error,
                     Kind = IssueKind.CoordinateOutOfRange,
                     Message = $"セル配置がシート範囲外です: sheet={sheetName}, r={cell.Row}, c={cell.Col}, rowSpan={cell.RowSpan}, colSpan={cell.ColSpan}",
+                    Span = null,
+                });
+            }
+        }
+    }
+
+    private static void ValidateChartCoordinates(
+        string sheetName,
+        int sheetRows,
+        int sheetCols,
+        IEnumerable<LayoutChart> charts,
+        IList<Issue> issues)
+    {
+        foreach (var chart in charts)
+        {
+            var endRow = chart.TopRow + chart.HeightRows - 1;
+            var endCol = chart.LeftColumn + chart.WidthColumns - 1;
+
+            if (chart.TopRow < 1 ||
+                chart.LeftColumn < 1 ||
+                chart.WidthColumns <= 0 ||
+                chart.HeightRows <= 0 ||
+                endRow > sheetRows ||
+                endCol > sheetCols)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.CoordinateOutOfRange,
+                    Message = $"グラフ配置がシート範囲外です: sheet={sheetName}, r={chart.TopRow}, c={chart.LeftColumn}, width={chart.WidthColumns}, height={chart.HeightRows}",
                     Span = null,
                 });
             }

@@ -15,7 +15,7 @@ public sealed class LayoutSheet
     /// <param name="rows">The rows.</param>
     /// <param name="cols">The cols.</param>
     public LayoutSheet(string name, IEnumerable<LayoutCell> cells, int rows, int cols)
-        : this(name, cells, rows, cols, namedAreas: null, options: null, scopedConditionalFormattings: null)
+        : this(name, cells, rows, cols, namedAreas: null, options: null, scopedConditionalFormattings: null, charts: null)
     {
     }
 
@@ -36,7 +36,8 @@ public sealed class LayoutSheet
         int cols,
         IEnumerable<LayoutNamedArea>? namedAreas = null,
         SheetOptionsAst? options = null,
-        IEnumerable<ConditionalFormattingAst>? conditionalFormattings = null)
+        IEnumerable<ConditionalFormattingAst>? conditionalFormattings = null,
+        IEnumerable<LayoutChart>? charts = null)
         : this(
             name,
             cells,
@@ -44,7 +45,8 @@ public sealed class LayoutSheet
             cols,
             namedAreas,
             options,
-            conditionalFormattings?.Select(rule => new LayoutConditionalFormatting(rule, "/sheet")))
+            conditionalFormattings?.Select(rule => new LayoutConditionalFormatting(rule, "/sheet")),
+            charts)
     {
     }
 
@@ -55,7 +57,8 @@ public sealed class LayoutSheet
         int cols,
         IEnumerable<LayoutNamedArea>? namedAreas,
         SheetOptionsAst? options,
-        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings)
+        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings,
+        IEnumerable<LayoutChart>? charts)
     {
         Name = name;
         Rows = rows;
@@ -67,6 +70,7 @@ public sealed class LayoutSheet
         NamedAreas = (namedAreas ?? Array.Empty<LayoutNamedArea>()).ToArray();
         Options = options;
         ConditionalFormattings = (scopedConditionalFormattings ?? Array.Empty<LayoutConditionalFormatting>()).ToArray();
+        Charts = (charts ?? Array.Empty<LayoutChart>()).ToArray();
     }
 
     /// <summary>
@@ -87,7 +91,8 @@ public sealed class LayoutSheet
         int cols,
         IEnumerable<LayoutNamedArea>? namedAreas,
         SheetOptionsAst? options,
-        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings) =>
+        IEnumerable<LayoutConditionalFormatting>? scopedConditionalFormattings,
+        IEnumerable<LayoutChart>? charts = null) =>
         new(
             name,
             cells,
@@ -95,7 +100,8 @@ public sealed class LayoutSheet
             cols,
             namedAreas,
             options,
-            scopedConditionalFormattings);
+            scopedConditionalFormattings,
+            charts);
 
     /// <summary>
     /// Gets the name.
@@ -131,6 +137,11 @@ public sealed class LayoutSheet
     /// Gets conditional formatting rules defined on the sheet.
     /// </summary>
     public IReadOnlyList<LayoutConditionalFormatting> ConditionalFormattings { get; }
+
+    /// <summary>
+    /// Gets charts defined on the sheet.
+    /// </summary>
+    public IReadOnlyList<LayoutChart> Charts { get; }
 }
 
 /// <summary>
