@@ -672,15 +672,49 @@ namespace ExcelReportLib.DSL
         {
             foreach (var sheet in root.Sheets)
             {
-                if (sheet.Rows <= 0 || sheet.Cols <= 0)
-                {
-                    continue;
-                }
+                var validationRows = sheet.Rows > 0 ? sheet.Rows : MaxExcelRows;
+                var validationCols = sheet.Cols > 0 ? sheet.Cols : MaxExcelColumns;
 
                 foreach (var node in sheet.Children.Values)
                 {
-                    ValidateStaticLayoutNode(node, issues, sheet.Rows, sheet.Cols, parentRow: 1, parentCol: 1, recurseIntoChildren: true);
+                    ValidateStaticLayoutNode(node, issues, validationRows, validationCols, parentRow: 1, parentCol: 1, recurseIntoChildren: true);
                 }
+
+                foreach (var chart in sheet.Charts)
+                {
+                    ValidateStaticChart(
+                        chart,
+                        issues,
+                        validationRows,
+                        validationCols);
+                }
+            }
+        }
+
+        private static void ValidateStaticChart(
+            ChartAst chart,
+            List<Issue> issues,
+            int sheetRows,
+            int sheetCols)
+        {
+            var endRow = chart.Row + chart.Height - 1;
+            var endCol = chart.Column + chart.Width - 1;
+            if (chart.Row < 1 ||
+                chart.Column < 1 ||
+                chart.Width <= 0 ||
+                chart.Height <= 0 ||
+                endRow > sheetRows ||
+                endCol > sheetCols ||
+                endRow > MaxExcelRows ||
+                endCol > MaxExcelColumns)
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.CoordinateOutOfRange,
+                    Message = $"chart の配置がシートまたは Excel の上限を超えています: r={chart.Row}, c={chart.Column}, width={chart.Width}, height={chart.Height}",
+                    Span = chart.Span,
+                });
             }
         }
 
@@ -823,6 +857,8 @@ namespace ExcelReportLib.DSL
 
         private static bool ValidateRootNamespace(XDocument doc, List<Issue> issues)
         {
+            const string RootElementName = "workbook";
+
             var root = doc.Root;
             if (root is null)
             {
@@ -831,6 +867,18 @@ namespace ExcelReportLib.DSL
                     Severity = IssueSeverity.Fatal,
                     Kind = IssueKind.XmlMalformed,
                     Message = "DSL のルート要素が存在しません。",
+                });
+                return false;
+            }
+
+            if (!string.Equals(root.Name.LocalName, RootElementName, StringComparison.Ordinal))
+            {
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Fatal,
+                    Kind = IssueKind.SchemaViolation,
+                    Message = $"DSL ルート要素は '{RootElementName}' である必要があります。入力: '{root.Name.LocalName}'。",
+                    Span = SourceSpan.CreateSpanAttributes(root),
                 });
                 return false;
             }
@@ -1059,5 +1107,3 @@ namespace ExcelReportLib.DSL
         public bool HasFatal => Issues.Any(i => i.Severity == IssueSeverity.Fatal);
     }
 }
-
-

@@ -2,7 +2,7 @@
 
 プロジェクトマネージャーへの指摘事項を記録
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-05
 
 ## アクティブな指摘点
 
@@ -80,6 +80,9 @@ Last Updated: 2026-03-26
 | FP86 | local `formulaRef` 解決で曖昧性によりフォールバック/タイブレークした場合は必ず Warning を記録する | 対応済み | 2026-03-26 |
 | FP87 | PRレビュー指摘: `sheet` 直下 sibling `cell` 同士の local formulaRef 共有回帰を出さない（`/sheet` 共有維持） | 対応済み | 2026-03-26 |
 | FP88 | PR追加レビュー指摘(3-6): global/local衝突時の解決優先・sheet-scope fallback非リーク・import root厳格化・テスト品質補強を反映する | 対応済み | 2026-03-26 |
+| FP89 | Chart機能の設計書（`Design/Chart/Chart_DetailDesign.md`）を追跡内容に追加し、tasks/phasesへ反映する | 対応済み | 2026-04-05 |
+| FP90 | コードレビューはSubAgentで分割実施し、レビュー結果は必ず `reports/` へファイル出力する | 対応済み | 2026-04-05 |
+| FP91 | PR上のCodexレビュー指摘も確認し、対応内容を修正 + `reports/` へ記録する | 対応済み | 2026-04-05 |
 ---
 
 ## 対応履歴

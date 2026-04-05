@@ -546,6 +546,61 @@ root.Lines.Select((value, index) => new { value, index });
 - 実際のアドレス解決はレイアウト結果に基づいて行う。
 - 系列は 1 次元連続の範囲のみ許可（縦一列または横一行）。2 次元展開は Fatal。
 
+### 9.1 具体例（global の集約）
+
+`formulaRefScope` 未指定は `global` 扱いとなる。  
+この場合、`repeat` で増えた行に同じ `formulaRef` 名を付けると、同一系列として 1 本に集約される。
+
+```xml
+<component name="TaskRow">
+  <grid>
+    <cell c="2" value="@(data.Workload)" formulaRef="Task.Workload" />
+  </grid>
+</component>
+
+<sheet name="Summary">
+  <repeat direction="down" from="@(root.Tasks)" var="it">
+    <use component="TaskRow" with="@(it)" />
+  </repeat>
+</sheet>
+```
+
+例として `root.Tasks` が 3 件で、展開後セルが `B1`, `B2`, `B3` になる場合:
+
+- `Task.Workload` は `B1:B3` として解決される
+- `Task.WorkloadEnd` は `B3` として解決される
+- `#{Task.Workload:Task.WorkloadEnd}` は `B1:B3` へ置換される
+
+このため、同名 `formulaRef` を参照する処理は同じ系列範囲（`B1:B3`）を利用できる。
+
+### 9.2 具体例（local の分離）
+
+`formulaRefScope="local"` を指定すると、同名でもスコープごとに別系列として保持される。
+
+```xml
+<repeat direction="down" from="@(root.Tasks)" var="it">
+  <grid>
+    <cell c="2" value="@(it.Workload)" formulaRef="Task.Workload" formulaRefScope="local" />
+  </grid>
+</repeat>
+```
+
+この場合、各反復のローカルスコープに `Task.Workload` が生成される。  
+そのため、sheet 直下など別スコープから `Task.Workload` を参照したときは、暗黙に 1 本へ集約しない（local 非リーク）。
+
+### 9.3 具体例（1 次元制約）
+
+次のように同名 `formulaRef` が 2 次元（複数列）へ展開される場合、系列参照は不正となる。
+
+```xml
+<grid>
+  <cell r="1" c="1" formulaRef="Task.Workload" value="10" />
+  <cell r="1" c="2" formulaRef="Task.Workload" value="20" />
+</grid>
+```
+
+系列解決は 1 次元連続範囲のみ許可するため、2 次元は Error/Fatal 扱いとする。
+
 ---
 
 ## 10. バリデーション要件（As-Is / To-Be）
@@ -753,4 +808,3 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - `componentImport@href` も DSL ファイルから見た相対パス。
 - As-Is: 同名 component が複数存在する場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 component が複数存在する場合は「後勝ち + Warning」。
-

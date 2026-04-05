@@ -1,9 +1,20 @@
 # Phases Status
 
-Last Updated: 2026-03-26
+Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: issue#37 のSubAgentレビューを3分割で実施し、各レビュー結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` に出力
+- 2026-04-05: レビュー統合サマリー `reports/subagent-review-issue37-summary-2026-04-05.md` を追加
+- 2026-04-05: レビューHigh指摘対応として chart series OpenXML子要素順を修正し、chart XMLスキーマ妥当性テストを追加
+- 2026-04-05: `formulaRef` 系列解決を専用map化し、named area `<name>End` との衝突による誤解決を回避
+- 2026-04-05: `TestDsl/DslDefinition_v2.xsd` を Design版へ同期し、`sheet/repeat` の `from/var` 属性・子要素両対応を反映
+- 2026-04-05: `DslParser` の静的座標検証（rows/cols省略時）とルート要素名検証を強化
+- 2026-04-05: 回帰として `dotnet test --no-restore` 全件実行し `Passed 189, Failed 0` を確認
+- 2026-04-05: issue#37 Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡対象へ追加し、tasks/phases の進捗管理に反映
+- 2026-04-05: issue#37 設計レビューを実施し、実装方針を策定（chart DSL/AST/XSD -> Layout -> WorksheetState -> Renderer）
+- 2026-04-05: SubAgent（Socrates）に実装方針レビューを依頼し、scopePath維持・責務分離・異常系方針の指摘を反映
+- 2026-04-05: issue#37 の実装と回帰検証を完了し、`dotnet test --no-restore` で `Passed 185, Failed 0` を確認
 - 2026-03-26: GitHub xunit-tests 失敗（`Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins`）を修正し、`componentImport` 厳格化後のfixture整合を反映
 - 2026-03-26: 回帰として `dotnet test --no-restore` を全件実行し `Passed 179, Failed 0` を確認
 - 2026-03-26: ユーザー指定レビュー指摘3-6に対応し、global/local衝突解決・sheet-scope fallback非リーク化・importルート厳格検証を実装
@@ -144,6 +155,8 @@ Last Updated: 2026-03-26
 - 2026-03-26: issue #45 の follow-up として DSL namespace/schema を v2（`urn:excelreport:v2`/`DslDefinition_v2.xsd`）へ完全移行
 - 2026-03-26: top-level sibling scope を分離し、local formulaRef の sibling 混在不具合（P1）を修正
 - 2026-03-26: 追加テスト3件 + 主要回帰 + 全体回帰を実施し `Passed 165, Failed 0` を確認
+- 2026-04-05: PR #49 Codexレビュー指摘2件（chart fallback色のワークブックスコープ化 / chart座標Excel上限チェック）を反映
+- 2026-04-05: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%

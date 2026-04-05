@@ -64,6 +64,11 @@ namespace ExcelReportLib.DSL.AST
         public IReadOnlyList<ConditionalFormattingAst> ConditionalFormattings { get; init; } = Array.Empty<ConditionalFormattingAst>();
 
         /// <summary>
+        /// Gets chart definitions defined under sheet.
+        /// </summary>
+        public IReadOnlyList<ChartAst> Charts { get; init; } = Array.Empty<ChartAst>();
+
+        /// <summary>
         /// Gets or sets the span.
         /// </summary>
         public SourceSpan? Span { get; init; }
@@ -112,6 +117,10 @@ namespace ExcelReportLib.DSL.AST
                 .Select(element => new ConditionalFormattingAst(element, issues))
                 .ToArray();
 
+            var charts = sheetElem.Elements(sheetElem.Name.Namespace + ChartAst.TagName)
+                .Select(element => new ChartAst(element, issues))
+                .ToArray();
+
             // レイアウトノードの解析
             var layoutElems = sheetElem.Elements().Where(e => LayoutNodeAst.AllowedLayoutNodeNames.Contains(e.Name.LocalName));
             var children = layoutElems.Select(e => LayoutNodeAst.LayoutNodeAstFactory(e, issues)).ToList();
@@ -143,6 +152,7 @@ namespace ExcelReportLib.DSL.AST
             Children = AstDictionaryBuilder.BuildLayoutNodeMap(children, issues, TagName);
             Options = options;
             ConditionalFormattings = conditionalFormattings;
+            Charts = charts;
             Span = SourceSpan.CreateSpanAttributes(sheetElem);
         }
 
@@ -198,4 +208,3 @@ namespace ExcelReportLib.DSL.AST
         }
     }
 }
-

@@ -14,6 +14,11 @@ namespace ExcelReportLib.DSL.AST
         /// Gets or sets the styles.
         /// </summary>
         public StylesAst? Styles { get; init; }         // <styles>（任意）
+
+        /// <summary>
+        /// Gets or sets the chart palette.
+        /// </summary>
+        public ChartPaletteAst? ChartPalette { get; init; } // <chartPalette>（任意）
         
         /// <summary>
         /// Gets or sets the components.
@@ -55,6 +60,9 @@ namespace ExcelReportLib.DSL.AST
             var stylesElem = workbookElem.Element(workbookElem.Name.Namespace + StylesAst.TagName);
             StylesAst? stylesAst = stylesElem != null ? new StylesAst(stylesElem, issues, dslDir) : null;
 
+            var chartPaletteElem = workbookElem.Element(workbookElem.Name.Namespace + ChartPaletteAst.TagName);
+            ChartPaletteAst? chartPaletteAst = chartPaletteElem != null ? new ChartPaletteAst(chartPaletteElem, issues) : null;
+
             var componentElems = workbookElem.Elements(workbookElem.Name.Namespace + ComponentAst.TagName);
             var components = componentElems.Select(e => new ComponentAst(e, issues)).ToList();
 
@@ -65,6 +73,7 @@ namespace ExcelReportLib.DSL.AST
             var componentImports = componentImportsElems.Select(e => new ComponentImportAst(e, issues, dslDir)).ToList();
 
             Styles = stylesAst;
+            ChartPalette = chartPaletteAst;
             Components = components;
             ComponentInports = (componentImports.Count == 0) ? null : componentImports;
             Sheets = sheets;

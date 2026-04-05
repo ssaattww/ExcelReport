@@ -1,6 +1,8 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Validation;
+using A = DocumentFormat.OpenXml.Drawing;
+using C = DocumentFormat.OpenXml.Drawing.Charts;
 using ExcelReportLib;
 using ExcelReportLib.DSL;
 using ExcelReportLib.Logger;
@@ -1381,6 +1383,87 @@ public sealed class ReportGeneratorTests
         Assert.Equal("B2", formula!.Text);
     }
 
+    /// <summary>
+    /// Verifies that end-to-end generation renders chart parts with per-point colors.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetChart_RendersChartParts_WithColorByPointColors()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <chartPalette>
+                <color key="Done" value="#4CAF50" />
+                <color key="Doing" value="#FF9800" />
+                <color key="Todo" value="#BDBDBD" />
+              </chartPalette>
+              <component name="TaskRow">
+                <grid>
+                  <cell value="@(data.Name)" formulaRef="Task.Name" />
+                  <cell c="2" value="@(data.Workload)" formulaRef="Task.Workload" />
+                  <cell c="3" value="@(data.State)" formulaRef="Task.State" />
+                  <cell c="4" value="@(data.Blocked)" formulaRef="Task.Blocked" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <repeat direction="down" from="@(root.Tasks)" var="it">
+                  <use component="TaskRow" with="@(it)" />
+                </repeat>
+                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="Task.Name">
+                  <series name="Workload" value="Task.Workload" colorBy="Task.State" />
+                  <series name="Blocked" value="Task.Blocked" color="#1E88E5" />
+                </chart>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Tasks = new[]
+            {
+                new { Name = "Task1", Workload = 10, State = "Done", Blocked = 7 },
+                new { Name = "Task2", Workload = 20, State = "Doing", Blocked = 5 },
+                new { Name = "Task3", Workload = 15, State = "Todo", Blocked = 9 },
+                new { Name = "Task4", Workload = 30, State = "Doing", Blocked = 4 },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.DoesNotContain(result.Issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+
+        using var document = OpenWorkbook(result);
+        var worksheetPart = GetWorksheetPart(document, "Summary");
+        var drawingsPart = Assert.IsType<DrawingsPart>(worksheetPart.DrawingsPart);
+        var chartPart = Assert.Single(drawingsPart.ChartParts);
+        var barChart = Assert.Single(chartPart.ChartSpace.Descendants<C.BarChart>());
+        var chartSeries = barChart.Elements<C.BarChartSeries>().ToArray();
+
+        Assert.Equal(2, chartSeries.Length);
+
+        var firstSeriesColors = chartSeries[0]
+            .Elements<C.DataPoint>()
+            .Select(ExtractPointColor)
+            .ToArray();
+        var expectedFirstSeriesColors = new[] { "4CAF50", "FF9800", "BDBDBD", "FF9800" };
+        Assert.Equal(expectedFirstSeriesColors, firstSeriesColors);
+
+        var secondSeriesColors = chartSeries[1]
+            .Elements<C.DataPoint>()
+            .Select(ExtractPointColor)
+            .ToArray();
+        Assert.Equal(4, secondSeriesColors.Length);
+        Assert.All(secondSeriesColors, color => Assert.Equal("1E88E5", color));
+
+        var validator = new OpenXmlValidator();
+        var errors = validator.Validate(document)
+            .Select(error => $"{error.Id}: {error.Description}")
+            .ToArray();
+        Assert.True(errors.Length == 0, string.Join(Environment.NewLine, errors));
+    }
+
     private static ReportGeneratorOptions CreateOptions(IReportLogger? logger = null) =>
         new()
         {
@@ -1431,6 +1514,14 @@ public sealed class ReportGeneratorTests
         return cell.CellValue?.Text ?? string.Empty;
     }
 
+    private static string ExtractPointColor(C.DataPoint dataPoint)
+    {
+        var shapeProperties = Assert.IsType<C.ChartShapeProperties>(dataPoint.GetFirstChild<C.ChartShapeProperties>());
+        var solidFill = Assert.IsType<A.SolidFill>(shapeProperties.GetFirstChild<A.SolidFill>());
+        var rgb = Assert.IsType<A.RgbColorModelHex>(solidFill.GetFirstChild<A.RgbColorModelHex>());
+        return Assert.IsType<string>(rgb.Val?.Value);
+    }
+
     public sealed class LinqTemplateRoot
     {
         public IReadOnlyList<LinqTemplateLine> Lines { get; init; } = [];
@@ -1443,4 +1534,3 @@ public sealed class ReportGeneratorTests
         public decimal Amount { get; init; }
     }
 }
-

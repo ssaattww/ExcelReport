@@ -1,5 +1,6 @@
 using ExcelReportLib.DSL;
 using ExcelReportLib.DSL.AST;
+using System.Xml.Linq;
 
 namespace ExcelReportLib.Tests;
 
@@ -50,6 +51,36 @@ public sealed class WorkbookAstTests
         Assert.Equal(5, components.Count);
         Assert.Contains(components, component => component.Name == "DetailRow");
         Assert.Contains(components, component => component.Name == "TotalsRow");
+    }
+
+    /// <summary>
+    /// Verifies that parse workbook chart palette parses colors.
+    /// </summary>
+    [Fact]
+    public void Parse_Workbook_ChartPalette_ParsesColors()
+    {
+        var issues = new List<Issue>();
+        var rootElement = XElement.Parse(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <chartPalette>
+                <color key="Done" value="#4CAF50" />
+                <color key="Todo" value="#BDBDBD" />
+              </chartPalette>
+              <sheet name="Summary">
+                <cell r="1" c="1" value="A" />
+              </sheet>
+            </workbook>
+            """);
+
+        var workbook = new WorkbookAst(rootElement, issues);
+        var palette = Assert.IsType<ChartPaletteAst>(workbook.ChartPalette);
+        Assert.Equal(2, palette.Colors.Count);
+        Assert.Equal("Done", palette.Colors[0].Key);
+        Assert.Equal("#4CAF50", palette.Colors[0].Value);
+        Assert.Equal("Todo", palette.Colors[1].Key);
+        Assert.Equal("#BDBDBD", palette.Colors[1].Value);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
     }
 
     private static WorkbookAst CreateWorkbook()

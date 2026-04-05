@@ -1,10 +1,23 @@
 # Tasks Status
 
-Last Updated: 2026-03-26
-Scope: ExcelReport開発 - Phase 10: sheet repeat対応
+Last Updated: 2026-04-05
+Scope: ExcelReport開発 - issue #37 chart作成対応
 
 ## Progress Summary
 
+- 2026-04-05 issue#37 レビュー実施: SubAgentレビューを3チャンク（DSL/AST/XSD, Layout/WorksheetState, Renderer/Tests/Docs）に分割し、各結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` へ出力
+- 2026-04-05 issue#37 レビュー統合: `reports/subagent-review-issue37-summary-2026-04-05.md` を作成し、指摘を重大度別に集約
+- 2026-04-05 issue#37 指摘対応: chart series OpenXML子要素順（`dPt`/`spPr`）を修正し、`RendererTests`/`ReportGeneratorTests` に schema妥当性検証を追加
+- 2026-04-05 issue#37 指摘対応: `formulaRef` 系列解決を named area から分離（専用 series map 化）し、`*End` 衝突時の誤解決を回避
+- 2026-04-05 issue#37 指摘対応: `TestDsl/DslDefinition_v2.xsd` を Design版と同期（`sheet/repeat` の `from/var` 属性/要素両対応）
+- 2026-04-05 issue#37 指摘対応: `DslParser` の静的座標検証を rows/cols省略時も Excel上限で有効化、ルート要素名検証を追加
+- 2026-04-05 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --no-restore` 実行で `Passed 189, Failed 0`
+- 2026-04-05 追跡更新: `Design/Chart/Chart_DetailDesign.md` を追跡対象に追加し、tasks/phases の進捗記録に明示
+- 2026-04-05 issue#37 設計レビュー: `Design/Chart/Chart_DetailDesign.md` をレビューし、実装方針を策定
+- 2026-04-05 issue#37 方針レビュー: SubAgent（Socrates）に実装方針レビューを依頼し、指摘を反映した方針v2で確定
+- 2026-04-05 issue#37 実装: chart DSL/AST/XSD・LayoutEngine・WorksheetState・Renderer（barStacked/line）まで一気通貫で実装
+- 2026-04-05 issue#37 テスト: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --no-restore` 実行で `Passed 185, Failed 0`
+- 2026-04-05 記録: `reports/issue37-chart-design-and-plan-review-2026-04-05.md` を作成
 - 2026-03-26 CI失敗修正: `LayoutEngineTests.Expand_WhenLocalAndImportedComponentsShareName_LocalComponentWins` の import fixture を `<workbook>` から `<components>` へ修正し、`componentImport` ルート厳格化と整合
 - 2026-03-26 再検証: `dotnet test --no-restore` 全件実行で `Passed 179, Failed 0` を確認
 - 2026-03-26 PR#47追加レビュー対応(3-6): `FindNamedArea` の global/unique-descendant 衝突時に global優先+Warning化、sheet-scope `conditionalFormatting@formulaRef` は fallback経路のみ local非リーク化
@@ -176,7 +189,15 @@ Scope: ExcelReport開発 - Phase 10: sheet repeat対応
 | 23 | sheet repeat 実装 (DSL/AST/ValidateDsl/LayoutEngine/Renderer互換確認) | Done | Codex + PM | 22 | 10 |
 
 
-## Additional Work (2026-03-19)
+## Additional Work
+
+- 2026-04-05 issue #37: グラフ作成機能（chart）を実装完了（DSL/AST/XSD/Layout/State/Renderer）
+- 2026-04-05 issue #37: 設計レビュー -> 実装方針策定 -> SubAgentレビュー -> 実装の順で実施し、レビュー指摘を反映
+- 2026-04-05 issue #37: Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡内容へ追加
+- 2026-04-05 issue #37: `ExcelReportLib.Tests` 全体回帰を実施し `Passed 185, Failed 0` を確認
+- 2026-04-05 issue #37: 実施記録 `reports/issue37-chart-design-and-plan-review-2026-04-05.md` を追加
+- 2026-04-05 issue #37 PR#49 follow-up: Codexレビュー2件（fallback色のシート跨ぎ一貫性 / chart座標Excel上限）を修正し、回帰テスト2件を追加
+- 2026-04-05 issue #37 PR#49 follow-up: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
 
 - 2026-03-26 issue #45: named target属性の完全破壊変更（`area` 統一）を実装完了（`repeat@area`/`use@area`/`grid@area`）
 - 2026-03-26 issue #45: `INamedAreaTarget.AreaName` による共通解決へ統一し、legacy属性（`name`/`instance`）拒否をテストで担保

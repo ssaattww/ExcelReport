@@ -14,6 +14,7 @@ public sealed class WorksheetState
     /// <param name="cells">The cell states keyed by row and column coordinates.</param>
     /// <param name="mergedRanges">The merged-cell ranges defined on the worksheet.</param>
     /// <param name="namedAreas">The named areas available in the worksheet.</param>
+    /// <param name="charts">The chart states defined on the worksheet.</param>
     /// <param name="options">The worksheet-level options.</param>
     public WorksheetState(
         string name,
@@ -22,6 +23,7 @@ public sealed class WorksheetState
         IReadOnlyDictionary<(int Row, int Column), CellState> cells,
         IReadOnlyList<MergedCellRange> mergedRanges,
         IReadOnlyDictionary<string, NamedAreaState> namedAreas,
+        IReadOnlyList<ChartState>? charts,
         WorksheetOptionsState options)
     {
         Name = name;
@@ -32,6 +34,7 @@ public sealed class WorksheetState
         NamedAreas = new Dictionary<string, NamedAreaState>(
             namedAreas ?? throw new ArgumentNullException(nameof(namedAreas)),
             StringComparer.Ordinal);
+        Charts = (charts ?? Array.Empty<ChartState>()).ToArray();
         Options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -64,6 +67,11 @@ public sealed class WorksheetState
     /// Gets the named areas.
     /// </summary>
     public IReadOnlyDictionary<string, NamedAreaState> NamedAreas { get; }
+
+    /// <summary>
+    /// Gets chart states.
+    /// </summary>
+    public IReadOnlyList<ChartState> Charts { get; }
 
     /// <summary>
     /// Gets the options.
