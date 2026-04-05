@@ -620,9 +620,54 @@ root.Lines.Select((value, index) => new { value, index });
 
 ---
 
-## 11. 外部スタイル定義と外部コンポーネント定義の例
+## 11. 属性リファレンス（属性単位）
 
-### 11.1 同一ディレクトリ内の外部スタイル定義ファイルを読む例
+本章は、要素単位ではなく属性名で仕様を逆引きするための補助リファレンスである。
+
+### 11.1 共通配置属性（PlacementAttrs）
+
+| 属性 | 主な適用要素 | 意味 | 主な制約 |
+|---|---|---|---|
+| `r` | `cell`, `use`, `repeat`, `chart` | 配置開始行（1-based） | `1` 以上 |
+| `c` | `cell`, `use`, `repeat`, `chart` | 配置開始列（1-based） | `1` 以上 |
+| `rowSpan` | `cell`, `use`, `repeat` | 行方向スパン | `1` 以上 |
+| `colSpan` | `cell`, `use`, `repeat` | 列方向スパン | `1` 以上 |
+| `when` | 配置系要素全般 | C# 条件式。`false` 評価時は非展開 | 式評価エラー時は Issue 記録 |
+
+### 11.2 範囲名・参照属性
+
+| 属性 | 主な適用要素 | 意味 | 解決ルール |
+|---|---|---|---|
+| `area` | `use`, `repeat`, `grid` | 配置範囲の Named Area Key | 展開後セル群の外接矩形を `Area(key)` として定義し、`at="..."` などから参照 |
+| `at` | `freeze`, `groupRows`, `groupCols`, `autoFilter`, `conditionalFormatting` | 対象範囲指定 | 直接範囲 / Named Area Key / `formulaRef` 系列名の順で解決 |
+| `formulaRef` | `cell`, `conditionalFormatting` | セル系列の論理名、または式参照名 | 同名セルを系列として集約し `Name` / `NameEnd` を形成 |
+| `formulaRefScope` | `cell` | `formulaRef` の可視範囲 | `global`（既定）/ `local`。`local` は定義スコープ外へ暗黙公開しない |
+
+### 11.3 データ展開・コンポーネント属性
+
+| 属性 | 主な適用要素 | 意味 | 主な制約 |
+|---|---|---|---|
+| `component` | `use` | 参照するコンポーネント名 | 未定義参照は Issue(Error) |
+| `with` | `use` | `data` に渡す C# 式 | 評価失敗は Issue |
+| `from` | `sheet`, `repeat` | 反復元 C# 式 | `IEnumerable` を返すこと |
+| `var` | `sheet`, `repeat` | 反復変数名 | 省略時 `item` |
+| `direction` | `repeat` | 反復方向 | `down` / `right` |
+
+### 11.4 値・スタイル属性
+
+| 属性 | 主な適用要素 | 意味 | 主な制約 |
+|---|---|---|---|
+| `value` | `cell` | 出力値（文字列 / C#式 / Excel数式） | 属性 + `<value>` 併用時は Warning、属性優先 |
+| `styleRef` | `cell`（属性）, 各要素（子要素） | グローバル style 参照 | 複数指定時は定義順で適用 |
+
+### 11.5 補足（chart 属性）
+
+chart 専用属性（`type`, `category`, `series@value`, `series@colorBy` など）の詳細は  
+`Design/Chart/Chart_DetailDesign.md` を正として管理する。
+
+## 12. 外部スタイル定義と外部コンポーネント定義の例
+
+### 12.1 同一ディレクトリ内の外部スタイル定義ファイルを読む例
 
 DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDefinition_FullTemplate_SampleExternalStyle_v2.xml` を配置し、
 相対パスで読み込む。
@@ -687,7 +732,7 @@ DSL 本体と同じディレクトリに、スタイル専用ファイル `DslDe
 - As-Is: 同名 style が複数定義された場合は「先勝ち + Issue(Error)」。
 - To-Be: 同名 style が複数定義された場合は「後勝ち + Warning」。
 
-### 11.2 同一ディレクトリ内の外部コンポーネント定義ファイルを読む例
+### 12.2 同一ディレクトリ内の外部コンポーネント定義ファイルを読む例
 
 コンポーネント定義も、DSL 本体と同じディレクトリに外出しし、`componentImport` で読み込む。
 

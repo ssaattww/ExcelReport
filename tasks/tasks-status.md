@@ -198,6 +198,7 @@ Scope: ExcelReport開発 - issue #37 chart作成対応
 - 2026-04-05 issue #37: 実施記録 `reports/issue37-chart-design-and-plan-review-2026-04-05.md` を追加
 - 2026-04-05 issue #37 PR#49 follow-up: Codexレビュー2件（fallback色のシート跨ぎ一貫性 / chart座標Excel上限）を修正し、回帰テスト2件を追加
 - 2026-04-05 issue #37 PR#49 follow-up: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
+- 2026-04-05 設計改善: `DslDefinition_DetailDesign.md` に属性単位の逆引き章（`area`/`formulaRef`/`at` など）を追加
 
 - 2026-03-26 issue #45: named target属性の完全破壊変更（`area` 統一）を実装完了（`repeat@area`/`use@area`/`grid@area`）
 - 2026-03-26 issue #45: `INamedAreaTarget.AreaName` による共通解決へ統一し、legacy属性（`name`/`instance`）拒否をテストで担保
