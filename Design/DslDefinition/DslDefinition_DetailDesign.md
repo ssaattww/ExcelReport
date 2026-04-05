@@ -525,6 +525,13 @@ Area(key) = { topRow, bottomRow, leftCol, rightCol }
 - すべて C# を前提とする。
 - `@( ... )` 内は C# の式として扱う。
 - `cell@value` において、`@( ... )` の評価結果が文字列かつ `=` で始まる場合はセル数式として出力する。
+- `@( ... )` の式内では、シート参照文字列の組み立てを簡潔にする `xl` ヘルパーを利用できる:
+  - `xl.Sheet(name)` -> `'Sheet Name'`
+  - `xl.Ref(name, "A1")` -> `'Sheet Name'!A1`
+  - `xl.FormulaRef(name, "A1")` -> `='Sheet Name'!A1`
+- `xl` ヘルパーの `name` / `reference` に null/空白を渡した場合は式の Runtime Error として扱う（不正な式文字列を黙って生成しない）。
+- C# 文字列補間（`$"..."`）も利用可能。複数パーツの式を連結する場合は `+` より補間を推奨:
+  - `@($"=SUM({xl.Ref(it.SourceSheet, "B2:B10")})")`
 - スコープ:
   - `root` : 入力の最上位オブジェクト。
   - `data` : `use.with` で渡されたオブジェクト。
@@ -615,12 +622,13 @@ root.Lines.Select((value, index) => new { value, index });
     <value>@(it.Name)</value>
   </cell>
   <cell r="1" c="2">
-    <value>@("='" + it.SourceSheet + "'!A1")</value>
+    <value>@(xl.FormulaRef(it.SourceSheet, "A1"))</value>
   </cell>
 </sheet>
 ```
 
 この例では、評価結果 `='Summary'!A1` のような文字列がセル数式として扱われる。
+補間記法で書く場合は、例えば `<value>@($"=SUM({xl.Ref(it.SourceSheet, "B2:B10")})")</value>` の形で記述できる。
 `root.Items` の例が `[{ Name="ReportA", SourceSheet="Summary" }, { Name="ReportB", SourceSheet="ReportA" }]` の場合、
 展開後は `ReportA!B1 -> ='Summary'!A1`、`ReportB!B1 -> ='ReportA'!A1` となる。
 完全な実行例（データモデル、DSL全文、展開結果）は `Design/SheetReference/SheetReference_DetailDesign.md` を参照。

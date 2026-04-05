@@ -19,6 +19,7 @@ namespace ExcelReportLib.ExpressionEngine;
 public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
 {
     private static readonly ScriptOptions DefaultScriptOptions = CreateDefaultScriptOptions();
+    private static readonly ExcelFormulaHelpers DefaultExcelFormulaHelpers = ExcelFormulaHelpers.Instance;
 
     private static readonly IReadOnlyDictionary<string, string> DynamicLinqRewriteMap =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -82,6 +83,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 rootObj = compileContext.UseDynamicRoot ? DynamicValue.Wrap(context.Root) : context.Root,
                 dataObj = compileContext.UseDynamicData ? DynamicValue.Wrap(context.Data) : context.Data,
                 varsObj = new DynamicVars(context.Vars),
+                xl = DefaultExcelFormulaHelpers,
             };
 
             var rawValue = compiled.Runner!(globals).GetAwaiter().GetResult();
@@ -117,6 +119,65 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// Gets or sets wrapped vars object.
         /// </summary>
         public object? varsObj { get; init; }
+
+        /// <summary>
+        /// Gets or sets Excel formula helper object.
+        /// </summary>
+        public dynamic xl { get; init; } = null!;
+    }
+
+    /// <summary>
+    /// Helper functions available from expression scripts as <c>xl</c>.
+    /// </summary>
+    public sealed class ExcelFormulaHelpers
+    {
+        /// <summary>
+        /// Shared immutable instance.
+        /// </summary>
+        public static ExcelFormulaHelpers Instance { get; } = new();
+
+        /// <summary>
+        /// Builds escaped sheet token like <c>'Summary'</c>.
+        /// </summary>
+        /// <param name="sheetName">Target sheet name.</param>
+        /// <returns>Escaped sheet token.</returns>
+        public string Sheet(string? sheetName)
+        {
+            var safeName = NormalizeRequiredText(sheetName, nameof(sheetName));
+            return $"'{safeName.Replace("'", "''", StringComparison.Ordinal)}'";
+        }
+
+        /// <summary>
+        /// Builds sheet-qualified reference like <c>'Summary'!A1</c>.
+        /// </summary>
+        /// <param name="sheetName">Target sheet name.</param>
+        /// <param name="reference">A1-style cell or range reference.</param>
+        /// <returns>Sheet-qualified reference text.</returns>
+        public string Ref(string? sheetName, string? reference)
+        {
+            var safeReference = NormalizeRequiredText(reference, nameof(reference));
+            return $"{Sheet(sheetName)}!{safeReference}";
+        }
+
+        /// <summary>
+        /// Builds formula text for a sheet-qualified reference like <c>='Summary'!A1</c>.
+        /// </summary>
+        /// <param name="sheetName">Target sheet name.</param>
+        /// <param name="reference">A1-style cell or range reference.</param>
+        /// <returns>Formula text.</returns>
+        public string FormulaRef(string? sheetName, string? reference) =>
+            $"={Ref(sheetName, reference)}";
+
+        private static string NormalizeRequiredText(string? value, string parameterName)
+        {
+            var trimmed = value?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                throw new ArgumentException($"Parameter '{parameterName}' must not be null or whitespace.", parameterName);
+            }
+
+            return trimmed;
+        }
     }
 
     /// <summary>
@@ -1041,4 +1102,3 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 });
     }
 }
-

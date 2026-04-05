@@ -231,6 +231,97 @@ public sealed class ExpressionEngineTests
         Assert.Equal(new object?[] { "No1" }, pairs.ToArray());
     }
 
+    /// <summary>
+    /// Verifies that xl helper escapes sheet names and builds formula references.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_BuildsEscapedFormulaReference()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(\"Summary O'Brien\", \"A1\"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.False(result.HasError);
+        Assert.Equal("='Summary O''Brien'!A1", result.Value);
+    }
+
+    /// <summary>
+    /// Verifies that interpolated-string syntax works with xl helper methods.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_WithInterpolatedString_Works()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            """@($"=SUM({xl.Ref("Summary O'Brien", "B2:B10")})")""",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.False(result.HasError);
+        Assert.Equal("=SUM('Summary O''Brien'!B2:B10)", result.Value);
+    }
+
+    /// <summary>
+    /// Verifies that helper binding does not conflict with user lambda parameter named xl.
+    /// </summary>
+    [Fact]
+    public void Evaluate_LinqLambdaParameterNamedXl_DoesNotConflictWithHelperBinding()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var root = new
+        {
+            Items = new[]
+            {
+                new { Name = "A" },
+                new { Name = "B" },
+            },
+        };
+
+        var result = engine.Evaluate(
+            "@(root.Items.Select(xl => xl.Name).ToArray())",
+            new ExpressionContext(root, root));
+
+        Assert.False(result.HasError);
+        var values = Assert.IsAssignableFrom<IEnumerable<object?>>(result.Value);
+        Assert.Equal(new object?[] { "A", "B" }, values.ToArray());
+    }
+
+    /// <summary>
+    /// Verifies that helper reports runtime error when sheet name is null/blank.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_NullSheetName_ReturnsRuntimeError()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(null, \"A1\"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.True(result.HasError);
+        Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
+        Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
+    }
+
+    /// <summary>
+    /// Verifies that helper reports runtime error when reference is null/blank.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_BlankReference_ReturnsRuntimeError()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(\"Summary\", \"   \"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.True(result.HasError);
+        Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
+        Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
+    }
+
     private static Type CreatePublicTypeWithHashInName()
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(
@@ -281,4 +372,3 @@ public sealed class ExpressionEngineTests
         public string City { get; init; } = string.Empty;
     }
 }
-

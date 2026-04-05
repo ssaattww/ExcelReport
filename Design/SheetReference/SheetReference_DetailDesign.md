@@ -24,6 +24,8 @@
 - 既存の `value="=SUM(...)"` は従来どおり数式扱い。
 - 既存の `value="@( ... )"` は、評価結果が `=` で始まらない限り従来どおり値扱い。
 - 評価結果が `=` で始まる文字列を「文字列そのもの」として出したいケースは、`'=...` のように先頭へ `'` を付ける運用で回避可能。
+- シート名エスケープを簡潔に記述するため、式内で `xl` ヘルパー（`xl.Sheet` / `xl.Ref` / `xl.FormulaRef`）を利用できる。
+- 式は C# なので、文字列補間 `@($"...")` も利用できる。
 
 ## 4. 完全な利用例（sheet repeat + 動的シート参照）
 
@@ -82,12 +84,17 @@ var data = new RootModel
 
     <cell r="2" c="1" value="SourceA1" />
     <cell r="2" c="2">
-      <value>@("='" + it.SourceSheet.Replace("'", "''") + "'!A1")</value>
+      <value>@(xl.FormulaRef(it.SourceSheet, "A1"))</value>
     </cell>
 
     <cell r="3" c="1" value="SourceB1" />
     <cell r="3" c="2">
-      <value>@("='" + it.SourceSheet.Replace("'", "''") + "'!B1")</value>
+      <value>@(xl.FormulaRef(it.SourceSheet, "B1"))</value>
+    </cell>
+
+    <cell r="4" c="1" value="WorkloadSum(B2:B10)" />
+    <cell r="4" c="2">
+      <value>@($"=SUM({xl.Ref(it.SourceSheet, "B2:B10")})")</value>
     </cell>
   </sheet>
 </workbook>
@@ -116,10 +123,14 @@ var result = generator.Generate(dsl, data, options);
 
 ## 5. 実装方針
 
-- 変更箇所を `LayoutEngine.EvaluateCellValue` に限定し、判定ロジックのみ拡張する。
+- 数式自動判定は `LayoutEngine.EvaluateCellValue` に実装し、`@( ... )` 評価結果が `=` 始まりの場合に `Formula` として保持する。
+- シート参照文字列の可読性改善は `ExpressionEngine` の `xl` ヘルパー（`Sheet`/`Ref`/`FormulaRef`）で対応する。
+- `xl` ヘルパー引数（`sheetName`/`reference`）は null/空白を許可しない。無効入力は式評価の Runtime Error として返す。
 - Renderer / WorksheetState / DSL AST の構造変更は行わない。
 
 ## 6. 検証方針
 
-1. LayoutEngine 単体: `<value>@("='Detail'!A1")</value>` が `Formula` に入ること。
-2. ReportGenerator E2E: `sheet repeat` で生成したシートに動的なシート間参照式が出力されること。
+1. ExpressionEngine 単体: `xl.FormulaRef` / `xl.Ref` / C#補間記法（`$"..."`）で期待文字列を返すこと。
+2. ExpressionEngine 単体: `sheetName` / `reference` が null/空白のとき Runtime Error となること。
+3. LayoutEngine 単体: `@( ... )` 評価結果が `=` 始まり文字列の場合に `Formula` として保持されること。
+4. ReportGenerator E2E: `sheet repeat` で生成したシートに動的なシート間参照式が出力されること。
