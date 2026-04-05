@@ -1,10 +1,14 @@
 # Tasks Status
 
 Last Updated: 2026-04-05
-Scope: ExcelReport開発 - issue #43 非同期api対応
+Scope: ExcelReport開発 - issue #43 非同期api対応 / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-05 PR作成: README更新を含むPR #52 を作成し、本文に `Closes #48` を記載して issue連携
+- 2026-04-05 README追記: QuickStart を component定義ベースへ更新（`component` + `grid` + `repeat` + `use` を含む構成）
+- 2026-04-05 README刷新: `README.md` / `README.ja.md` を更新し、DSL `urn:excelreport:v2`・Chart機能・Async API・進捗ポーリング例を反映
+- 2026-04-05 README方針反映: ユーザー指摘により README での ClosedXML 対比は記載しない方針へ調整
 - 2026-04-05 PR#51 Codexレビュー対応: `TryGetResult` を終端状態ゲート化し、結果公開と終端状態遷移を原子的に統合
 - 2026-04-05 PR#51 Codexレビュー対応: `Cancel` の `CancellationTokenSource` 破棄競合を防御し、`ObjectDisposedException` を `false` 返却へ変換
 - 2026-04-05 PR#51 検証: `AsyncReportGeneratorTests` 7件 + Release全体198件通過を確認
@@ -208,6 +212,10 @@ Scope: ExcelReport開発 - issue #43 非同期api対応
 
 ## Additional Work
 
+- 2026-04-05 PR #52: README刷新+QuickStart改善を `master` 向けに提出し、`Closes #48` で issue連携
+- 2026-04-05 README QuickStart改善: 英日 README の QuickStart DSL を component定義型へ変更（`ItemHeader` / `ItemRow` + `repeat` + `use`）
+- 2026-04-05 README刷新: `README.md` / `README.ja.md` を Chart・Async対応の内容に全面更新（DSL v2、chart DSL例、Async進捗ポーリング例）
+- 2026-04-05 README方針: ユーザー指摘を反映し、ClosedXML との対比説明は記載しない方針で統一
 - 2026-04-05 PR #51: Codexレビュー2件（`TryGetResult` 完了競合 / `Cancel` dispose競合）を実装修正
 - 2026-04-05 PR #51: 実施記録 `reports/pr51-codex-review-fixes-2026-04-05.md` を追加
 - 2026-04-05 issue #43 follow-up: `AsyncReportJobStatus` に `ElapsedMilliseconds` / `CurrentPhaseElapsedMilliseconds` / `PhaseElapsedMilliseconds` を追加し、遅延箇所可視化を可能化

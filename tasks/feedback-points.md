@@ -88,6 +88,9 @@ Last Updated: 2026-04-05
 | FP94 | issue #43 follow-up: 待ち時間の可視化のため、総経過時間とフェーズ別経過時間を進捗APIで取得可能にする | 対応済み | 2026-04-05 |
 | FP95 | issue #43 follow-up: Rendering中は描画予定数（総ユニット）と完了数を返し、0-100進捗を細粒度で可視化する | 対応済み | 2026-04-05 |
 | FP96 | PR #51 Codexレビュー指摘（`TryGetResult` 完了競合 / `Cancel` dispose競合）を修正し、結果を reports に記録する | 対応済み | 2026-04-05 |
+| FP97 | README更新ではClosedXMLとの対比説明は不要。Chart/非同期の機能説明を中心に記載する | 対応済み | 2026-04-05 |
+| FP98 | QuickStartはcomponent定義ベースにし、`grid` / `repeat` / `use component` を含む実践的な例にする | 対応済み | 2026-04-05 |
+| FP99 | PR作成時は issue #48 と紐付ける（`Closes #48` など） | 対応済み | 2026-04-05 |
 ---
 
 ## 対応履歴
