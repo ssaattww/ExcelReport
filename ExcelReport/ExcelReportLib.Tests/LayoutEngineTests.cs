@@ -980,6 +980,31 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that expression value returning '=...' is treated as Excel formula.
+    /// </summary>
+    [Fact]
+    public void Expand_CellValueExpressionReturningFormula_TreatedAsFormula()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell r="1" c="2">
+                  <value>@("='Detail'!A1")</value>
+                </cell>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var formulaCell = Assert.Single(sheet.Cells);
+
+        Assert.Equal("='Detail'!A1", formulaCell.Formula);
+        Assert.Equal("='Detail'!A1", formulaCell.Value);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that expand omitted sheet rows cols auto calculates from cell placement.
     /// </summary>
     [Fact]

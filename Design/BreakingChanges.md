@@ -27,6 +27,17 @@ This file tracks breaking changes (non-backward-compatible behavior changes in D
 
 ## Breaking Change Entries
 
+### BC-20260405-01: Treat `cell@value` expression result beginning with `=` as formula
+- Version before change: 2.0.3
+- Planned effective version: after 2.0.3
+- Confirmed effective version: pending
+- Confirmed version source: GitHub Releases (`tagName`)
+- Change date: 2026-04-05
+- Scope: DSL runtime behavior (`cell@value` expression evaluation in LayoutEngine)
+- Change detail: When `cell@value` is an expression (`@( ... )`) and the evaluated result is a string starting with `=`, the cell is now emitted as Excel formula instead of plain string value.
+- Migration: If you need literal text beginning with `=`, return a string prefixed with `'` (for example, `'=ABC`) or avoid leading `=` in expression output.
+- Compatibility: conditionally compatible
+
 ### BC-20260326-02: Migrate DSL Namespace/Schema to v2 Only
 - Version before change: 1.2.4
 - Planned effective version: after 1.2.4

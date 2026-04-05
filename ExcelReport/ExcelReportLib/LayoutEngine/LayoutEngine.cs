@@ -650,8 +650,15 @@ public sealed class LayoutEngine : ILayoutEngine
 
         if (LooksLikeExpression(valueRaw))
         {
+            var evaluated = EvaluateExpressionValue(valueRaw, rootData, dataContext, vars, issues);
+            if (evaluated is string evaluatedText &&
+                evaluatedText.StartsWith("=", StringComparison.Ordinal))
+            {
+                return new RenderedValue(evaluatedText, evaluatedText);
+            }
+
             return new RenderedValue(
-                EvaluateExpressionValue(valueRaw, rootData, dataContext, vars, issues),
+                evaluated,
                 Formula: null);
         }
 

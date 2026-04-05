@@ -94,6 +94,8 @@ Last Updated: 2026-04-05
 | FP100 | GitHub Actions の Node.js 20 廃止警告に対応し、workflow を Node24 実行へ移行準備する | 対応済み | 2026-04-05 |
 | FP101 | `ExcelReportLibTest/TestDsl` は削除し、必要fixtureはテストプロジェクト配下へ整理する | 対応済み | 2026-04-05 |
 | FP102 | `master` が squash 運用のため、ブランチ再利用は禁止。毎回 `origin/master` から新規ブランチを作成する | 対応済み | 2026-04-05 |
+| FP103 | issue #16: `sheet repeat` の動的シート名を使ったシート間参照を可能にする（`cell@value` 式評価結果 `=...` を数式扱い） | 対応済み | 2026-04-05 |
+| FP104 | issue #16 follow-up: `sheet repeat` の動的シート参照例は `<value>...</value>` 方式で、入力例と展開結果まで明記する | 対応済み | 2026-04-05 |
 ---
 
 ## 対応履歴
