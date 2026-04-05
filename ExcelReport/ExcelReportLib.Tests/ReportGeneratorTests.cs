@@ -1397,33 +1397,39 @@ public sealed class ReportGeneratorTests
                 <color key="Doing" value="#FF9800" />
                 <color key="Todo" value="#BDBDBD" />
               </chartPalette>
+              <component name="TaskRow">
+                <grid>
+                  <cell value="@(data.Name)" formulaRef="Task.Name" />
+                  <cell c="2" value="@(data.Workload)" formulaRef="Task.Workload" />
+                  <cell c="3" value="@(data.State)" formulaRef="Task.State" />
+                  <cell c="4" value="@(data.Blocked)" formulaRef="Task.Blocked" />
+                </grid>
+              </component>
               <sheet name="Summary">
-                <cell r="2" c="1" value="Task1" />
-                <cell r="3" c="1" value="Task2" />
-                <cell r="4" c="1" value="Task3" />
-                <cell r="5" c="1" value="Task4" />
-                <cell r="2" c="2" value="10" />
-                <cell r="3" c="2" value="20" />
-                <cell r="4" c="2" value="15" />
-                <cell r="5" c="2" value="30" />
-                <cell r="2" c="3" value="Done" />
-                <cell r="3" c="3" value="Doing" />
-                <cell r="4" c="3" value="Todo" />
-                <cell r="5" c="3" value="Doing" />
-                <cell r="2" c="4" value="7" />
-                <cell r="3" c="4" value="5" />
-                <cell r="4" c="4" value="9" />
-                <cell r="5" c="4" value="4" />
-                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="A2:A5">
-                  <series name="Workload" value="B2:B5" colorBy="C2:C5" />
-                  <series name="Blocked" value="D2:D5" color="#1E88E5" />
+                <repeat direction="down" from="@(root.Tasks)" var="it">
+                  <use component="TaskRow" with="@(it)" />
+                </repeat>
+                <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="Task.Name">
+                  <series name="Workload" value="Task.Workload" colorBy="Task.State" />
+                  <series name="Blocked" value="Task.Blocked" color="#1E88E5" />
                 </chart>
               </sheet>
             </workbook>
             """;
 
+        var data = new
+        {
+            Tasks = new[]
+            {
+                new { Name = "Task1", Workload = 10, State = "Done", Blocked = 7 },
+                new { Name = "Task2", Workload = 20, State = "Doing", Blocked = 5 },
+                new { Name = "Task3", Workload = 15, State = "Todo", Blocked = 9 },
+                new { Name = "Task4", Workload = 30, State = "Doing", Blocked = 4 },
+            },
+        };
+
         var generator = new ReportGenerator();
-        var result = generator.Generate(dsl, data: null, CreateOptions());
+        var result = generator.Generate(dsl, data, CreateOptions());
 
         Assert.NotNull(result.Output);
         Assert.DoesNotContain(result.Issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
