@@ -16,6 +16,9 @@ namespace ExcelReportLib.LayoutEngine;
 /// </summary>
 public sealed class LayoutEngine : ILayoutEngine
 {
+    private const int MaxExcelRows = 1_048_576;
+    private const int MaxExcelColumns = 16_384;
+
     private readonly IExpressionEngine _expressionEngine;
 
     /// <summary>
@@ -856,13 +859,15 @@ public sealed class LayoutEngine : ILayoutEngine
                 chart.WidthColumns <= 0 ||
                 chart.HeightRows <= 0 ||
                 endRow > sheetRows ||
-                endCol > sheetCols)
+                endCol > sheetCols ||
+                endRow > MaxExcelRows ||
+                endCol > MaxExcelColumns)
             {
                 issues.Add(new Issue
                 {
                     Severity = IssueSeverity.Error,
                     Kind = IssueKind.CoordinateOutOfRange,
-                    Message = $"グラフ配置がシート範囲外です: sheet={sheetName}, r={chart.TopRow}, c={chart.LeftColumn}, width={chart.WidthColumns}, height={chart.HeightRows}",
+                    Message = $"グラフ配置がシートまたは Excel の範囲外です: sheet={sheetName}, r={chart.TopRow}, c={chart.LeftColumn}, width={chart.WidthColumns}, height={chart.HeightRows}",
                     Span = null,
                 });
 

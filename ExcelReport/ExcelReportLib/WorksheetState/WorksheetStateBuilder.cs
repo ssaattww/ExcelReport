@@ -42,14 +42,33 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
     {
         ArgumentNullException.ThrowIfNull(layoutPlan);
 
-        return layoutPlan.Sheets
-            .Select(layoutSheet => BuildSheet(layoutSheet, layoutPlan.ChartPalette, issues))
-            .ToArray();
+        var normalizedChartPalette = layoutPlan.ChartPalette.ToDictionary(
+            pair => pair.Key,
+            pair => NormalizeRgbColor(pair.Value),
+            StringComparer.Ordinal);
+        var workbookKeyColorAssignments = new Dictionary<string, string>(normalizedChartPalette, StringComparer.Ordinal);
+        var workbookNextPaletteIndex = 0;
+        var sheets = new List<WorksheetState>(layoutPlan.Sheets.Count);
+
+        foreach (var layoutSheet in layoutPlan.Sheets)
+        {
+            sheets.Add(
+                BuildSheet(
+                    layoutSheet,
+                    normalizedChartPalette,
+                    workbookKeyColorAssignments,
+                    ref workbookNextPaletteIndex,
+                    issues));
+        }
+
+        return sheets;
     }
 
     private static WorksheetState BuildSheet(
         LayoutSheet layoutSheet,
         IReadOnlyDictionary<string, string> chartPalette,
+        IDictionary<string, string> workbookKeyColorAssignments,
+        ref int workbookNextPaletteIndex,
         IList<Issue>? issues)
     {
         ValidateSheetBounds(layoutSheet.Rows, layoutSheet.Cols, layoutSheet.Name);
@@ -117,7 +136,15 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         var namedAreas = BuildNamedAreas(layoutSheet);
         var formulaPlaceholderAreas = BuildFormulaPlaceholderAreas(layoutSheet, namedAreas);
         var resolvedCells = ResolveFormulaPlaceholders(cells, layoutSheet.Cells, formulaPlaceholderAreas, issues);
-        var charts = BuildCharts(layoutSheet, resolvedCells, namedAreas, formulaPlaceholderAreas, chartPalette, issues);
+        var charts = BuildCharts(
+            layoutSheet,
+            resolvedCells,
+            namedAreas,
+            formulaPlaceholderAreas,
+            chartPalette,
+            workbookKeyColorAssignments,
+            ref workbookNextPaletteIndex,
+            issues);
         var options = BuildOptions(layoutSheet.Options, layoutSheet.ConditionalFormattings, namedAreas, formulaPlaceholderAreas, issues);
 
         return new WorksheetState(
@@ -527,19 +554,14 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
         IReadOnlyDictionary<string, NamedAreaState> namedAreas,
         FormulaPlaceholderContext formulaPlaceholderContext,
         IReadOnlyDictionary<string, string> chartPalette,
+        IDictionary<string, string> keyColorAssignments,
+        ref int nextPaletteIndex,
         IList<Issue>? issues)
     {
         if (layoutSheet.Charts.Count == 0)
         {
             return Array.Empty<ChartState>();
         }
-
-        var normalizedPalette = chartPalette.ToDictionary(
-            pair => pair.Key,
-            pair => NormalizeRgbColor(pair.Value),
-            StringComparer.Ordinal);
-        var keyColorAssignments = new Dictionary<string, string>(normalizedPalette, StringComparer.Ordinal);
-        var nextPaletteIndex = 0;
         var results = new List<ChartState>();
 
         foreach (var chart in layoutSheet.Charts)
@@ -597,7 +619,7 @@ public sealed class WorksheetStateBuilder : IWorksheetStateBuilder
                         cells,
                         namedAreas,
                         formulaPlaceholderContext,
-                        normalizedPalette,
+                        chartPalette,
                         keyColorAssignments,
                         ref nextPaletteIndex,
                         seriesIndex,

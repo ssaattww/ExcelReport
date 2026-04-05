@@ -246,7 +246,42 @@ public sealed class LayoutEngineTests
                 issue.Kind == IssueKind.CoordinateOutOfRange &&
                 issue.Severity == IssueSeverity.Error &&
                 (issue.Message.Contains("グラフ配置がシート範囲外", StringComparison.Ordinal) ||
+                 issue.Message.Contains("グラフ配置がシートまたは Excel の範囲外", StringComparison.Ordinal) ||
                  issue.Message.Contains("chart の配置がシートまたは Excel の上限を超えています", StringComparison.Ordinal)));
+    }
+
+    /// <summary>
+    /// Verifies that chart exceeding Excel max row/column is reported and excluded even when sheet rows/cols are omitted.
+    /// </summary>
+    [Fact]
+    public void Expand_SheetChart_ExceedsExcelLimitsWithoutSheetBounds_IsExcludedFromLayoutSheet()
+    {
+        var parseResult = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <chart type="barStacked" r="1048576" c="1" width="1" height="2" category="A1:A1">
+                  <series name="Done" value="B1:B1" />
+                </chart>
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = false,
+            });
+
+        Assert.NotNull(parseResult.Root);
+        var plan = new LayoutEngine.LayoutEngine().Expand(parseResult.Root!, rootData: null);
+
+        var sheet = Assert.Single(plan.Sheets);
+        Assert.Empty(sheet.Charts);
+        Assert.Contains(
+            plan.Issues,
+            issue =>
+                issue.Kind == IssueKind.CoordinateOutOfRange &&
+                issue.Severity == IssueSeverity.Error &&
+                issue.Message.Contains("Excel", StringComparison.Ordinal));
     }
 
     /// <summary>

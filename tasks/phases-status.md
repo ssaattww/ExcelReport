@@ -155,6 +155,8 @@ Last Updated: 2026-04-05
 - 2026-03-26: issue #45 の follow-up として DSL namespace/schema を v2（`urn:excelreport:v2`/`DslDefinition_v2.xsd`）へ完全移行
 - 2026-03-26: top-level sibling scope を分離し、local formulaRef の sibling 混在不具合（P1）を修正
 - 2026-03-26: 追加テスト3件 + 主要回帰 + 全体回帰を実施し `Passed 165, Failed 0` を確認
+- 2026-04-05: PR #49 Codexレビュー指摘2件（chart fallback色のワークブックスコープ化 / chart座標Excel上限チェック）を反映
+- 2026-04-05: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%
