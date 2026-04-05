@@ -178,7 +178,7 @@ XSD 上の型: `WorkbookType`。
 - 属性:
   - `r`, `c`, `rowSpan`, `colSpan`, `when` : 共通配置属性。
   - `value` : 出力値（`<value>` 子要素でも指定可能）。
-    - `@( ... )` 形式: C# 式として評価した結果を文字列化してセット。
+    - `@( ... )` 形式: C# 式として評価した結果をセット。評価結果が文字列かつ `=` で始まる場合は Excel 数式として扱う。
     - `=` で始まる文字列: Excel 数式として扱う。
   - `styleRef` : 単一 style 名を指定するショートカット。
   - `formulaRef` : 数式定義用の論理名（例えば `Detail.Value`）。
@@ -523,7 +523,8 @@ Area(key) = { topRow, bottomRow, leftCol, rightCol }
 ## 8. 式言語
 
 - すべて C# を前提とする。
-- `@( ... )` 内は C# の式として扱い、評価結果を文字列化してセルの値とする。
+- `@( ... )` 内は C# の式として扱う。
+- `cell@value` において、`@( ... )` の評価結果が文字列かつ `=` で始まる場合はセル数式として出力する。
 - スコープ:
   - `root` : 入力の最上位オブジェクト。
   - `data` : `use.with` で渡されたオブジェクト。
@@ -601,6 +602,29 @@ root.Lines.Select((value, index) => new { value, index });
 
 系列解決は 1 次元連続範囲のみ許可するため、2 次元は Error/Fatal 扱いとする。
 
+### 9.4 具体例（sheet repeat + シート間参照）
+
+`sheet@from` で生成されるシート間を参照したい場合は、`cell@value` の式評価結果として数式文字列を返す。
+
+```xml
+<sheet name="Summary">
+  <cell r="1" c="1" value="100" />
+</sheet>
+<sheet name="@(it.Name)" from="@(root.Items)" var="it">
+  <cell r="1" c="1">
+    <value>@(it.Name)</value>
+  </cell>
+  <cell r="1" c="2">
+    <value>@("='" + it.SourceSheet + "'!A1")</value>
+  </cell>
+</sheet>
+```
+
+この例では、評価結果 `='Summary'!A1` のような文字列がセル数式として扱われる。
+`root.Items` の例が `[{ Name="ReportA", SourceSheet="Summary" }, { Name="ReportB", SourceSheet="ReportA" }]` の場合、
+展開後は `ReportA!B1 -> ='Summary'!A1`、`ReportB!B1 -> ='ReportA'!A1` となる。
+完全な実行例（データモデル、DSL全文、展開結果）は `Design/SheetReference/SheetReference_DetailDesign.md` を参照。
+
 ---
 
 ## 10. バリデーション要件（As-Is / To-Be）
@@ -657,7 +681,7 @@ root.Lines.Select((value, index) => new { value, index });
 
 | 属性 | 主な適用要素 | 意味 | 主な制約 |
 |---|---|---|---|
-| `value` | `cell` | 出力値（文字列 / C#式 / Excel数式） | 属性 + `<value>` 併用時は Warning、属性優先 |
+| `value` | `cell` | 出力値（文字列 / C#式 / Excel数式） | `@( ... )` 評価結果が `=` 始まり文字列なら数式扱い。属性 + `<value>` 併用時は Warning、属性優先 |
 | `styleRef` | `cell`（属性）, 各要素（子要素） | グローバル style 参照 | 複数指定時は定義順で適用 |
 
 ### 11.5 補足（chart 属性）

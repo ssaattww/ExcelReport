@@ -1342,6 +1342,52 @@ public sealed class ReportGeneratorTests
     }
 
     /// <summary>
+    /// Verifies that sheet-repeat can emit cross-sheet formulas from expression value.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetRepeat_CrossSheetFormulaFromExpression_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell r="1" c="1" value="100" />
+              </sheet>
+              <sheet name="@(it.Name)" from="@(root.Items)" var="it">
+                <cell r="1" c="1" value="@(it.Name)" />
+                <cell r="1" c="2">
+                  <value>@("='" + it.SourceSheet + "'!A1")</value>
+                </cell>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Name = "ReportA", SourceSheet = "Summary" },
+                new { Name = "ReportB", SourceSheet = "ReportA" },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+
+        using var document = OpenWorkbook(result);
+        var reportAFormula = GetCell(document, "ReportA", "B1").CellFormula;
+        var reportBFormula = GetCell(document, "ReportB", "B1").CellFormula;
+
+        Assert.NotNull(reportAFormula);
+        Assert.NotNull(reportBFormula);
+        Assert.Equal("'Summary'!A1", reportAFormula!.Text);
+        Assert.Equal("'ReportA'!A1", reportBFormula!.Text);
+    }
+
+    /// <summary>
     /// Verifies that worksheet-state fallback warnings are included in result issues and logs.
     /// </summary>
     [Fact]

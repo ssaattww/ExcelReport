@@ -4,6 +4,10 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: issue #16 向けに `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat 生成シート間参照の仕様を定義
+- 2026-04-05: `cell@value` 式評価結果が `=` 始まり文字列の場合に数式として扱う仕様を `DslDefinition_DetailDesign.md` へ追記
+- 2026-04-05: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を数式として保持する実装を追加
+- 2026-04-05: 検証として追加2件 + `LayoutEngineTests|ReportGeneratorTests` 74件を実行し、合計76件全通過を確認
 - 2026-04-05: Node.js 20 deprecation warning 対応として `pr-xunit-tests.yml` / `publish-nuget.yml` に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
 - 2026-04-05: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
 - 2026-04-05: `DslTestFixtures` の参照パスを更新し、`ExcelReportLib.Tests` 198件全通過を確認
@@ -181,6 +185,7 @@ Last Updated: 2026-04-05
 - 2026-04-05: PR #49 Codexレビュー指摘2件（chart fallback色のワークブックスコープ化 / chart座標Excel上限チェック）を反映
 - 2026-04-05: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
 - 2026-04-05: 設計書 `DslDefinition_DetailDesign.md` に属性逆引き章を追加（`area` に限定しない属性単位整理）
+- 2026-04-05: issue #16 follow-up として `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を `Design/SheetReference/SheetReference_DetailDesign.md` に追記
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%
