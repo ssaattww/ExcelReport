@@ -13,6 +13,7 @@ Last Updated: 2026-04-05
 - 2026-04-05: 検証として `Evaluate_XlFormulaHelper_BuildsEscapedFormulaReference` と `ExpressionEngineTests|ReportGeneratorTests` 58件を実行し全通過を確認
 - 2026-04-05: 検証追加として C# 補間記法 `$\"...\"` を使う2テストを追加し、`ExpressionEngineTests|ReportGeneratorTests` 60件全通過を確認
 - 2026-04-05: 設計書（`DslDefinition` / `SheetReference`）に C#補間記法 `$\"...\"` の利用例を追記
+- 2026-04-05: PR #57 Codexレビュー指摘（`xl` ローカル宣言とラムダ変数衝突）を修正し、回帰テスト追加 + `ExpressionEngineTests|ReportGeneratorTests` 61件全通過を確認
 - 2026-04-05: Node.js 20 deprecation warning 対応として `pr-xunit-tests.yml` / `publish-nuget.yml` に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
 - 2026-04-05: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
 - 2026-04-05: `DslTestFixtures` の参照パスを更新し、`ExcelReportLib.Tests` 198件全通過を確認

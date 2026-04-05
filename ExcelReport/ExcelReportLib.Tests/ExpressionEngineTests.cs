@@ -263,6 +263,31 @@ public sealed class ExpressionEngineTests
         Assert.Equal("=SUM('Summary O''Brien'!B2:B10)", result.Value);
     }
 
+    /// <summary>
+    /// Verifies that helper binding does not conflict with user lambda parameter named xl.
+    /// </summary>
+    [Fact]
+    public void Evaluate_LinqLambdaParameterNamedXl_DoesNotConflictWithHelperBinding()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+        var root = new
+        {
+            Items = new[]
+            {
+                new { Name = "A" },
+                new { Name = "B" },
+            },
+        };
+
+        var result = engine.Evaluate(
+            "@(root.Items.Select(xl => xl.Name).ToArray())",
+            new ExpressionContext(root, root));
+
+        Assert.False(result.HasError);
+        var values = Assert.IsAssignableFrom<IEnumerable<object?>>(result.Value);
+        Assert.Equal(new object?[] { "A", "B" }, values.ToArray());
+    }
+
     private static Type CreatePublicTypeWithHashInName()
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(

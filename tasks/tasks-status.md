@@ -14,6 +14,7 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-05 issue#16 follow-up 検証: `ExpressionEngineTests|ReportGeneratorTests` 58件通過
 - 2026-04-05 issue#16 follow-up 検証: C#補間記法 `$\"...\"` で `xl.Ref`/`xl.FormulaRef` を使うE2E/単体テストを追加し、回帰 60件通過
 - 2026-04-05 issue#16 follow-up 文書化: 設計書に C#補間記法 `$\"...\"` + `xl.Ref` の記法例を追記
+- 2026-04-05 PR#57レビュー対応: `dynamic xl = ...` のローカル宣言を撤去し、ラムダ変数 `xl` との衝突回帰を追加（回帰 61件通過）
 - 2026-04-05 CI対応: Node.js 20 deprecation warning 対応として workflow 全体に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
 - 2026-04-05 整理: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
 - 2026-04-05 参照更新: `DslTestFixtures` の fixture パスを `.Tests/TestDsl` 基準へ変更

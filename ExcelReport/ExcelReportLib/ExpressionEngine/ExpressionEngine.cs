@@ -83,7 +83,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
                 rootObj = compileContext.UseDynamicRoot ? DynamicValue.Wrap(context.Root) : context.Root,
                 dataObj = compileContext.UseDynamicData ? DynamicValue.Wrap(context.Data) : context.Data,
                 varsObj = new DynamicVars(context.Vars),
-                xlObj = DefaultExcelFormulaHelpers,
+                xl = DefaultExcelFormulaHelpers,
             };
 
             var rawValue = compiled.Runner!(globals).GetAwaiter().GetResult();
@@ -123,7 +123,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// <summary>
         /// Gets or sets Excel formula helper object.
         /// </summary>
-        public object? xlObj { get; init; }
+        public dynamic xl { get; init; } = null!;
     }
 
     /// <summary>
@@ -494,8 +494,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         var script =
             rootBinding.Declaration + Environment.NewLine +
             dataBinding.Declaration + Environment.NewLine +
-            "dynamic vars = varsObj;" + Environment.NewLine +
-            "dynamic xl = xlObj;" + Environment.NewLine;
+            "dynamic vars = varsObj;" + Environment.NewLine;
 
         if (includeDynamicLinqHelpers)
         {
