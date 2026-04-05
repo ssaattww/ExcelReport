@@ -28,4 +28,5 @@ Branch: feature/issue-43-async-api
 ## Notes
 
 - ドキュメント更新のみのため追加テストは未実施
-- PR 本文には `Closes #48` を含めて作成する
+- PR #52 を作成し、本文に `Closes #48` を記載して issue 連携済み
+- PR URL: https://github.com/ssaattww/ExcelReport/pull/52

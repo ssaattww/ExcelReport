@@ -4,6 +4,7 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: README更新を含む PR #52 を作成し、`Closes #48` を本文に含めて issue連携
 - 2026-04-05: README QuickStart を component定義ベース（`component` + `grid` + `repeat` + `use`）へ更新し、サンプルを実運用寄りに改善
 - 2026-04-05: README刷新として `README.md` / `README.ja.md` を更新し、DSL `urn:excelreport:v2`・Chart機能・Async API・進捗ポーリング例を反映
 - 2026-04-05: ユーザー指摘に基づき、README では ClosedXML との対比説明を記載しない方針へ調整
