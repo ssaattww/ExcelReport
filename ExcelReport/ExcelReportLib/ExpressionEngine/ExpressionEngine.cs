@@ -143,7 +143,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// <returns>Escaped sheet token.</returns>
         public string Sheet(string? sheetName)
         {
-            var safeName = sheetName ?? string.Empty;
+            var safeName = NormalizeRequiredText(sheetName, nameof(sheetName));
             return $"'{safeName.Replace("'", "''", StringComparison.Ordinal)}'";
         }
 
@@ -155,7 +155,7 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// <returns>Sheet-qualified reference text.</returns>
         public string Ref(string? sheetName, string? reference)
         {
-            var safeReference = (reference ?? string.Empty).Trim();
+            var safeReference = NormalizeRequiredText(reference, nameof(reference));
             return $"{Sheet(sheetName)}!{safeReference}";
         }
 
@@ -167,6 +167,17 @@ public sealed class ExpressionEngine : IExpressionEngine, IExpressionEvaluator
         /// <returns>Formula text.</returns>
         public string FormulaRef(string? sheetName, string? reference) =>
             $"={Ref(sheetName, reference)}";
+
+        private static string NormalizeRequiredText(string? value, string parameterName)
+        {
+            var trimmed = value?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                throw new ArgumentException($"Parameter '{parameterName}' must not be null or whitespace.", parameterName);
+            }
+
+            return trimmed;
+        }
     }
 
     /// <summary>

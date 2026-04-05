@@ -40,3 +40,13 @@
   - スクリプト前置きの `dynamic xl = ...` 宣言を削除
   - `ScriptGlobals.xl` を `dynamic` プロパティとして提供
   - ラムダ変数 `xl` 利用の回帰テストを追加
+
+## SubAgent 指摘対応（P2/P3）
+
+- P2対応: `xl.Sheet` / `xl.Ref` / `xl.FormulaRef` の引数に null/空白が渡された場合は `ArgumentException` を投げ、式評価を Runtime Error として返すように変更。
+- P3対応: 設計書の実装方針を実装実態に合わせて更新（`LayoutEngine` 限定記述を撤回し、`ExpressionEngine` の `xl` ヘルパー実装を明記）。
+
+### 追加検証
+
+- `dotnet test ... --filter "Evaluate_XlFormulaHelper_NullSheetName_ReturnsRuntimeError|Evaluate_XlFormulaHelper_BlankReference_ReturnsRuntimeError"`: Passed 2
+- `dotnet test ... --filter "ExpressionEngineTests|ReportGeneratorTests"`: Passed 63

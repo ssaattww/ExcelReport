@@ -28,3 +28,10 @@
 ## 参考
 
 - SubAgent補足: `ExpressionEngineTests|ReportGeneratorTests` は 61/61 pass を確認。
+
+## 対応状況（2026-04-05）
+
+- P2: 対応済み  
+  `xl` ヘルパーに必須入力チェックを追加し、null/空白は `ArgumentException` -> `ExpressionRuntimeError` として扱うよう修正。
+- P3: 対応済み  
+  `Design/SheetReference/SheetReference_DetailDesign.md` の実装方針を `ExpressionEngine` 追加実装に合わせて更新。

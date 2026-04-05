@@ -288,6 +288,40 @@ public sealed class ExpressionEngineTests
         Assert.Equal(new object?[] { "A", "B" }, values.ToArray());
     }
 
+    /// <summary>
+    /// Verifies that helper reports runtime error when sheet name is null/blank.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_NullSheetName_ReturnsRuntimeError()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(null, \"A1\"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.True(result.HasError);
+        Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
+        Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
+    }
+
+    /// <summary>
+    /// Verifies that helper reports runtime error when reference is null/blank.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_BlankReference_ReturnsRuntimeError()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(\"Summary\", \"   \"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.True(result.HasError);
+        Assert.Contains(result.Issues, issue => issue.Kind == IssueKind.ExpressionRuntimeError);
+        Assert.StartsWith("#ERR(", Assert.IsType<string>(result.Value));
+    }
+
     private static Type CreatePublicTypeWithHashInName()
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(

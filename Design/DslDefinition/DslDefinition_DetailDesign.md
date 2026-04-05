@@ -529,6 +529,7 @@ Area(key) = { topRow, bottomRow, leftCol, rightCol }
   - `xl.Sheet(name)` -> `'Sheet Name'`
   - `xl.Ref(name, "A1")` -> `'Sheet Name'!A1`
   - `xl.FormulaRef(name, "A1")` -> `='Sheet Name'!A1`
+- `xl` ヘルパーの `name` / `reference` に null/空白を渡した場合は式の Runtime Error として扱う（不正な式文字列を黙って生成しない）。
 - C# 文字列補間（`$"..."`）も利用可能。複数パーツの式を連結する場合は `+` より補間を推奨:
   - `@($"=SUM({xl.Ref(it.SourceSheet, "B2:B10")})")`
 - スコープ:

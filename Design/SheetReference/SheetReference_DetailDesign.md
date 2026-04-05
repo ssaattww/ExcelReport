@@ -123,10 +123,14 @@ var result = generator.Generate(dsl, data, options);
 
 ## 5. 実装方針
 
-- 変更箇所を `LayoutEngine.EvaluateCellValue` に限定し、判定ロジックのみ拡張する。
+- 数式自動判定は `LayoutEngine.EvaluateCellValue` に実装し、`@( ... )` 評価結果が `=` 始まりの場合に `Formula` として保持する。
+- シート参照文字列の可読性改善は `ExpressionEngine` の `xl` ヘルパー（`Sheet`/`Ref`/`FormulaRef`）で対応する。
+- `xl` ヘルパー引数（`sheetName`/`reference`）は null/空白を許可しない。無効入力は式評価の Runtime Error として返す。
 - Renderer / WorksheetState / DSL AST の構造変更は行わない。
 
 ## 6. 検証方針
 
-1. LayoutEngine 単体: `<value>@(xl.FormulaRef("Detail", "A1"))</value>` が `Formula` に入ること。
-2. ReportGenerator E2E: `sheet repeat` で生成したシートに動的なシート間参照式が出力されること。
+1. ExpressionEngine 単体: `xl.FormulaRef` / `xl.Ref` / C#補間記法（`$"..."`）で期待文字列を返すこと。
+2. ExpressionEngine 単体: `sheetName` / `reference` が null/空白のとき Runtime Error となること。
+3. LayoutEngine 単体: `@( ... )` 評価結果が `=` 始まり文字列の場合に `Formula` として保持されること。
+4. ReportGenerator E2E: `sheet repeat` で生成したシートに動的なシート間参照式が出力されること。
