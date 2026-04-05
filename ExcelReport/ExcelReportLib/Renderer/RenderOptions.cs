@@ -19,4 +19,9 @@ public sealed class RenderOptions
     /// Gets or sets the generated at.
     /// </summary>
     public DateTimeOffset? GeneratedAt { get; init; }
+
+    /// <summary>
+    /// Gets or sets progress callback invoked during rendering.
+    /// </summary>
+    public Action<RenderProgressInfo>? ProgressReporter { get; init; }
 }

@@ -40,6 +40,42 @@ public sealed class XlsxRenderer : IRenderer
         var effectiveOptions = options ?? new RenderOptions();
         var effectiveIssues = issues ?? Array.Empty<Issue>();
         var output = new MemoryStream();
+        var totalUnits = EstimateTotalUnits(worksheets, effectiveIssues.Count);
+        var completedUnits = 0;
+        var lastReportedPercent = -1;
+
+        void ReportProgress(string message, bool force = false)
+        {
+            if (effectiveOptions.ProgressReporter is null)
+            {
+                return;
+            }
+
+            var boundedCompleted = Math.Clamp(completedUnits, 0, totalUnits);
+            var percent = (int)Math.Floor((double)boundedCompleted * 100 / totalUnits);
+            if (!force && percent == lastReportedPercent)
+            {
+                return;
+            }
+
+            lastReportedPercent = percent;
+            effectiveOptions.ProgressReporter(
+                new RenderProgressInfo
+                {
+                    CompletedUnits = boundedCompleted,
+                    TotalUnits = totalUnits,
+                    Percent = percent,
+                    Message = message,
+                });
+        }
+
+        void CompleteUnit(string message)
+        {
+            completedUnits = Math.Min(totalUnits, completedUnits + 1);
+            ReportProgress(message);
+        }
+
+        ReportProgress("Rendering workbook.", force: true);
 
         using (var document = SpreadsheetDocument.Create(output, SpreadsheetDocumentType.Workbook, true))
         {
@@ -58,8 +94,16 @@ public sealed class XlsxRenderer : IRenderer
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                worksheetPart.Worksheet = BuildWorksheet(worksheet, styleCatalog, cancellationToken);
-                AppendChartsToWorksheet(worksheetPart, worksheet, cancellationToken);
+                worksheetPart.Worksheet = BuildWorksheet(
+                    worksheet,
+                    styleCatalog,
+                    cancellationToken,
+                    () => CompleteUnit($"Rendering cells: {worksheet.Name}"));
+                AppendChartsToWorksheet(
+                    worksheetPart,
+                    worksheet,
+                    cancellationToken,
+                    () => CompleteUnit($"Rendering chart: {worksheet.Name}"));
                 worksheetPart.Worksheet.Save();
 
                 sheets.Append(
@@ -69,6 +113,7 @@ public sealed class XlsxRenderer : IRenderer
                         SheetId = nextSheetId++,
                         Name = worksheet.Name,
                     });
+                CompleteUnit($"Rendered worksheet: {worksheet.Name}");
             }
 
             if (effectiveIssues.Count > 0)
@@ -80,6 +125,7 @@ public sealed class XlsxRenderer : IRenderer
                     ref nextSheetId,
                     "_Issues",
                     BuildIssuesWorksheet(effectiveIssues));
+                CompleteUnit("Rendered worksheet: _Issues");
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -90,10 +136,14 @@ public sealed class XlsxRenderer : IRenderer
                 "_Audit",
                 BuildAuditWorksheet(effectiveOptions),
                 SheetStateValues.Hidden);
+            CompleteUnit("Rendered worksheet: _Audit");
 
             stylesPart.Stylesheet.Save();
             workbookPart.Workbook.Save();
         }
+
+        completedUnits = totalUnits;
+        ReportProgress("Rendering complete.", force: true);
 
         var workbookBytes = output.ToArray();
 
@@ -107,7 +157,8 @@ public sealed class XlsxRenderer : IRenderer
     private static Worksheet BuildWorksheet(
         WorksheetStateModel sheetState,
         StyleCatalog styleCatalog,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action? onUnitCompleted = null)
     {
         var worksheet = new Worksheet();
 
@@ -138,6 +189,7 @@ public sealed class XlsxRenderer : IRenderer
             }
 
             row.Append(CreateCell(cellState, styleCatalog));
+            onUnitCompleted?.Invoke();
         }
 
         ApplyRowGroups(rowMap, sheetState.Options.RowGroups);
@@ -172,7 +224,8 @@ public sealed class XlsxRenderer : IRenderer
     private static void AppendChartsToWorksheet(
         WorksheetPart worksheetPart,
         WorksheetStateModel sheetState,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action? onUnitCompleted = null)
     {
         if (sheetState.Charts.Count == 0)
         {
@@ -195,6 +248,7 @@ public sealed class XlsxRenderer : IRenderer
             var chartPart = drawingsPart.AddNewPart<ChartPart>();
             chartPart.ChartSpace = BuildChartSpace(chart);
             chartPart.ChartSpace.Save();
+            onUnitCompleted?.Invoke();
 
             var chartRelationId = drawingsPart.GetIdOfPart(chartPart);
             worksheetDrawing.Append(CreateChartAnchor(chart, chartRelationId, nextDrawingObjectId++));
@@ -881,6 +935,29 @@ public sealed class XlsxRenderer : IRenderer
         }
 
         sheets.Append(sheet);
+    }
+
+    private static int EstimateTotalUnits(IReadOnlyList<WorksheetStateModel> worksheets, int issueCount)
+    {
+        long units = 1; // hidden audit sheet
+        if (issueCount > 0)
+        {
+            units++;
+        }
+
+        foreach (var worksheet in worksheets)
+        {
+            units += Math.Max(1, worksheet.Cells.Count); // ensure progress per worksheet
+            units += worksheet.Charts.Count;
+            units += 1; // worksheet-level finalize unit
+        }
+
+        if (units < 1)
+        {
+            units = 1;
+        }
+
+        return (int)Math.Min(int.MaxValue, units);
     }
 
     private static Worksheet BuildIssuesWorksheet(IReadOnlyList<Issue> issues)
