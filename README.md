@@ -6,7 +6,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ExcelReportLib)](https://www.nuget.org/packages/ExcelReportLib/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-A .NET 8 library for generating `.xlsx` workbooks from a custom XML DSL (`urn:excelreport:v1`) and runtime data.
+A .NET 8 library for generating `.xlsx` workbooks from a custom XML DSL (`urn:excelreport:v2`) and runtime data.
 
 ## Overview
 
@@ -15,21 +15,24 @@ A .NET 8 library for generating `.xlsx` workbooks from a custom XML DSL (`urn:ex
 1. Parse XML DSL into AST nodes.
 2. Evaluate expressions and resolve styles/components.
 3. Expand layout primitives (`grid`, `repeat`, `use`, `cell`) into concrete coordinates.
-4. Build worksheet state (cells, merges, named areas, sheet options).
+4. Build worksheet state (cells, merges, named areas, sheet options, chart state).
 5. Render OpenXML workbook streams, including `_Issues` and `_Audit` sheets when applicable.
 
 Primary orchestration is handled by `ReportGenerator`.
 
 ## Features
 
-- XML DSL-based report definitions (`urn:excelreport:v1`)
+- XML DSL-based report definitions (`urn:excelreport:v2`)
 - Expression evaluation (`@(root...)`, `@(data...)`, `@(vars...)`)
 - Reusable components via `<component>` and `<use>`
 - External component import via `<componentImport>`
 - Collection expansion via `<repeat>`
 - Style system with imports, composition, borders, and number formats
 - Named areas and formula placeholder resolution (e.g. `#{Detail.Value:Detail.ValueEnd}`)
-- Worksheet options (freeze panes, grouping, auto filter)
+- Formula reference aggregation for repeated component rows (`formulaRef`, `formulaRefScope`)
+- Worksheet options (freeze panes, grouping, auto filter, conditional formatting)
+- Chart rendering (`barStacked`, `line`) with `chartPalette`, `color`, `colorKey`, `colorBy`
+- Async generation API (`AsyncReportGenerator`) with job status polling and rendering progress units
 - OpenXML rendering with diagnostics and generation audit metadata
 
 ## Architecture
@@ -61,15 +64,22 @@ Core modules:
 - `ExpressionEngine`: expression parsing/evaluation with cache support
 - `Styles/StyleResolver`: style indexing and precedence composition
 - `LayoutEngine`: layout expansion, repeat/use expansion, conditional rendering
-- `WorksheetState/WorksheetStateBuilder`: merge/bounds validation and formula placeholder resolution
+- `WorksheetState/WorksheetStateBuilder`: merge/bounds validation and formula/chart reference resolution
 - `Renderer/XlsxRenderer`: OpenXML output generation
 - `ReportGenerator`: end-to-end orchestration and phase logging
+- `AsyncReportGenerator`: non-blocking job execution, status/result retrieval, cancellation, cleanup
 
 ## Installation
 
 ### Prerequisites
 
 - .NET SDK 8.0+
+
+### Add package
+
+```bash
+dotnet add package ExcelReportLib
+```
 
 ### Add as a project reference (from source)
 
@@ -88,7 +98,7 @@ dotnet build ExcelReport.sln
 ### 1) Define DSL
 
 ```xml
-<workbook xmlns="urn:excelreport:v1">
+<workbook xmlns="urn:excelreport:v2">
   <styles>
     <style name="HeaderCell" scope="cell">
       <font bold="true"/>
@@ -147,6 +157,75 @@ else
 }
 ```
 
+## Chart Example (formulaRef-based)
+
+```xml
+<workbook xmlns="urn:excelreport:v2">
+  <chartPalette>
+    <color key="Done" value="#4CAF50" />
+    <color key="Doing" value="#FF9800" />
+    <color key="Todo" value="#BDBDBD" />
+  </chartPalette>
+
+  <component name="TaskRow">
+    <grid>
+      <cell value="@(data.Name)" formulaRef="Task.Name" />
+      <cell c="2" value="@(data.Workload)" formulaRef="Task.Workload" />
+      <cell c="3" value="@(data.State)" formulaRef="Task.State" />
+      <cell c="4" value="@(data.Blocked)" formulaRef="Task.Blocked" />
+    </grid>
+  </component>
+
+  <sheet name="Summary">
+    <repeat direction="down" from="@(root.Tasks)" var="it">
+      <use component="TaskRow" with="@(it)" />
+    </repeat>
+
+    <chart type="barStacked" title="Progress" r="2" c="8" width="10" height="16" category="Task.Name">
+      <series name="Workload" value="Task.Workload" colorBy="Task.State" />
+      <series name="Blocked" value="Task.Blocked" color="#1E88E5" />
+    </chart>
+  </sheet>
+</workbook>
+```
+
+## Async Generation + Progress Polling
+
+```csharp
+using ExcelReportLib;
+using ExcelReportLib.Logger;
+
+var asyncGenerator = new AsyncReportGenerator();
+var jobId = asyncGenerator.StartGenerate(dsl, data);
+
+while (true)
+{
+    if (!asyncGenerator.TryGetStatus(jobId, out var status))
+    {
+        throw new InvalidOperationException("Job not found.");
+    }
+
+    Console.WriteLine(
+        $"state={status.State}, progress={status.ProgressPercent}% " +
+        $"render={status.RenderingCompletedUnits}/{status.RenderingTotalUnits}, " +
+        $"phase={status.CurrentPhase}, elapsed={status.ElapsedMilliseconds}ms");
+
+    if (status.State is AsyncReportJobState.Succeeded or AsyncReportJobState.Failed or AsyncReportJobState.Canceled)
+    {
+        break;
+    }
+
+    await Task.Delay(200);
+}
+
+if (asyncGenerator.TryGetResult(jobId, out var asyncResult) && asyncResult.Succeeded)
+{
+    File.WriteAllBytes("report-async.xlsx", asyncResult.Output!.ToArray());
+}
+
+_ = asyncGenerator.Remove(jobId); // optional cleanup of completed job record
+```
+
 ## API Reference Summary
 
 ### Primary API
@@ -154,6 +233,13 @@ else
 - `ReportGenerator`
   - `Generate(string dsl, object? data, ReportGeneratorOptions? options = null, CancellationToken cancellationToken = default)`
   - `GenerateFromFile(string dslFilePath, object? data, ReportGeneratorOptions? options = null, CancellationToken cancellationToken = default)`
+- `AsyncReportGenerator`
+  - `StartGenerate(string dsl, object? data, ReportGeneratorOptions? options = null)`
+  - `StartGenerateFromFile(string dslFilePath, object? data, ReportGeneratorOptions? options = null)`
+  - `TryGetStatus(string jobId, out AsyncReportJobStatus status)`
+  - `TryGetResult(string jobId, out ReportGeneratorResult result)`
+  - `Cancel(string jobId)`
+  - `Remove(string jobId)`
 - `ReportGeneratorOptions`
   - `EnableSchemaValidation`
   - `TreatExpressionSyntaxErrorAsFatal`
@@ -161,15 +247,19 @@ else
   - `RenderOptions`
 - `ReportGeneratorResult`
   - `Output`, `Issues`, `LogEntries`, `Succeeded`, `AbortedByFatal`, `UnhandledException`
+- `AsyncReportJobStatus`
+  - `State`, `ProgressPercent`, `CurrentPhase`, `ElapsedMilliseconds`
+  - `CurrentPhaseElapsedMilliseconds`, `PhaseElapsedMilliseconds`
+  - `RenderingCompletedUnits`, `RenderingTotalUnits`, `RenderingProgressPercent`
 
 ### Advanced/Composable APIs
 
 - Parsing: `DslParser`, `DslParserOptions`, `DslParseResult`, `Issue`
 - Expression: `IExpressionEngine`, `ExpressionEngine`, `ExpressionContext`, `ExpressionResult`
-- Layout: `ILayoutEngine`, `LayoutEngine`, `LayoutPlan`, `LayoutSheet`, `LayoutCell`
+- Layout: `ILayoutEngine`, `LayoutEngine`, `LayoutPlan`, `LayoutSheet`, `LayoutCell`, `LayoutChart`
 - Styles: `IStyleResolver`, `StyleResolver`, `StylePlan`, `ResolvedStyle`
-- Worksheet state: `IWorksheetStateBuilder`, `WorksheetStateBuilder`, `WorksheetState`, `CellState`
-- Rendering: `IRenderer`, `XlsxRenderer`, `RenderOptions`, `RenderResult`
+- Worksheet state: `IWorksheetStateBuilder`, `WorksheetStateBuilder`, `WorksheetState`, `CellState`, `ChartState`
+- Rendering: `IRenderer`, `XlsxRenderer`, `RenderOptions`, `RenderResult`, `RenderProgressInfo`
 - Logging: `IReportLogger`, `ReportLogger`, `LogEntry`, `LogLevel`, `ReportPhase`
 
 ## Project Structure
@@ -185,12 +275,14 @@ else
 │   │   ├── Styles/
 │   │   ├── WorksheetState/
 │   │   ├── Renderer/
-│   │   └── ReportGenerator.cs
+│   │   ├── ReportGenerator.cs
+│   │   └── AsyncReportGenerator.cs
 │   └── ExcelReportLib.Tests/
 │       ├── DslParserTests.cs
 │       ├── LayoutEngineTests.cs
 │       ├── RendererTests.cs
 │       ├── ReportGeneratorTests.cs
+│       ├── AsyncReportGeneratorTests.cs
 │       └── ...
 └── reports/
 ```
