@@ -8,6 +8,11 @@ Last Updated: 2026-04-05
 - 2026-04-05: `cell@value` 式評価結果が `=` 始まり文字列の場合に数式として扱う仕様を `DslDefinition_DetailDesign.md` へ追記
 - 2026-04-05: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を数式として保持する実装を追加
 - 2026-04-05: 検証として追加2件 + `LayoutEngineTests|ReportGeneratorTests` 74件を実行し、合計76件全通過を確認
+- 2026-04-05: issue #16 follow-up として式ヘルパー `xl`（`Sheet`/`Ref`/`FormulaRef`）を `ExpressionEngine` に追加
+- 2026-04-05: `sheet repeat` の動的参照例を `xl.FormulaRef` 記法へ更新し、`Replace(\"'\", \"''\")` の直接記述を解消
+- 2026-04-05: 検証として `Evaluate_XlFormulaHelper_BuildsEscapedFormulaReference` と `ExpressionEngineTests|ReportGeneratorTests` 58件を実行し全通過を確認
+- 2026-04-05: 検証追加として C# 補間記法 `$\"...\"` を使う2テストを追加し、`ExpressionEngineTests|ReportGeneratorTests` 60件全通過を確認
+- 2026-04-05: 設計書（`DslDefinition` / `SheetReference`）に C#補間記法 `$\"...\"` の利用例を追記
 - 2026-04-05: Node.js 20 deprecation warning 対応として `pr-xunit-tests.yml` / `publish-nuget.yml` に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
 - 2026-04-05: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
 - 2026-04-05: `DslTestFixtures` の参照パスを更新し、`ExcelReportLib.Tests` 198件全通過を確認

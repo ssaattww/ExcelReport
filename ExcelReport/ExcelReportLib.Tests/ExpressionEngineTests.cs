@@ -231,6 +231,38 @@ public sealed class ExpressionEngineTests
         Assert.Equal(new object?[] { "No1" }, pairs.ToArray());
     }
 
+    /// <summary>
+    /// Verifies that xl helper escapes sheet names and builds formula references.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_BuildsEscapedFormulaReference()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            "@(xl.FormulaRef(\"Summary O'Brien\", \"A1\"))",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.False(result.HasError);
+        Assert.Equal("='Summary O''Brien'!A1", result.Value);
+    }
+
+    /// <summary>
+    /// Verifies that interpolated-string syntax works with xl helper methods.
+    /// </summary>
+    [Fact]
+    public void Evaluate_XlFormulaHelper_WithInterpolatedString_Works()
+    {
+        var engine = new ExpressionEngine.ExpressionEngine();
+
+        var result = engine.Evaluate(
+            """@($"=SUM({xl.Ref("Summary O'Brien", "B2:B10")})")""",
+            new ExpressionContext(root: null, data: null));
+
+        Assert.False(result.HasError);
+        Assert.Equal("=SUM('Summary O''Brien'!B2:B10)", result.Value);
+    }
+
     private static Type CreatePublicTypeWithHashInName()
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(
@@ -281,4 +313,3 @@ public sealed class ExpressionEngineTests
         public string City { get; init; } = string.Empty;
     }
 }
-

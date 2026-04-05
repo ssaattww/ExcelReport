@@ -1350,13 +1350,13 @@ public sealed class ReportGeneratorTests
         const string dsl =
             """
             <workbook xmlns="urn:excelreport:v2">
-              <sheet name="Summary">
+              <sheet name="Summary O'Brien">
                 <cell r="1" c="1" value="100" />
               </sheet>
               <sheet name="@(it.Name)" from="@(root.Items)" var="it">
                 <cell r="1" c="1" value="@(it.Name)" />
                 <cell r="1" c="2">
-                  <value>@("='" + it.SourceSheet + "'!A1")</value>
+                  <value>@(xl.FormulaRef(it.SourceSheet, "A1"))</value>
                 </cell>
               </sheet>
             </workbook>
@@ -1366,7 +1366,7 @@ public sealed class ReportGeneratorTests
         {
             Items = new[]
             {
-                new { Name = "ReportA", SourceSheet = "Summary" },
+                new { Name = "ReportA", SourceSheet = "Summary O'Brien" },
                 new { Name = "ReportB", SourceSheet = "ReportA" },
             },
         };
@@ -1383,8 +1383,50 @@ public sealed class ReportGeneratorTests
 
         Assert.NotNull(reportAFormula);
         Assert.NotNull(reportBFormula);
-        Assert.Equal("'Summary'!A1", reportAFormula!.Text);
+        Assert.Equal("'Summary O''Brien'!A1", reportAFormula!.Text);
         Assert.Equal("'ReportA'!A1", reportBFormula!.Text);
+    }
+
+    /// <summary>
+    /// Verifies that sheet-repeat formula can be authored with C# interpolated string and xl helper.
+    /// </summary>
+    [Fact]
+    public void Generate_SheetRepeat_CrossSheetFormulaWithInterpolatedString_E2E()
+    {
+        const string dsl =
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary O'Brien">
+                <cell r="2" c="2" value="10" />
+                <cell r="10" c="2" value="20" />
+              </sheet>
+              <sheet name="@(it.Name)" from="@(root.Items)" var="it">
+                <cell r="1" c="2">
+                  <value>@($"=SUM({xl.Ref(it.SourceSheet, "B2:B10")})")</value>
+                </cell>
+              </sheet>
+            </workbook>
+            """;
+
+        var data = new
+        {
+            Items = new[]
+            {
+                new { Name = "ReportA", SourceSheet = "Summary O'Brien" },
+            },
+        };
+
+        var generator = new ReportGenerator();
+        var result = generator.Generate(dsl, data, CreateOptions());
+
+        Assert.NotNull(result.Output);
+        Assert.False(result.AbortedByFatal);
+
+        using var document = OpenWorkbook(result);
+        var reportFormula = GetCell(document, "ReportA", "B1").CellFormula;
+
+        Assert.NotNull(reportFormula);
+        Assert.Equal("SUM('Summary O''Brien'!B2:B10)", reportFormula!.Text);
     }
 
     /// <summary>

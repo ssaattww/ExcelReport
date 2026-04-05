@@ -10,6 +10,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持
 - 2026-04-05 issue#16 テスト: `LayoutEngineTests` / `ReportGeneratorTests` に動的シート間参照の回帰テストを追加
 - 2026-04-05 issue#16 検証: 追加2件 + `LayoutEngineTests|ReportGeneratorTests` 74件（計76件）通過
+- 2026-04-05 issue#16 follow-up 実装: 式ヘルパー `xl`（`xl.Sheet`/`xl.Ref`/`xl.FormulaRef`）を追加し、シート名エスケープ記述を簡潔化
+- 2026-04-05 issue#16 follow-up 検証: `ExpressionEngineTests|ReportGeneratorTests` 58件通過
+- 2026-04-05 issue#16 follow-up 検証: C#補間記法 `$\"...\"` で `xl.Ref`/`xl.FormulaRef` を使うE2E/単体テストを追加し、回帰 60件通過
+- 2026-04-05 issue#16 follow-up 文書化: 設計書に C#補間記法 `$\"...\"` + `xl.Ref` の記法例を追記
 - 2026-04-05 CI対応: Node.js 20 deprecation warning 対応として workflow 全体に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
 - 2026-04-05 整理: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
 - 2026-04-05 参照更新: `DslTestFixtures` の fixture パスを `.Tests/TestDsl` 基準へ変更
@@ -226,6 +230,7 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-05 issue #16 follow-up: `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を設計書へ追記
 - 2026-04-05 issue #16: 実施記録 `reports/issue16-cross-sheet-reference-design-and-implementation-2026-04-05.md` を追加
 - 2026-04-05 issue #16 follow-up: 例示改善の記録 `reports/issue16-sheet-repeat-example-clarification-2026-04-05.md` を追加
+- 2026-04-05 issue #16 follow-up: `xl` 式ヘルパー導入の記録 `reports/issue16-xl-formula-helper-2026-04-05.md` を追加
 - 2026-04-05 CI warning対応: `.github/workflows/pr-xunit-tests.yml` / `publish-nuget.yml` に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` を追加
 - 2026-04-05 TestDsl整理: 旧 `ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReportLib.Tests/TestDsl` へ移動
 - 2026-04-05 回帰検証: `ExcelReportLib.Tests` 全体198件通過を確認
