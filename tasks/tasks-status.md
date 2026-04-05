@@ -5,6 +5,13 @@ Scope: ExcelReport開発 - issue #37 chart作成対応
 
 ## Progress Summary
 
+- 2026-04-05 issue#37 レビュー実施: SubAgentレビューを3チャンク（DSL/AST/XSD, Layout/WorksheetState, Renderer/Tests/Docs）に分割し、各結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` へ出力
+- 2026-04-05 issue#37 レビュー統合: `reports/subagent-review-issue37-summary-2026-04-05.md` を作成し、指摘を重大度別に集約
+- 2026-04-05 issue#37 指摘対応: chart series OpenXML子要素順（`dPt`/`spPr`）を修正し、`RendererTests`/`ReportGeneratorTests` に schema妥当性検証を追加
+- 2026-04-05 issue#37 指摘対応: `formulaRef` 系列解決を named area から分離（専用 series map 化）し、`*End` 衝突時の誤解決を回避
+- 2026-04-05 issue#37 指摘対応: `TestDsl/DslDefinition_v2.xsd` を Design版と同期（`sheet/repeat` の `from/var` 属性/要素両対応）
+- 2026-04-05 issue#37 指摘対応: `DslParser` の静的座標検証を rows/cols省略時も Excel上限で有効化、ルート要素名検証を追加
+- 2026-04-05 検証: `dotnet test ExcelReport/ExcelReportLib.Tests/ExcelReportLib.Tests.csproj --no-restore` 実行で `Passed 189, Failed 0`
 - 2026-04-05 追跡更新: `Design/Chart/Chart_DetailDesign.md` を追跡対象に追加し、tasks/phases の進捗記録に明示
 - 2026-04-05 issue#37 設計レビュー: `Design/Chart/Chart_DetailDesign.md` をレビューし、実装方針を策定
 - 2026-04-05 issue#37 方針レビュー: SubAgent（Socrates）に実装方針レビューを依頼し、指摘を反映した方針v2で確定

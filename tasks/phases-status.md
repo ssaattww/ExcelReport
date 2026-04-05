@@ -4,6 +4,13 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: issue#37 のSubAgentレビューを3分割で実施し、各レビュー結果を `reports/subagent-review-issue37-chunk{1..3}-2026-04-05.md` に出力
+- 2026-04-05: レビュー統合サマリー `reports/subagent-review-issue37-summary-2026-04-05.md` を追加
+- 2026-04-05: レビューHigh指摘対応として chart series OpenXML子要素順を修正し、chart XMLスキーマ妥当性テストを追加
+- 2026-04-05: `formulaRef` 系列解決を専用map化し、named area `<name>End` との衝突による誤解決を回避
+- 2026-04-05: `TestDsl/DslDefinition_v2.xsd` を Design版へ同期し、`sheet/repeat` の `from/var` 属性・子要素両対応を反映
+- 2026-04-05: `DslParser` の静的座標検証（rows/cols省略時）とルート要素名検証を強化
+- 2026-04-05: 回帰として `dotnet test --no-restore` 全件実行し `Passed 189, Failed 0` を確認
 - 2026-04-05: issue#37 Chart設計書 `Design/Chart/Chart_DetailDesign.md` を追跡対象へ追加し、tasks/phases の進捗管理に反映
 - 2026-04-05: issue#37 設計レビューを実施し、実装方針を策定（chart DSL/AST/XSD -> Layout -> WorksheetState -> Renderer）
 - 2026-04-05: SubAgent（Socrates）に実装方針レビューを依頼し、scopePath維持・責務分離・異常系方針の指摘を反映
