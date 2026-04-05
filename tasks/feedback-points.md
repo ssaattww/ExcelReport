@@ -91,6 +91,8 @@ Last Updated: 2026-04-05
 | FP97 | README更新ではClosedXMLとの対比説明は不要。Chart/非同期の機能説明を中心に記載する | 対応済み | 2026-04-05 |
 | FP98 | QuickStartはcomponent定義ベースにし、`grid` / `repeat` / `use component` を含む実践的な例にする | 対応済み | 2026-04-05 |
 | FP99 | PR作成時は issue #48 と紐付ける（`Closes #48` など） | 対応済み | 2026-04-05 |
+| FP100 | GitHub Actions の Node.js 20 廃止警告に対応し、workflow を Node24 実行へ移行準備する | 対応済み | 2026-04-05 |
+| FP101 | `ExcelReportLibTest/TestDsl` は削除し、必要fixtureはテストプロジェクト配下へ整理する | 対応済み | 2026-04-05 |
 ---
 
 ## 対応履歴

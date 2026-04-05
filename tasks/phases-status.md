@@ -4,6 +4,9 @@ Last Updated: 2026-04-05
 
 ## Overall Progress
 
+- 2026-04-05: Node.js 20 deprecation warning 対応として `pr-xunit-tests.yml` / `publish-nuget.yml` に `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` を追加
+- 2026-04-05: `ExcelReport/ExcelReportLibTest/TestDsl` を削除し、fixture を `ExcelReport/ExcelReportLib.Tests/TestDsl` へ移設
+- 2026-04-05: `DslTestFixtures` の参照パスを更新し、`ExcelReportLib.Tests` 198件全通過を確認
 - 2026-04-05: README更新を含む PR #52 を作成し、`Closes #48` を本文に含めて issue連携
 - 2026-04-05: README QuickStart を component定義ベース（`component` + `grid` + `repeat` + `use`）へ更新し、サンプルを実運用寄りに改善
 - 2026-04-05: README刷新として `README.md` / `README.ja.md` を更新し、DSL `urn:excelreport:v2`・Chart機能・Async API・進捗ポーリング例を反映

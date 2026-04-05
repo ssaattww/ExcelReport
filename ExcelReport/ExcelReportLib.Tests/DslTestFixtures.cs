@@ -13,7 +13,7 @@ internal static class DslTestFixtures
     private static readonly string ProjectDirectory = ResolveProjectDirectory();
 
     internal static string FixtureDirectory { get; } = Path.GetFullPath(
-        Path.Combine(ProjectDirectory, "..", "ExcelReportLibTest", "TestDsl"));
+        Path.Combine(ProjectDirectory, "TestDsl"));
 
     internal static string GetPath(string fileName) => Path.Combine(FixtureDirectory, fileName);
 
@@ -59,4 +59,3 @@ internal static class DslTestFixtures
         Path.GetDirectoryName(callerFilePath)
         ?? throw new InvalidOperationException("Unable to determine the test project directory.");
 }
-
