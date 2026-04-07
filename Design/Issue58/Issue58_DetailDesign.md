@@ -197,6 +197,35 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 - 展開後のセル位置が連続し、欠落・重複がないこと
 
 
+### 10.7 セル値の具体例（Markdownテーブル）
+
+#### 10.7.1 セル値トリガ -> DSL 変換例
+| Excelセル値（例） | 意味 | 変換後DSL（例） | 備考 |
+|---|---|---|---|
+| `請求書` | 固定文字列 | `<cell value="請求書" />` | そのまま値セル |
+| `@item.Name` | 式評価値 | `<cell value="@item.Name" />` | 実行時評価 |
+| `{{use:Header}}` | コンポーネント挿入 | `<use component="Header" />` | 挿入トリガ |
+| `{{use:ItemRow, from:@items, var:item}}` | 反復+挿入 | `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>` | repeat展開 |
+| `=SUM(B2:B10)` | Excel数式 | `<cell formula="SUM(B2:B10)" />` （または既存規約へ正規化） | 実装時に統一 |
+
+#### 10.7.2 入れ子構成のセル配置イメージ（Excel側）
+| シート | セル | 入力値 | 役割 |
+|---|---|---|---|
+| `__component_Header` | `A1` | `請求書` | ヘッダー定義 |
+| `__component_GroupBlock` | `A1` | `@group.Name` | グループ見出し |
+| `__component_GroupBlock` | `A2` | `{{use:ItemRow, from:@group.Items, var:item}}` | 子component反復挿入 |
+| `Invoice` | `A1` | `{{use:Header}}` | 先頭ヘッダー挿入 |
+| `Invoice` | `A3` | `{{use:GroupBlock, from:@groups, var:group}}` | グループ単位で入れ子展開 |
+
+#### 10.7.3 罫線の競合が起こるセル例
+| 位置 | 親component指定 | 子component指定 | 解決結果 |
+|---|---|---|---|
+| `Invoice!A10` の bottom | `thin` | `dashed` | 子優先で `dashed`（Warning記録） |
+| `Invoice!B10` の right | `medium` | 未指定 | 親の `medium` を継承 |
+| `Invoice!C10` の top | 未指定 | `thin` | 子の `thin` を採用 |
+| `Invoice!D10` の left | `thin` | `thin` | 同値のためWarningなし |
+
+
 ## 11. セル書式方針（特に罫線）
 
 ### 11.1 基本方針
