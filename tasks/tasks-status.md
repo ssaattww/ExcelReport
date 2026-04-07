@@ -1,10 +1,13 @@
 # Tasks Status
 
-Last Updated: 2026-04-05
+Last Updated: 2026-04-07
 Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-07 issue#58 要件取得: `gh` 非依存で GitHub issue URL から本文を取得し、設計ドラフトを承認依頼版へ更新
+- 2026-04-07 issue#58 着手: 要件本文未取得のため調査レポート `reports/issue58-investigation-2026-04-07.md` を作成
+- 2026-04-07 issue#58 設計: 承認前ドラフト `Design/Issue58/Issue58_DetailDesign.md` を作成（要件確定待ち）
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義
 - 2026-04-05 issue#16 仕様化: `cell@value` の式評価結果が `=` 始まり文字列なら数式扱いとする仕様を DSL 設計書へ反映
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持

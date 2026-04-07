@@ -1,9 +1,12 @@
 # Phases Status
 
-Last Updated: 2026-04-05
+Last Updated: 2026-04-07
 
 ## Overall Progress
 
+- 2026-04-07: issue #58 の本文を URL 直接参照で取得し、設計を要件反映版へ更新（承認待ち）
+- 2026-04-07: issue #58 対応を開始し、要件未取得リスクを `reports/issue58-investigation-2026-04-07.md` に記録
+- 2026-04-07: issue #58 の実装前ステップとして設計ドラフト `Design/Issue58/Issue58_DetailDesign.md` を作成し、ユーザー承認待ちへ遷移
 - 2026-04-05: issue #16 向けに `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat 生成シート間参照の仕様を定義
 - 2026-04-05: `cell@value` 式評価結果が `=` 始まり文字列の場合に数式として扱う仕様を `DslDefinition_DetailDesign.md` へ追記
 - 2026-04-05: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を数式として保持する実装を追加
