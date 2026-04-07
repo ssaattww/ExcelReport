@@ -5,6 +5,7 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-07 issue#58 罫線方針追加: 入れ子component時のborder優先順位・辺単位合成・競合Warning・検証ケースを設計へ追記
 - 2026-04-07 issue#58 設計具体化: 入れ子コンポーネント定義/シート表現/挿入表現をDSL例付きで追記（実装は未着手）
 - 2026-04-07 issue#58 方針見直し: A/B案にC案を加えて比較し、初期採用はA案を維持。対象範囲外へグラフ作成機能を明記
 - 2026-04-07 issue#58 要件取得: `gh` 非依存で GitHub issue URL から本文を取得し、設計ドラフトを承認依頼版へ更新
