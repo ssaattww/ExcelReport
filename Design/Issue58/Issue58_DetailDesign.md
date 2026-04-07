@@ -118,3 +118,80 @@ Issue本文（2026-04-07作成）から、以下を設計対象とする。
 ---
 
 **承認依頼**: 上記3点がOKであれば「承認」と返信ください。承認後、TDDで実装フェーズへ移行します。
+
+## 10. 具体表現設計（入れ子コンポーネント / シート定義 / 挿入）
+
+### 10.1 コンポーネント定義シートの表し方
+- シート名規約: `__component_<ComponentName>`
+- 例:
+  - `__component_Header`
+  - `__component_ItemRow`
+  - `__component_GroupBlock`
+
+このシートのセル配置を、そのまま component のレイアウト定義へ変換する。
+
+### 10.2 通常シート定義の表し方
+- コンポーネント定義シート以外は通常 `<sheet>` として扱う。
+- 例: `Invoice` シートは DSL の `<sheet name="Invoice">` へ変換。
+
+### 10.3 コンポーネント挿入の表し方（use）
+Excel側で次の記法を挿入トリガとして扱う（初版案）:
+- セル値: `{{use:Header}}`  -> `<use component="Header" />`
+- セル値: `{{use:ItemRow, from:@items, var:item}}` -> `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>`
+
+> 注: 文字列トリガ構文は初版の暫定仕様。将来は名前付き範囲等への置換余地あり。
+
+### 10.4 入れ子コンポーネント定義の例
+
+#### Excelテンプレート（概念）
+- `__component_Header`: タイトル行
+- `__component_ItemRow`: 明細1行（品名/数量/単価）
+- `__component_GroupBlock`: 見出し + `{{use:ItemRow, from:@group.Items, var:item}}` を含む
+- `Invoice`: `{{use:Header}}` の下に `{{use:GroupBlock, from:@groups, var:group}}`
+
+#### 変換後 DSL 例（設計イメージ）
+```xml
+<workbook xmlns="urn:excelreport:v2">
+  <components>
+    <component name="Header">
+      <grid>
+        <cell value="請求書" />
+      </grid>
+    </component>
+
+    <component name="ItemRow">
+      <grid>
+        <cell value="@item.Name" />
+        <cell value="@item.Qty" />
+        <cell value="@item.Price" />
+      </grid>
+    </component>
+
+    <component name="GroupBlock">
+      <grid>
+        <cell value="@group.Name" />
+      </grid>
+      <repeat from="@group.Items" var="item">
+        <use component="ItemRow" />
+      </repeat>
+    </component>
+  </components>
+
+  <sheet name="Invoice">
+    <use component="Header" />
+    <repeat from="@groups" var="group">
+      <use component="GroupBlock" />
+    </repeat>
+  </sheet>
+</workbook>
+```
+
+### 10.5 挿入時の座標ルール（初版）
+- `use` は「トリガセル位置」を挿入起点にする。
+- component の高さ/幅ぶん展開し、後続行は下方へシフト（既存 LayoutEngine 規約に追従）。
+- `repeat + use` は反復ごとに順次展開する。
+
+### 10.6 検証観点（例ベース）
+- 入れ子 repeat/use で scope (`group` / `item`) が衝突しないこと
+- `sheet` 直下と component 内で同名 var を使っても期待通りに解決されること
+- 展開後のセル位置が連続し、欠落・重複がないこと
