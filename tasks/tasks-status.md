@@ -1,10 +1,11 @@
 # Tasks Status
 
-Last Updated: 2026-04-07
+Last Updated: 2026-04-11
 Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-11 issue#58 可視化強化: Excelセル座標と一致するセルマトリクス表 + SVG図を設計書へ追加
 - 2026-04-07 issue#58 懸念深掘り: 実装前チェックリスト（変換契約/展開境界/罫線/性能）を設計書へ追加
 - 2026-04-07 issue#58 具体例拡張: セル値/挿入トリガ/罫線競合をMarkdownテーブルで設計書に追記
 - 2026-04-07 issue#58 罫線方針追加: 入れ子component時のborder優先順位・辺単位合成・競合Warning・検証ケースを設計へ追記

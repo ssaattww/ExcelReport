@@ -226,6 +226,38 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | `Invoice!D10` の left | `thin` | `thin` | 同値のためWarningなし |
 
 
+### 10.8 Excelセル座標と一致する表現（セルマトリクス）
+
+#### 10.8.1 `Invoice` シート（入力テンプレート）
+| Row\Col | A | B | C | D |
+|---|---|---|---|---|
+| 1 | `{{use:Header}}` |  |  |  |
+| 2 |  |  |  |  |
+| 3 | `{{use:GroupBlock, from:@groups, var:group}}` |  |  |  |
+| 4 |  |  |  |  |
+
+#### 10.8.2 `__component_GroupBlock` シート（入力テンプレート）
+| Row\Col | A | B | C | D |
+|---|---|---|---|---|
+| 1 | `@group.Name` |  |  |  |
+| 2 | `{{use:ItemRow, from:@group.Items, var:item}}` |  |  |  |
+| 3 |  |  |  |  |
+| 4 |  |  |  |  |
+
+#### 10.8.3 罫線状態マトリクス（展開後イメージ）
+| Row\Col | A | B | C | D |
+|---|---|---|---|---|
+| 1 | `A1` title, outer border | outer border | outer border | outer border |
+| 2 | `A2` group label | child border | child border | child border |
+| 3 | child row | child border | child border | child border |
+| 4 | `A4` bottom conflict (`parent:thin`,`child:dashed`) | `B4` right=medium | `C4` top=thin | `D4` left=thin |
+
+#### 10.8.4 SVG可視化（セル座標対応）
+以下の図は、上記 10.8.3 のセル状態を A1〜D4 の座標で可視化したもの。
+
+![Issue58 cell style state](assets/cell-style-state-example.svg)
+
+
 ## 11. セル書式方針（特に罫線）
 
 ### 11.1 基本方針

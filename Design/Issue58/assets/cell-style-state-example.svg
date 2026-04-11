@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="420" viewBox="0 0 980 420">
+  <style>
+    .title { font: bold 20px sans-serif; }
+    .label { font: 14px sans-serif; }
+    .celltxt { font: 12px sans-serif; }
+    .thin { stroke:#2f5d8a; stroke-width:1; fill:#ffffff; }
+    .thick { stroke:#1d3557; stroke-width:2; fill:#eef6ff; }
+    .warn { fill:#ffe9e9; stroke:#c62828; stroke-width:2; }
+    .note { font: 12px sans-serif; fill:#333; }
+  </style>
+
+  <text x="20" y="28" class="title">Issue #58: Nested Component Border Resolution (Excel Cell Aligned)</text>
+
+  <!-- Grid origin -->
+  <g transform="translate(80,70)">
+    <!-- headers -->
+    <text x="70" y="-18" class="label">A</text>
+    <text x="210" y="-18" class="label">B</text>
+    <text x="350" y="-18" class="label">C</text>
+    <text x="490" y="-18" class="label">D</text>
+
+    <text x="-25" y="45" class="label">1</text>
+    <text x="-25" y="115" class="label">2</text>
+    <text x="-25" y="185" class="label">3</text>
+    <text x="-25" y="255" class="label">4</text>
+
+    <!-- row 1 -->
+    <rect x="0" y="0" width="140" height="70" class="thick" />
+    <rect x="140" y="0" width="140" height="70" class="thick" />
+    <rect x="280" y="0" width="140" height="70" class="thick" />
+    <rect x="420" y="0" width="140" height="70" class="thick" />
+
+    <!-- row 2 -->
+    <rect x="0" y="70" width="140" height="70" class="thin" />
+    <rect x="140" y="70" width="140" height="70" class="thin" />
+    <rect x="280" y="70" width="140" height="70" class="thin" />
+    <rect x="420" y="70" width="140" height="70" class="thin" />
+
+    <!-- row 3 -->
+    <rect x="0" y="140" width="140" height="70" class="thin" />
+    <rect x="140" y="140" width="140" height="70" class="thin" />
+    <rect x="280" y="140" width="140" height="70" class="thin" />
+    <rect x="420" y="140" width="140" height="70" class="thin" />
+
+    <!-- row 4 with conflict on A4 -->
+    <rect x="0" y="210" width="140" height="70" class="warn" />
+    <rect x="140" y="210" width="140" height="70" class="thick" />
+    <rect x="280" y="210" width="140" height="70" class="thin" />
+    <rect x="420" y="210" width="140" height="70" class="thin" />
+
+    <!-- text labels -->
+    <text x="8" y="20" class="celltxt">A1 Header</text>
+    <text x="8" y="35" class="celltxt">value: 請求書</text>
+
+    <text x="8" y="90" class="celltxt">A2 @group.Name</text>
+    <text x="8" y="105" class="celltxt">use: ItemRow</text>
+
+    <text x="8" y="230" class="celltxt">A4 conflict</text>
+    <text x="8" y="245" class="celltxt">parent: thin</text>
+    <text x="8" y="260" class="celltxt">child: dashed</text>
+
+    <text x="148" y="230" class="celltxt">B4 right=medium</text>
+    <text x="288" y="230" class="celltxt">C4 top=thin</text>
+    <text x="428" y="230" class="celltxt">D4 left=thin</text>
+  </g>
+
+  <g transform="translate(680,90)">
+    <text class="label" x="0" y="0">Legend</text>
+    <rect x="0" y="14" width="22" height="14" class="thick" />
+    <text x="30" y="26" class="note">Parent outer border</text>
+    <rect x="0" y="40" width="22" height="14" class="thin" />
+    <text x="30" y="52" class="note">Child/default border</text>
+    <rect x="0" y="66" width="22" height="14" class="warn" />
+    <text x="30" y="78" class="note">Conflict (child wins + warning)</text>
+  </g>
+</svg>
