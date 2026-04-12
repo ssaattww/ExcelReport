@@ -333,6 +333,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 記録: `reports/issue58-output-svg-refresh-2026-04-12.md` を作成
 - 2026-04-12 issue #58 再修正: 10.8.9/10.8.10 の repeat 解釈を見直し、2件の `GroupBlock` を `B4:D7` と `B8:D9` へ連続配置、親フレームを `A3:E10` へ拡張する図と説明へ更新
 - 2026-04-12 記録: `reports/issue58-repeat-frame-aggregation-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.3-codex` / `high`）で 10.8/10.9/10.10 を設計レビューし、`repeat` 時の `H` 定義、`GroupBlock` 有効幅、`styleOverflow=edge` の行方向、連続インスタンス境界罫線の未定義を指摘事項として整理
+- 2026-04-12 記録: `reports/issue58-subagent-design-review-2026-04-12.md` を作成
 
 ## Status Definitions
 
