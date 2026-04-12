@@ -4,6 +4,9 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の component range 解決第1段として `ExcelTemplateComponentRangeResolver` を追加し、defined name 優先 + candidate bbox 自動判定を実装
+- 2026-04-13: issue #58 の component range resolver を 5件の unit test と全体223件回帰で検証
+- 2026-04-13: issue #58 の component range resolver review は `gpt-5.4` / `high` で再試行したが、network 制限により中断したため report に記録
 - 2026-04-13: issue #58 の ExcelTemplate 中間モデル第1段として `ExcelTemplateExtractor` と workbook/sheet/cell/style/component range モデルを追加
 - 2026-04-13: issue #58 の extractor を xlsx 読取テストで固定し、追加2件 + 全体218件通過を確認
 - 2026-04-13: issue #58 の extractor 実装内容と review 試行結果を `reports/issue58-excel-template-extractor-2026-04-13.md` に記録

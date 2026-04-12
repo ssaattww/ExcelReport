@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateComponentRangeResolver` を追加し、`__component_<Name>` の defined name 優先解決と candidate bbox 自動判定を実装
+- 2026-04-13 issue#58 検証: `ExcelTemplateComponentRangeResolverTests` 5件通過、`ExcelReportLib.Tests` 全体223件通過
+- 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-component-range-resolver-review-2026-04-13.md` に記録
+- 2026-04-13 issue#58 記録: component range resolver 実装内容を `reports/issue58-component-range-resolver-2026-04-13.md` に記録
 - 2026-04-13 issue#58 実装継続: `ExcelTemplateExtractor` と中間モデル（workbook/sheet/cell/style/component range）を追加し、xlsx から sheet/cell/formula/defined name/merged cell を読取可能化
 - 2026-04-13 issue#58 検証: `ExcelTemplateExtractorTests` 2件通過、`ExcelReportLib.Tests` 全体218件通過
 - 2026-04-13 issue#58 記録: extractor 実装と review 試行結果を `reports/issue58-excel-template-extractor-2026-04-13.md` に記録
@@ -255,6 +259,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Additional Work
 
+- 2026-04-13 issue #58 実装: `ExcelTemplateComponentRangeResolver` を追加し、`__component_range_<Name>` の明示範囲と candidate bbox 自動判定を実装
+- 2026-04-13 issue #58 実装: `IssueKind.InvalidComponentRange` / `IssueKind.EmptyComponentRange` を追加
+- 2026-04-13 issue #58 テスト: `ExcelTemplateComponentRangeResolverTests` を追加し、defined name優先 / bbox自動判定 / 空範囲Error / 別シート参照Error を固定
+- 2026-04-13 issue #58 review: `gpt-5.4` / `high` review を再試行したが、network 制限で `codex review` が中断したため結果を report に記録
+- 2026-04-13 issue #58 記録: `reports/issue58-component-range-resolver-2026-04-13.md` / `reports/issue58-component-range-resolver-review-2026-04-13.md` を追加
 - 2026-04-12 issue #58 実装: `cell@formula` / `use@styleOverflow` を XSD / AST / `ValidateDsl` / `LayoutEngine` へ追加
 - 2026-04-12 issue #58 実装: `styleOverflow=edge` を `LayoutEngine` post-expand で実装し、anchor 矩形 seed 書式の right/down/corner trailing edge copy に対応
 - 2026-04-12 issue #58 実装: `IssueKind.TemplateRangeOverflow` を追加し、ExcelTemplate 向け anchor overflow を Warning として記録

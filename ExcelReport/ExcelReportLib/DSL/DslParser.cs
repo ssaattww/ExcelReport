@@ -1082,6 +1082,14 @@ namespace ExcelReportLib.DSL
         /// </summary>
         TemplateRangeOverflow,
         /// <summary>
+        /// An ExcelTemplate component range definition was malformed or pointed to the wrong sheet.
+        /// </summary>
+        InvalidComponentRange,
+        /// <summary>
+        /// An ExcelTemplate component range could not be inferred because it had no candidate cells.
+        /// </summary>
+        EmptyComponentRange,
+        /// <summary>
         /// A formula reference series must be a single continuous one-dimensional range.
         /// </summary>
         FormulaRefSeriesNot1DContinuous,
