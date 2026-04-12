@@ -1,9 +1,20 @@
 # Phases Status
 
-Last Updated: 2026-04-11
+Last Updated: 2026-04-12
 
 ## Overall Progress
 
+- 2026-04-12: issue #58 設計へ「挿入先書式は任意」を明記し、3x3外枠+中央use の外枠追従拡張ルール（子範囲+余白）を追加
+- 2026-04-12: issue #58 のサイズ不一致対応を列方向まで拡張し、`TemplateRangeOverflow` の `deltaRows/deltaCols` 記録を定義
+- 2026-04-12: issue #58 挿入元/挿入先SVGへテンプレート定義罫線を反映し、出力結果SVGとの書式整合を改善
+- 2026-04-12: issue #58 SVG表現を説明用強調から実運用見た目へ修正し、ExcelTemplate/出力Excelと同系統の見た目に統一
+- 2026-04-12: issue #58 展開後SVGの書式スタイルを再検討し、罫線ルール準拠（親外枠/子明細bottom/競合辺）へ修正
+- 2026-04-12: issue #58 設計へ C#サンプルデータ展開後セル値のSVG（`expanded-cell-values-from-csharp.svg`）を追加
+- 2026-04-12: issue #58 設計でセル表示値SVGを挿入先/挿入元に分離し、書式説明はMarkdownテーブルへ移管
+- 2026-04-12: issue #58 設計へ挿入データのC# class定義（`InvoiceData/GroupData/ItemData`）とサンプル入力を追加
+- 2026-04-12: issue #58 設計へコンポーネント定義範囲（DefinedName明示指定 + 自動判定）と検証ルールを追加
+- 2026-04-12: issue #58 設計にサイズ不一致（挿入元 > 挿入先想定範囲）時の展開/書式保持ルールを追加し、`TemplateRangeOverflow` Warning と結合セル境界Error条件を明記
+- 2026-04-12: issue #58 の設計書名を「Excelテンプレート対応」に明確化し、ファイル名を `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` に更新
 - 2026-04-11: issue #58 設計にセル座標一致の表現（A-D列マトリクス）とSVG可視化を追加
 - 2026-04-07: issue #58 実装前リスクを詳細化し、高コストな後戻り項目の事前合意リストを追加
 - 2026-04-07: issue #58 設計にセル値の具体例テーブルを追加し、変換イメージを明確化
@@ -12,7 +23,7 @@ Last Updated: 2026-04-11
 - 2026-04-07: issue #58 設計を見直し、A/B/C比較の上でA案採用理由を明文化。対象範囲外にグラフ作成機能を追記
 - 2026-04-07: issue #58 の本文を URL 直接参照で取得し、設計を要件反映版へ更新（承認待ち）
 - 2026-04-07: issue #58 対応を開始し、要件未取得リスクを `reports/issue58-investigation-2026-04-07.md` に記録
-- 2026-04-07: issue #58 の実装前ステップとして設計ドラフト `Design/Issue58/Issue58_DetailDesign.md` を作成し、ユーザー承認待ちへ遷移
+- 2026-04-07: issue #58 の実装前ステップとして設計ドラフト `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` を作成し、ユーザー承認待ちへ遷移
 - 2026-04-05: issue #16 向けに `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat 生成シート間参照の仕様を定義
 - 2026-04-05: `cell@value` 式評価結果が `=` 始まり文字列の場合に数式として扱う仕様を `DslDefinition_DetailDesign.md` へ追記
 - 2026-04-05: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を数式として保持する実装を追加
@@ -203,6 +214,13 @@ Last Updated: 2026-04-11
 - 2026-04-05: 調査記録 `reports/pr49-codex-review-followup-2026-04-05.md` を追加
 - 2026-04-05: 設計書 `DslDefinition_DetailDesign.md` に属性逆引き章を追加（`area` に限定しない属性単位整理）
 - 2026-04-05: issue #16 follow-up として `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を `Design/SheetReference/SheetReference_DetailDesign.md` に追記
+- 2026-04-12: issue #58 設計補足として `Invoice` の `use` 書式は任意（mustではない）を 10.8.3 注記へ追記
+- 2026-04-12: issue #58 で SVG 例を `3x3挿入先 + 中央use` / `3x4子` へ更新し、書式overflow比較図を追加
+- 2026-04-12: issue #58 で `styleOverflow`（`none`/`edge`）ポリシーと `A1:C1` / `A1:B1` ケースの決定ルールを設計へ反映
+- 2026-04-12: issue #58 で 10.10.1 の挿入元SVGを復元し、簡略例から `GroupBlock/ItemRow` 正式フォーマットへ差し戻し
+- 2026-04-12: issue #58 で図の参照を 10.8 節へ集約（10.8.8/10.8.9）し、10.8.3 の破線除去 + `use:Header` 追加を反映
+- 2026-04-12: issue #58 で 10.8.10 は状態遷移図を省略し、状態整理テーブル中心の記載へ調整
+- 2026-04-12: issue #58 で 10.8.9 出力SVGを `A1:F1` / `A3:E8` 状態整理ケースへ更新し、説明文も先頭GroupBlock抜粋へ整合
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%

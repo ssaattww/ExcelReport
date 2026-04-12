@@ -1,10 +1,21 @@
 # Tasks Status
 
-Last Updated: 2026-04-11
-Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / README刷新（Chart・Async）
+Last Updated: 2026-04-12
+Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応設計 / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-12 issue#58 設計修正: 挿入先書式は任意（mustではない）を明記し、3x3外枠+中央useの外枠追従拡張ルール（子範囲+余白）を追加
+- 2026-04-12 issue#58 設計修正: サイズ不一致を行方向だけでなく列方向も対象化し、`TemplateRangeOverflow` に `deltaRows/deltaCols` 記録を追加
+- 2026-04-12 issue#58 可視化再修正: 挿入元/挿入先SVGにもテンプレート定義罫線（実線/破線）を反映し、出力SVGとの見た目整合を改善
+- 2026-04-12 issue#58 可視化方針修正: SVGを説明用着色から実運用見た目へ変更し、ExcelTemplate/出力Excelに寄せた表記へ統一
+- 2026-04-12 issue#58 可視化修正: 展開後SVGの書式表現を再設計し、親外枠/子明細bottom/競合辺(子優先+Warning)を線種で明示
+- 2026-04-12 issue#58 可視化追加: C#サンプルデータ展開後のセル値SVG（`expanded-cell-values-from-csharp.svg`）を設計書へ追加
+- 2026-04-12 issue#58 可視化更新: セル表示値のSVGを挿入先/挿入元で分離（`insert-target-cell-values.svg` / `insert-source-cell-values.svg`）、書式説明はMarkdown表へ移管
+- 2026-04-12 issue#58 設計補完: 挿入データ用C# class（`InvoiceData/GroupData/ItemData`）とサンプルデータを設計書へ追加
+- 2026-04-12 issue#58 範囲定義設計: コンポーネント定義範囲を「DefinedName明示指定 + 自動判定フォールバック」で定義し、検証/エラー条件を追加
+- 2026-04-12 issue#58 設計補強: 挿入元サイズ > 挿入先想定範囲（例: 3行を1行定義領域へ挿入）の書式保持ルール、`TemplateRangeOverflow` Warning、結合セル境界Errorを追記
+- 2026-04-12 issue#58 命名改善: 設計書タイトルを「Excelテンプレート対応」へ変更し、ファイル名を `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` へ更新
 - 2026-04-11 issue#58 可視化強化: Excelセル座標と一致するセルマトリクス表 + SVG図を設計書へ追加
 - 2026-04-07 issue#58 懸念深掘り: 実装前チェックリスト（変換契約/展開境界/罫線/性能）を設計書へ追加
 - 2026-04-07 issue#58 具体例拡張: セル値/挿入トリガ/罫線競合をMarkdownテーブルで設計書に追記
@@ -13,7 +24,7 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-07 issue#58 方針見直し: A/B案にC案を加えて比較し、初期採用はA案を維持。対象範囲外へグラフ作成機能を明記
 - 2026-04-07 issue#58 要件取得: `gh` 非依存で GitHub issue URL から本文を取得し、設計ドラフトを承認依頼版へ更新
 - 2026-04-07 issue#58 着手: 要件本文未取得のため調査レポート `reports/issue58-investigation-2026-04-07.md` を作成
-- 2026-04-07 issue#58 設計: 承認前ドラフト `Design/Issue58/Issue58_DetailDesign.md` を作成（要件確定待ち）
+- 2026-04-07 issue#58 設計: 承認前ドラフト `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` を作成（要件確定待ち）
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義
 - 2026-04-05 issue#16 仕様化: `cell@value` の式評価結果が `=` 始まり文字列なら数式扱いとする仕様を DSL 設計書へ反映
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持
@@ -303,6 +314,23 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-03-19 CI/CD: GitHub Releaseのpre-release/release種別に連動してNuGet版種を同期するよう `publish-nuget.yml` を更新
 
 - 2026-03-19 ドキュメント運用: READMEからNuGet公開手順を削除し、`reports/nuget-publish-process-2026-03-19.md` に移管
+
+- 2026-04-12 issue #58 設計補足: `Invoice` の `use` セル書式は必須ではない旨を `ExcelTemplate_DetailDesign.md` 10.8.3 注記に明記
+- 2026-04-12 記録: `reports/issue58-invoice-use-style-optional-note-2026-04-12.md` を作成
+- 2026-04-12 issue #58 設計更新: SVG例を `3x3挿入先 + 中央use` / `3x4子component` に差し替え、書式overflow比較SVGを追加
+- 2026-04-12 issue #58 設計更新: `styleOverflow`（`none`/`edge`、既定`none`）を追加し、`A1:C1` / `A1:B1` の拡張挙動を明確化
+- 2026-04-12 記録: `reports/issue58-style-overflow-policy-2026-04-12.md` を作成
+- 2026-04-12 issue #58 修正: 10.10.1 に挿入元（C#展開後 GroupBlock インスタンス）SVGを復元し、既存出力図を 10.10.2 へ再配置
+- 2026-04-12 issue #58 修正: `ChildBlock/ヘッダー/なにかの値` の簡略例を廃止し、`GroupBlock/ItemRow` の正式フォーマットへ差し戻し
+- 2026-04-12 記録: `reports/issue58-svg-format-restoration-2026-04-12.md` を作成
+- 2026-04-12 issue #58 視認性改善: 展開後図を 10.8 節へ集約（10.8.8/10.8.9）し、10.10.1 は参照節へ整理
+- 2026-04-12 issue #58 修正: 10.8.3 の破線境界を除去し、挿入先3x3図に `{{use:Header}}` を追加して出力イメージとの差異を縮小
+- 2026-04-12 記録: `reports/issue58-section-layout-and-target-svg-fix-2026-04-12.md` を作成
+- 2026-04-12 issue #58 方針調整: 10.8.10 は状態遷移図を持たず、状態整理テーブルのみで記載する方針へ変更
+- 2026-04-12 記録: `reports/issue58-state-table-only-adjustment-2026-04-12.md` を作成
+- 2026-04-12 issue #58 修正: 10.8.9 の出力SVGを更新し、`A1:F1` Header拡張 + `A3:E8` 子枠拡張が見える状態整理ケースへ差し替え
+- 2026-04-12 issue #58 修正: 10.8.9/10.10補足を「先頭GroupBlock抜粋」注記へ更新し、図と説明の整合を修正
+- 2026-04-12 記録: `reports/issue58-output-svg-refresh-2026-04-12.md` を作成
 
 ## Status Definitions
 

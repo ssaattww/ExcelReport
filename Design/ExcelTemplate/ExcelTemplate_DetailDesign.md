@@ -1,0 +1,571 @@
+# Excelテンプレート対応 詳細設計（Issue #58 / 承認依頼版）
+
+- 作成日: 2026-04-07
+- ステータス: **レビュー依頼中（実装前）**
+- 対象Issue: https://github.com/ssaattww/ExcelReport/issues/58
+- 設計対象: Excel形式テンプレートを DSL へ変換する機能（`Excel -> XML Template -> DSL`）
+
+## 1. Excelテンプレート対応で合意したいこと（要約）
+Issue本文（2026-04-07作成）から、以下を設計対象とする。
+
+1. Excelテンプレートを入力にして、最終的に現行DSL/生成パイプラインへ接続したい
+2. デバッグ用途として「Excel -> XML Template -> DSL -> Excel」の中間可視化を持ちたい
+3. 本番では中間XMLを省略し「Excel -> DSL（直接変換）」も可能にしたい
+4. コンポーネント定義方式は次の2案を比較検討する
+   - A案: シート単位定義（特殊シート名）
+   - B案: 名前付き範囲定義（シート内で定義）
+
+## 2. 方針
+### 2.1 段階導入（破壊的変更なし）
+- **Phase A (Debug Path)**: Excel -> XmlTemplate を実装し、変換内容を可視化
+- **Phase B (Production Path)**: Excel -> DSL 直接変換を追加
+- 既存の `DSL -> ReportGenerator` パイプラインは再利用し、既存API互換を維持する
+
+### 2.2 コンポーネント定義方式の採用（再検討）
+ユーザー提案の A/B 案を前提にしつつ、追加で C 案を含めて比較した。
+
+- **A案: シート単位定義（特殊シート名）**
+  - 利点: 実装コストが低く、抽出境界が明確、デバッグしやすい
+  - 欠点: シート数増加時に運用が冗長になる
+- **B案: 名前付き範囲定義（シート内）**
+  - 利点: 既存Excel運用に近く、シートを増やさず定義可能
+  - 欠点: 同名管理・ネスト・範囲衝突で実装複雑度が上がる
+- **C案: セルコメント/メタ情報ベース定義（追加検討）**
+  - 利点: レイアウト自由度が高い
+  - 欠点: Excel編集で壊れやすく、規約逸脱検知が難しい
+
+**採用結論（初期リリース）: A案**
+- 採用理由: 「最小コストで安定導入」「変換ロジックの可観測性」「TDDで仕様固定しやすい」の3点で優位。
+- B/Cは将来拡張として残し、A案運用データを得てから再評価する。
+
+## 3. 対象範囲
+### In Scope
+- ExcelTemplate 入力モデルの追加
+- Excel -> XmlTemplate 変換器（デバッグ用途）
+- Excel -> DSL 直接変換器（本番用途）
+- シート単位コンポーネント抽出ルール
+- 変換ログ（どのセル/範囲をどのDSL要素へ写像したか）
+- 主要テスト（unit + e2e）
+
+### Out of Scope（今回）
+- 名前付き範囲ベースのコンポーネント定義（B案本実装）
+- セルコメント/メタ情報ベース定義（C案本実装）
+- GUI/CLIツールの本格追加
+- 既存DSL構文の大幅拡張
+- **グラフ作成機能（chart生成/設定DSL拡張）は今回の対象外**
+
+## 4. アーキテクチャ設計
+
+```text
+[Excel Workbook]
+   | (Phase A)
+   v
+[ExcelTemplateExtractor] -> [XmlTemplateSerializer]
+   | (Phase B bypass possible)
+   v
+[DslEmitter]
+   v
+[Existing DslParser/Layout/Renderer]
+   v
+[Excel Output]
+```
+
+### 4.1 新規コンポーネント（案）
+- `ExcelTemplate/ExcelTemplateExtractor`
+  - Excelブックを読み取り、シート/セル/スタイル/名前情報を中間モデル化
+- `ExcelTemplate/XmlTemplateSerializer`
+  - 中間モデルをXML templateとして出力（デバッグ向け）
+- `ExcelTemplate/DslEmitter`
+  - 中間モデル（またはExcel直接）からDSL文字列へ変換
+
+### 4.2 既存コンポーネントとの責務境界
+- 既存 `DSL` パーサ以降には変更を極力入れない
+- 変換層（ExcelTemplate系）で解決できる仕様はそこで閉じる
+
+## 5. DSLマッピングルール（初版）
+- シート名 `__component_<Name>` をコンポーネント定義シートとして扱う
+- 通常シートは `<sheet>` に変換
+- 値セルは `cell@value` へ変換
+- 数式セルは `cell@formula` または `cell@value` の既存規約へ正規化（既存仕様優先）
+- 最小限のスタイル属性（font/fill/numberFormat）から段階対応
+
+### 5.1 コンポーネント定義範囲（Range）の決定ルール
+初版では、コンポーネント定義シート `__component_<Name>` ごとに、次の優先順位で定義範囲を決定する。
+
+1. 明示範囲指定（最優先）
+   - Workbook DefinedName: `__component_range_<Name>`
+   - 例: `__component_range_GroupBlock` -> `__component_GroupBlock!$A$1:$D$4`
+2. 自動判定（DefinedName未指定時）
+   - 候補セル: 値/数式/挿入トリガ/書式指定/結合セルに関与するセル
+   - 候補セルの最小外接矩形を定義範囲とする
+   - trailing側（右端/下端）の完全空行・完全空列はトリミングする
+
+補足:
+- 定義範囲は必ず単一矩形とする（離散領域は不可）。
+- 明示範囲がシート名と不整合、または空矩形の場合は Error とする。
+- 自動判定で候補セルが0件の場合は Error（`EmptyComponentRange`）とする。
+
+## 6. 失敗時ポリシー
+- 未対応Excel要素を検出した場合:
+  - 変換を継続可能なら Warning として `ReportGeneratorResult.Issues` へ集約
+  - 継続不能なら Error で停止
+- どのセルが未対応だったかを座標付きでログ出力
+- 追加ポリシー（範囲/挿入）:
+  - 定義範囲が不正（空矩形/複数領域/シート不一致）の場合: Error（`InvalidComponentRange`）
+  - 挿入元展開で挿入先想定範囲を超過した場合: Warning（`TemplateRangeOverflow`, `deltaRows`/`deltaCols` を記録）
+  - 結合セルが挿入境界をまたいで破壊される場合: Error（`MergedCellBoundaryViolation`）
+
+## 7. テスト戦略（TDD）
+1. Unit
+   - シート分類（通常/コンポーネント）
+   - セル値/数式/最小スタイルの抽出
+   - DslEmitterの要素生成
+2. Integration
+   - Excel -> DSL 変換結果のスナップショット比較
+3. E2E
+   - Excel -> DSL -> ReportGenerator で最終Excel生成まで確認
+
+## 8. 互換性
+- 既存公開APIは非変更
+- 既存DSL実行機能に影響なし
+- 破壊的変更は現時点では想定しない
+
+## 9. 実装前の承認ポイント
+- [ ] 比較検討結果（A/B/C）を踏まえ、初期実装は A案で進めて良いか
+- [ ] デバッグ経路（Excel -> XML Template）を同時に入れるか（先行実装の要否）
+- [ ] 初版マッピング対象（値/数式/最小スタイル）でよいか
+- [ ] グラフ作成機能を今回スコープ外として扱う方針でよいか
+- [ ] コンポーネント定義範囲は「DefinedName明示指定 + 自動判定フォールバック」の二段構成でよいか
+- [ ] サイズ不一致時は「クリップせず展開 + overflow Warning」の方針でよいか
+- [ ] 挿入先書式は任意（mustではない）とし、3x3外枠+中央useのようなフレームは展開サイズへ追従拡張する方針でよいか
+- [ ] 挿入先書式のoverflow補完は `styleOverflow`（`none`/`edge`）で選択可能、既定 `none` でよいか
+
+---
+
+**承認依頼**: 上記8点がOKであれば「承認」と返信ください。承認後、TDDで実装フェーズへ移行します。
+
+## 10. 具体表現設計（入れ子コンポーネント / シート定義 / 挿入）
+
+### 10.1 コンポーネント定義シートの表し方
+- シート名規約: `__component_<ComponentName>`
+- 例:
+  - `__component_Header`
+  - `__component_ItemRow`
+  - `__component_GroupBlock`
+
+このシートのセル配置を、そのまま component のレイアウト定義へ変換する。
+
+### 10.2 通常シート定義の表し方
+- コンポーネント定義シート以外は通常 `<sheet>` として扱う。
+- 例: `Invoice` シートは DSL の `<sheet name="Invoice">` へ変換。
+
+### 10.3 コンポーネント挿入の表し方（use）
+Excel側で次の記法を挿入トリガとして扱う（初版案）:
+- セル値: `{{use:Header}}`  -> `<use component="Header" />`
+- セル値: `{{use:ItemRow, from:@items, var:item}}` -> `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>`
+
+> 注: 文字列トリガ構文は初版の暫定仕様。将来は名前付き範囲等への置換余地あり。
+
+### 10.4 入れ子コンポーネント定義の例
+
+#### Excelテンプレート（概念）
+- `__component_Header`: タイトル行
+- `__component_ItemRow`: 明細1行（品名/数量/単価）
+- `__component_GroupBlock`: 見出し + `{{use:ItemRow, from:@group.Items, var:item}}` を含む
+- `Invoice`: `{{use:Header}}` の下に `{{use:GroupBlock, from:@groups, var:group}}`
+
+#### 変換後 DSL 例（設計イメージ）
+```xml
+<workbook xmlns="urn:excelreport:v2">
+  <components>
+    <component name="Header">
+      <grid>
+        <cell value="請求書" />
+      </grid>
+    </component>
+
+    <component name="ItemRow">
+      <grid>
+        <cell value="@item.Name" />
+        <cell value="@item.Qty" />
+        <cell value="@item.Price" />
+      </grid>
+    </component>
+
+    <component name="GroupBlock">
+      <grid>
+        <cell value="@group.Name" />
+      </grid>
+      <repeat from="@group.Items" var="item">
+        <use component="ItemRow" />
+      </repeat>
+    </component>
+  </components>
+
+  <sheet name="Invoice">
+    <use component="Header" />
+    <repeat from="@groups" var="group">
+      <use component="GroupBlock" />
+    </repeat>
+  </sheet>
+</workbook>
+```
+
+### 10.5 挿入時の座標ルール（初版）
+- `use` は「トリガセル位置」を挿入起点にする。
+- component の高さ/幅ぶん展開し、後続行は下方へシフト（既存 LayoutEngine 規約に追従）。
+- `repeat + use` は反復ごとに順次展開する。
+
+### 10.6 検証観点（例ベース）
+- 入れ子 repeat/use で scope (`group` / `item`) が衝突しないこと
+- `sheet` 直下と component 内で同名 var を使っても期待通りに解決されること
+- 展開後のセル位置が連続し、欠落・重複がないこと
+
+
+### 10.7 セル値の具体例（Markdownテーブル）
+
+#### 10.7.1 セル値トリガ -> DSL 変換例
+| Excelセル値（例） | 意味 | 変換後DSL（例） | 備考 |
+|---|---|---|---|
+| `請求書` | 固定文字列 | `<cell value="請求書" />` | そのまま値セル |
+| `@item.Name` | 式評価値 | `<cell value="@item.Name" />` | 実行時評価 |
+| `{{use:Header}}` | コンポーネント挿入 | `<use component="Header" />` | 挿入トリガ |
+| `{{use:ItemRow, from:@items, var:item}}` | 反復+挿入 | `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>` | repeat展開 |
+| `=SUM(B2:B10)` | Excel数式 | `<cell formula="SUM(B2:B10)" />` （または既存規約へ正規化） | 実装時に統一 |
+
+#### 10.7.2 入れ子構成のセル配置イメージ（Excel側）
+| シート | セル | 入力値 | 役割 |
+|---|---|---|---|
+| `__component_Header` | `A1` | `請求書` | ヘッダー定義 |
+| `__component_GroupBlock` | `A1` | `@group.Name` | グループ見出し |
+| `__component_GroupBlock` | `A2` | `{{use:ItemRow, from:@group.Items, var:item}}` | 子component反復挿入 |
+| `Invoice` | `A1` | `{{use:Header}}` | 先頭ヘッダー挿入 |
+| `Invoice` | `A3` | `{{use:GroupBlock, from:@groups, var:group}}` | グループ単位で入れ子展開 |
+
+#### 10.7.3 罫線の競合が起こるセル例
+| 位置 | 親component指定 | 子component指定 | 解決結果 |
+|---|---|---|---|
+| `Invoice!A10` の bottom | `thin` | `dashed` | 子優先で `dashed`（Warning記録） |
+| `Invoice!B10` の right | `medium` | 未指定 | 親の `medium` を継承 |
+| `Invoice!C10` の top | 未指定 | `thin` | 子の `thin` を採用 |
+| `Invoice!D10` の left | `thin` | `thin` | 同値のためWarningなし |
+
+
+### 10.8 Excelセル座標と一致する表現（セルマトリクス）
+
+#### 10.8.1 挿入先シート（入力テンプレート）
+| Row\Col | A | B | C |
+|---|---|---|---|
+| 1 | `{{use:Header}}` |  |  |
+| 2 |  |  |  |
+| 3 |  |  |  |
+| 4 |  | `{{use:GroupBlock, from:@groups, var:group}}` |  |
+| 5 |  |  |  |
+
+#### 10.8.2 挿入元 `__component_GroupBlock` シート（3x4、入力テンプレート）
+| Row\Col | A | B | C | D |
+|---|---|---|---|---|
+| 1 | `@group.Name` |  |  |  |
+| 2 | `{{use:ItemRow, from:@group.Items, var:item}}` |  |  |  |
+| 3 |  |  |  |  |
+
+#### 10.8.3 挿入先セル値のSVG（表示値ベース）
+![Insert target cell values](assets/insert-target-cell-values.svg)
+
+注記:
+- `use` セル周辺に描かれている罫線は「テンプレートで定義されている場合の例」であり、必須要件ではない。
+- 挿入先書式が未定義でも `use` 展開は有効で、最終書式は 10.9/11章のルールで決定する。
+
+#### 10.8.4 挿入元セル値のSVG（表示値ベース）
+![Insert source cell values](assets/insert-source-cell-values.svg)
+
+注:
+- 10.8.3/10.8.4 のSVGは、実運用のExcelTemplate見た目に合わせるため、説明用の背景色強調は行わない。
+- 挿入アンカーや有効範囲の意味づけは本文・表で説明し、セル塗り分けには反映しない。
+- ただしテンプレートで事前定義する罫線（実線/破線）は、入力側SVGにも反映する。
+
+#### 10.8.5 書式説明（Markdownテーブル）
+| 範囲/セル | 意味 | 備考 |
+|---|---|---|
+| 挿入先 `A3:C5` | 3x3 の親フレーム | 中央 `B4` が `use` アンカー |
+| 挿入先 `A1` | `{{use:Header}}` | ヘッダー挿入トリガ |
+| 挿入先 `A1:C1` | 例: 挿入先上辺の書式シード | 必須ではない（未設定でも展開可） |
+| 挿入元 `A1:D3` | `GroupBlock` の実サイズ | 行3列4を展開先へそのまま挿入 |
+| 挿入元 `A1` | `@group.Name` | グループ見出し |
+| 挿入元 `A2` | `{{use:ItemRow, from:@group.Items, var:item}}` | 子コンポーネント挿入 |
+
+#### 10.8.6 挿入データ（C# class 定義）
+`repeat + use` で挿入されるデータモデルは、初版の設計例として以下を基準にする。
+
+```csharp
+public sealed class InvoiceData
+{
+    public string Title { get; init; } = string.Empty;
+    public IReadOnlyList<GroupData> Groups { get; init; } = Array.Empty<GroupData>();
+}
+
+public sealed class GroupData
+{
+    public string Name { get; init; } = string.Empty;
+    public IReadOnlyList<ItemData> Items { get; init; } = Array.Empty<ItemData>();
+}
+
+public sealed class ItemData
+{
+    public string Name { get; init; } = string.Empty;
+    public int Qty { get; init; }
+    public decimal Price { get; init; }
+}
+```
+
+#### 10.8.7 サンプル入力（C#）
+```csharp
+var data = new InvoiceData
+{
+    Title = "請求書",
+    Groups =
+    [
+        new GroupData
+        {
+            Name = "機械部品",
+            Items =
+            [
+                new ItemData { Name = "Bolt", Qty = 12, Price = 35m },
+                new ItemData { Name = "Nut", Qty = 12, Price = 18m },
+                new ItemData { Name = "Washer", Qty = 12, Price = 9m }
+            ]
+        },
+        new GroupData
+        {
+            Name = "電材",
+            Items = [ new ItemData { Name = "Cable", Qty = 3, Price = 980m } ]
+        }
+    ]
+};
+```
+
+#### 10.8.8 C#データ展開後の挿入元（`GroupBlock` インスタンス）SVG
+以下は 10.8.7 のサンプルデータを `GroupBlock` 単位へ展開したときの、挿入元インスタンスの表示値イメージである。
+
+![Expanded insert source from C# data](assets/expanded-insert-source-from-csharp.svg)
+
+#### 10.8.9 C#データ展開後セル値のSVG（`Invoice` 出力イメージ）
+以下は 10.8.7 のサンプルデータを `Invoice` シートへ挿入した出力イメージである。`Header` は `A1:F1` へ拡張し、`GroupBlock` は 1件目が `A3:E8`、2件目が `A9:E12` へ展開される。
+
+![Expanded cell values from C# data](assets/expanded-cell-values-from-csharp.svg)
+
+#### 10.8.10 Header拡張と3x3中央useの状態整理
+| 項目 | 入力（テンプレート） | 出力（展開後） |
+|---|---|---|
+| Header | `A1:C1` に `{{use:Header}}`、`styleOverflow=edge` | `A1:F1` まで外枠を拡張 |
+| 1件目 GroupBlock | `A3:C5` 外枠、中央 `B4` に `{{use:GroupBlock,...}}` | `A3:E8` が親外枠、`B4:D7` が挿入元実体。`B7:D7` のみ下破線 |
+| 2件目 GroupBlock | `repeat` により次位置へ展開 | `A9:E12` が親外枠、`B10:D11` が挿入元実体。`B11:D11` のみ下破線 |
+| 子データ列 | 値が2列でも可 | 有効幅 `W=3`（値2列+書式1列）なら外枠幅は `W+2=5` 列（`A:E`） |
+
+注:
+- もし子の有効幅が本当に `W=2` なら、展開後外枠は `A3:D8`（4列）になる。
+- 「2列の値」と「コンポーネント有効幅」は同義ではない。幅判定は 10.10 の定義範囲で決まる。
+
+### 10.9 サイズ不一致時の挿入ルール（挿入元 > 挿入先想定範囲）
+「挿入元 component が複数行/複数列」「挿入先 component / sheet 側の想定定義範囲が小さい」のようなサイズ不一致を、行・列の両方向で明示的に扱う。
+
+1. 挿入先の事前定義範囲は **クリップ境界ではなくアンカー情報** とみなす。
+2. 挿入先の書式指定は **任意**（mustではない）。
+   - 書式未指定でも `use` 展開は有効。
+   - 書式指定がある場合のみ、11章の合成ルールで最終書式を決定する。
+3. `use` は挿入元 component の実サイズ（高さ/幅）まで必ず展開し、途中で切り詰めない。
+4. 挿入先の事前定義範囲を超えたセル（overflow行/overflow列）は、挿入元 component 側の書式決定ルール（11章）をそのまま適用する。
+5. overflow により既存セルが押し下げ/押し広げされる場合、既存セル値・既存書式・結合状態は相対位置を保ってシフトする。
+6. 挿入先想定範囲より大きい展開が発生した場合、`Warning`（種別: `TemplateRangeOverflow`）を記録し、座標/シート名/挿入元component名/`deltaRows`/`deltaCols` を出力する。
+7. 結合セルが挿入境界をまたいで壊れる場合は `Error` とし、当該挿入を停止する（自動補正しない）。
+
+#### 10.9.1 挿入先外枠の追従拡張ルール（3x3 + 中央useケース）
+挿入先側で `use` を囲む外枠（例: 3x3範囲の外枠 + 中央セルが `use`）を定義している場合、展開後は次で外枠を再計算する。
+
+- 前提:
+  - 初期外枠矩形を `R0`
+  - `use` アンカーセルを `A`
+  - `R0` 内でのアンカー余白を `topMargin/bottomMargin/leftMargin/rightMargin`
+  - 挿入元展開サイズを `H x W`
+- 展開後外枠:
+  - `rowStart = A.row - topMargin`
+  - `rowEnd   = A.row + (H - 1) + bottomMargin`
+  - `colStart = A.col - leftMargin`
+  - `colEnd   = A.col + (W - 1) + rightMargin`
+- 結果:
+  - 3x3で中央use（四辺余白=1）の場合、子component展開範囲を四辺1セルぶん拡張した外枠になる。
+  - 行方向だけでなく列方向にも同じルールを適用する。
+
+#### 10.9.2 挿入先書式の overflow 拡張ポリシー（`styleOverflow`）
+「挿入先で定義した書式を、子展開で増えた領域にも伸ばすか」を `use` 単位で選択可能にする。
+
+- 追加属性（`use`）:
+  - `styleOverflow="none|edge"`
+  - 既定値は `none`（後方互換優先）
+- 例:
+
+```xml
+<use component="GroupBlock" from="@groups" var="group" styleOverflow="none" />
+<use component="GroupBlock" from="@groups" var="group" styleOverflow="edge" />
+```
+
+- モード定義:
+  - `none`: 挿入先書式は拡張しない。増分領域は挿入元コンポーネント側書式のみで決定する。
+  - `edge`: 増分領域に対し、拡張方向の「元範囲の辺セル」を基準に書式をコピーする。
+
+- `edge` の決定ルール（右方向に `deltaCols > 0` の場合）:
+  1. 右辺基準列 `baseCol = originalColEnd` を取る。
+  2. 各行について `baseCol` のセルに書式がある場合のみ、増分列へ同一書式をコピーする。
+  3. `baseCol` が未設定なら、その行はコピーしない。
+  4. コピー後も競合は 11章ルール（辺単位優先順位）で解決する。
+
+- 3x3 + 中央`use` + `GroupBlock(3x4最小定義)` の具体化:
+  - `A1:C1` が書式設定され、`styleOverflow=edge` の場合: `D1` へ拡張される。
+  - `A1:C1` が書式設定され、`styleOverflow=none` の場合: `D1` へは拡張されない。
+  - `A1:B1` のみ書式設定され、`styleOverflow=edge` の場合: 右辺基準 `C1` が未設定のため `D1` は拡張されない。
+
+#### 10.9.3 書式 overflow のSVG比較（3x3 -> 3x4）
+![Style overflow modes](assets/style-overflow-modes-3x3.svg)
+
+#### 10.9.4 書式 overflow の期待結果（Markdownテーブル）
+| ケース | 入力書式シード | 設定 | 拡張列 `D1` の結果 |
+|---|---|---|---|
+| Case 1 | `A1:C1` | `styleOverflow=none` | 拡張しない（未設定） |
+| Case 2 | `A1:C1` | `styleOverflow=edge` | `C1` を基準に拡張（設定される） |
+| Case 3 | `A1:B1` | `styleOverflow=edge` | `C1` が未設定なので拡張しない（未設定） |
+
+補足:
+- `A1` は `Header` component 由来の固定値（`請求書`）。
+- 10.8.9 のSVGでは、`@groups` の2件を連続展開した結果を示す。
+- SVGの線種は 11章ルールに対応する。
+  - 実線: 親component外枠、または挿入元実体の top/left/right
+  - 破線: 挿入元実体の bottom
+
+### 10.10 コンポーネント定義範囲の具体例
+#### 10.10.1 明示範囲指定
+- 定義名: `__component_range_GroupBlock`
+- 参照先: `__component_GroupBlock!$A$1:$D$4`
+- 挙動: この矩形外のセルはコンポーネント抽出対象外とする。
+
+#### 10.10.2 自動判定時
+- 候補セルが `A1`（`@group.Name`）と `A2`（`{{use:ItemRow,...}}`）のみの場合:
+  - 初期矩形: `A1:A2`
+  - 書式指定が `D4` に存在する場合:
+    - 拡張矩形: `A1:D4`
+- この最終矩形を component 展開サイズ（高さ/幅）の基準とする。
+
+#### 10.10.3 バリデーション
+| チェック項目 | 判定 | 失敗時 |
+|---|---|---|
+| DefinedName の参照先が対象シートか | 必須 | `InvalidComponentRange` Error |
+| 範囲が単一矩形か | 必須 | `InvalidComponentRange` Error |
+| 範囲内に有効セルが1つ以上あるか | 必須 | `EmptyComponentRange` Error |
+| 自動判定で overflow が発生したか | 任意記録 | `TemplateRangeOverflow` Warning |
+
+
+## 11. セル書式方針（特に罫線）
+
+### 11.1 基本方針
+- 値/数式だけでなく、セル書式（font/fill/numberFormat/border）も抽出対象にする。
+- ただし初期段階では「既存StyleResolver/Rendererの表現可能範囲」に正規化して取り込む。
+
+### 11.2 罫線の取り扱い原則
+入れ子 component 展開時の見た目崩れを防ぐため、次の優先順位で罫線を決定する。
+
+1. **セル直指定罫線（最優先）**
+2. **component 内ローカル既定罫線**
+3. **sheet 側既定罫線（最下位）**
+
+補足:
+- 罫線は辺単位（top/right/bottom/left）で合成し、未指定辺のみ下位ルールから補完する。
+- 競合時（同じ辺に異なる指定）は上位優先とし、Warning を記録する。
+
+### 11.3 入れ子時の罫線ルール
+- 親componentと子componentの境界で、同一辺が二重定義された場合は「子component優先」。
+- `repeat + use` で連続展開される行境界は、各行の bottom/top を辺単位で解決する。
+- 列方向の境界（left/right）も同様に辺単位で解決する。
+- 外枠を親で管理し、内側明細線を子で管理する設計を推奨。
+- 挿入先に外枠（フレーム）を定義する場合は 10.9.1 の追従拡張ルールで再配置する。
+
+### 11.4 具体例（罫線）
+
+#### 設計推奨パターン
+- `GroupBlock`（親）: 外枠（top/left/right/bottom）
+- `ItemRow`（子）: 明細行の下罫線（bottom）
+
+このとき:
+- 最終行以外: `ItemRow.bottom` が有効
+- グループ末尾: 親 `GroupBlock.bottom` と子 `ItemRow.bottom` が競合しうるため、子優先で解決し Warning を記録
+
+### 11.5 検証ケース（実装前にテスト化予定）
+1. 親外枠 + 子内罫線の組み合わせが期待どおり描画される
+2. 入れ子 + repeat 展開で行境界の二重線/線欠けが発生しない
+3. 競合辺がある場合に Warning が `ReportGeneratorResult.Issues` に記録される
+4. 既存 border mode（outer/all）との互換が維持される
+5. 挿入元高さ > 挿入先想定行数（例: 3行 component を 1行定義領域へ挿入）でも、overflow行の書式が欠落しない
+6. 挿入元幅 > 挿入先想定列数でも、overflow列の書式が欠落しない
+7. 3x3外枠 + 中央use のテンプレートで、展開後に外枠が「子範囲+余白」で追従拡張される
+8. overflow 発生時に `TemplateRangeOverflow` Warning が座標 + `deltaRows` + `deltaCols` 付きで記録される
+9. `styleOverflow=none` で `A1:C1` 書式が `D1` へ拡張されない
+10. `styleOverflow=edge` で `A1:C1` 書式が `D1` へ拡張される
+11. `styleOverflow=edge` かつ `A1:B1` のみ書式時、`C1` 未設定のため `D1` へ拡張されない
+
+### 11.6 リスクと緩和策
+- リスク: Excel側の自由入力で罫線指定が過剰に衝突する
+  - 緩和: 競合Warningを必須化し、座標/辺情報付きでログ化
+- リスク: 入れ子深度が増えると見た目把握が難しい
+  - 緩和: デバッグ経路（Excel -> XmlTemplate）で罫線解決結果を可視化する
+
+### 11.7 非罫線書式（font/fill/numberFormat）の合成方針
+- 挿入元 component のセルが明示指定する属性は、そのまま採用する（最優先）。
+- 明示指定がない属性は `component ローカル既定 -> sheet 既定` の順で補完する。
+- `styleOverflow=none` の場合、挿入先の事前定義範囲にのみ存在する書式を overflow 行/列へ暗黙コピーしない。
+- `styleOverflow=edge` の場合、10.9.2 の辺基準ルールに従い overflow 行/列へコピーする。
+- ただし既存行を押し下げる際は、押し下げ対象セルの既存書式を保持する（破壊しない）。
+
+
+## 12. 実装前に詰めるべき懸念点（事前合意チェックリスト）
+
+以下は、実装前に合意しないと後戻りコストが高い項目。
+
+### 12.1 変換契約の厳密化
+| 懸念点 | 未合意時のリスク | 事前合意内容 |
+|---|---|---|
+| 数式セルの正規化方式（`cell@formula` vs `cell@value`） | 実装途中でDSL互換崩れ | 初版は `cell@formula` 優先で統一し、既存互換が必要な箇所のみ例外化 |
+| 空セル/空白セルの扱い | 余計なセル生成、座標ずれ | 空セルは非出力、空白文字列は値セルとして出力 |
+| 日付/数値の型解釈 | Excel表示とDSL評価の乖離 | まずは生値+numberFormatで保持し、型推論は段階導入 |
+
+### 12.2 レイアウト展開の境界条件
+| 懸念点 | 未合意時のリスク | 事前合意内容 |
+|---|---|---|
+| `use` 展開時の行/列シフト | component重なり/欠落 | 「トリガセル起点 + 高さ/幅ぶんシフト」を固定ルール化 |
+| 入れ子 `repeat + use` の展開順 | varスコープ衝突 | 親repeat1回ごとに子を完全展開する深さ優先 |
+| 挿入元サイズ > 挿入先想定範囲（行/列） | 書式欠落/罫線崩れ/既存セル上書き | 挿入先範囲はクリップしない。overflow行/列まで展開し、後続セルを相対シフト。`TemplateRangeOverflow` Warning必須 |
+| 挿入先フレーム（外枠）の追従 | 外枠が狭いまま/拡張過剰 | 10.9.1 の余白保持ルール（子範囲+余白）で外枠を再計算 |
+| merged cell 含有component | 結合領域崩れ | 初版は制限付き対応（矩形内完結のみ） |
+
+### 12.3 書式・罫線の実装リスク
+| 懸念点 | 未合意時のリスク | 事前合意内容 |
+|---|---|---|
+| 挿入先書式の有無 | 「書式なしuseが無効」と誤解 | 挿入先書式は任意。未指定でも展開可、指定時のみ合成 |
+| 罫線競合時の採用規則 | 見た目不一致 | 既定ルール（子優先/辺単位/Warning）を固定 |
+| 非罫線書式のoverflow補完 | 色/フォント/表示形式の不整合 | `styleOverflow` を `none`/`edge` で明示選択し、既定は `none`。`edge` 時のみ辺基準で補完する |
+| Style重複生成 | ファイル肥大/性能低下 | StyleKeyで重複排除し、同一スタイル再利用 |
+| 条件付き書式との干渉 | 想定外の上書き | 初版は条件付き書式を非対象として明示 |
+
+### 12.4 運用・性能
+| 懸念点 | 未合意時のリスク | 事前合意内容 |
+|---|---|---|
+| 大規模テンプレート（数万セル） | 変換時間増大 | Phase Aで計測ログを必須化し閾値超過をWarning |
+| 失敗時の原因追跡 | 調査コスト増 | セル座標 + シート名 + 変換段階を必ず記録 |
+| 仕様逸脱テンプレート入力 | 実行時クラッシュ | Validateフェーズを設け、Error/Warningを事前集約 |
+
+### 12.5 今回の事前合意ゴール
+- 実装開始条件として、上記表の「事前合意内容」を受け入れ条件に組み込む。
+- 合意できない項目は実装スコープから除外し、設計書へ明示する。
+
+### 12.6 実装前レビューで確認する質問
+1. merged cell の初版制約（矩形内完結のみ）で問題ないか
+2. 条件付き書式は初版対象外で良いか
+3. 数式正規化の統一（`cell@formula` 優先）で良いか
+4. 大規模テンプレートの性能閾値（例: 10,000セル/3秒）をどこに置くか

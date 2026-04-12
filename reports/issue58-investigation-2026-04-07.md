@@ -25,7 +25,7 @@
 
 ## 判断
 - issue #58 の要件は取得済み。
-- 上記要件を反映して `Design/Issue58/Issue58_DetailDesign.md` を承認依頼版へ更新した。
+- 上記要件を反映して `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` を承認依頼版へ更新した。
 
 ## 次アクション
 - ユーザー承認後、TDDで実装に着手する。

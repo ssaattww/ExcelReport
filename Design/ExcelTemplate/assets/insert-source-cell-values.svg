@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="390" viewBox="0 0 980 390">
+  <style>
+    .title { font: bold 18px Calibri, sans-serif; fill: #222; }
+    .sub { font: 12px Calibri, sans-serif; fill: #555; }
+    .hdr { font: 12px Calibri, sans-serif; fill: #333; }
+    .txt { font: 12px Calibri, sans-serif; fill: #111; }
+    .head { fill: #f3f3f3; stroke: #c9c9c9; stroke-width: 1; }
+    .cell { fill: #fff; stroke: #d9d9d9; stroke-width: 1; }
+    .solid { stroke: #222; stroke-width: 1.6; fill: none; }
+    .dashed { stroke: #222; stroke-width: 1.2; stroke-dasharray: 5 3; fill: none; }
+  </style>
+
+  <text x="20" y="28" class="title">挿入元コンポーネント（__component_GroupBlock / 3x4）</text>
+  <text x="20" y="48" class="sub">ExcelTemplate入力例。GroupBlock は見出し + ItemRow の挿入トリガを持つ。</text>
+
+  <g transform="translate(60,88)">
+    <rect x="0" y="0" width="56" height="34" class="head"/>
+    <rect x="56" y="0" width="210" height="34" class="head"/>
+    <rect x="266" y="0" width="210" height="34" class="head"/>
+    <rect x="476" y="0" width="210" height="34" class="head"/>
+    <rect x="686" y="0" width="210" height="34" class="head"/>
+
+    <text x="20" y="22" class="hdr">Row</text>
+    <text x="155" y="22" class="hdr">A</text>
+    <text x="365" y="22" class="hdr">B</text>
+    <text x="575" y="22" class="hdr">C</text>
+    <text x="785" y="22" class="hdr">D</text>
+
+    <rect x="0" y="34" width="56" height="66" class="head"/>
+    <rect x="56" y="34" width="210" height="66" class="cell"/>
+    <rect x="266" y="34" width="210" height="66" class="cell"/>
+    <rect x="476" y="34" width="210" height="66" class="cell"/>
+    <rect x="686" y="34" width="210" height="66" class="cell"/>
+
+    <rect x="0" y="100" width="56" height="66" class="head"/>
+    <rect x="56" y="100" width="210" height="66" class="cell"/>
+    <rect x="266" y="100" width="210" height="66" class="cell"/>
+    <rect x="476" y="100" width="210" height="66" class="cell"/>
+    <rect x="686" y="100" width="210" height="66" class="cell"/>
+
+    <rect x="0" y="166" width="56" height="66" class="head"/>
+    <rect x="56" y="166" width="210" height="66" class="cell"/>
+    <rect x="266" y="166" width="210" height="66" class="cell"/>
+    <rect x="476" y="166" width="210" height="66" class="cell"/>
+    <rect x="686" y="166" width="210" height="66" class="cell"/>
+
+    <text x="22" y="74" class="hdr">1</text>
+    <text x="22" y="140" class="hdr">2</text>
+    <text x="22" y="206" class="hdr">3</text>
+
+    <text x="66" y="74" class="txt">@group.Name</text>
+    <text x="66" y="140" class="txt">{{use:ItemRow, from:@group.Items, var:item}}</text>
+
+    <!-- GroupBlock frame / row2 trigger boundary -->
+    <rect x="56" y="34" width="840" height="198" class="solid"/>
+    <line x1="56" y1="166" x2="896" y2="166" class="dashed"/>
+  </g>
+</svg>
