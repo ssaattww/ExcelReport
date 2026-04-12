@@ -1,7 +1,7 @@
-# Excelテンプレート対応 詳細設計（Issue #58 / 承認依頼版）
+# Excelテンプレート対応 詳細設計（Issue #58 / 実装方針レビュー版）
 
 - 作成日: 2026-04-07
-- ステータス: **レビュー依頼中（実装前）**
+- ステータス: **実装方針レビュー中**
 - 対象Issue: https://github.com/ssaattww/ExcelReport/issues/58
 - 設計対象: Excel形式テンプレートを DSL へ変換する機能（`Excel -> XML Template -> DSL`）
 
@@ -131,19 +131,21 @@ Issue本文（2026-04-07作成）から、以下を設計対象とする。
 - 既存DSL実行機能に影響なし
 - 破壊的変更は現時点では想定しない
 
-## 9. 実装前の承認ポイント
-- [ ] 比較検討結果（A/B/C）を踏まえ、初期実装は A案で進めて良いか
-- [ ] デバッグ経路（Excel -> XML Template）を同時に入れるか（先行実装の要否）
-- [ ] 初版マッピング対象（値/数式/最小スタイル）でよいか
-- [ ] グラフ作成機能を今回スコープ外として扱う方針でよいか
-- [ ] コンポーネント定義範囲は「DefinedName明示指定 + 自動判定フォールバック」の二段構成でよいか
-- [ ] サイズ不一致時は「クリップせず展開 + overflow Warning」の方針でよいか
-- [ ] 挿入先書式は任意（mustではない）とし、3x3外枠+中央useのようなフレームは展開サイズへ追従拡張する方針でよいか
-- [ ] 挿入先書式のoverflow補完は `styleOverflow`（`none`/`edge`）で選択可能、既定 `none` でよいか
+## 9. 実装前の承認結果
+- [x] 比較検討結果（A/B/C）を踏まえ、初期実装は A案で進める
+- [x] デバッグ経路（Excel -> XML Template）を同時に入れる
+- [x] 初版マッピング対象は 値/数式/最小スタイル とする
+- [x] グラフ作成機能は今回スコープ外とする
+- [x] コンポーネント定義範囲は「DefinedName明示指定 + 自動判定フォールバック」の二段構成とする
+- [x] サイズ不一致時は「クリップせず展開 + overflow Warning」とする
+- [x] 挿入先書式は任意（mustではない）とし、3x3外枠+中央useのフレームは展開サイズへ追従拡張する
+- [x] 挿入先書式のoverflow補完は `styleOverflow`（`none`/`edge`）で選択可能、既定 `none` とする
+- [x] merged cell は初版では「矩形内完結のみ」とする
+- [x] 条件付き書式は初版対象外とする
+- [x] 数式セルは `cell@formula` へ正規化し、C# 側で Excel 関数計算を行わない
+- [x] 大規模テンプレートの性能閾値は当面不問とし、必要時に別途基準化する
 
 ---
-
-**承認依頼**: 上記8点がOKであれば「承認」と返信ください。承認後、TDDで実装フェーズへ移行します。
 
 ## 10. 具体表現設計（入れ子コンポーネント / シート定義 / 挿入）
 
@@ -163,7 +165,7 @@ Issue本文（2026-04-07作成）から、以下を設計対象とする。
 ### 10.3 コンポーネント挿入の表し方（use）
 Excel側で次の記法を挿入トリガとして扱う（初版案）:
 - セル値: `{{use:Header}}`  -> `<use component="Header" />`
-- セル値: `{{use:ItemRow, from:@items, var:item}}` -> `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>`
+- セル値: `{{use:ItemRow, from:@items, var:item}}` -> `<repeat from="@items" var="item" direction="down"><use component="ItemRow" /></repeat>`
 
 > 注: 文字列トリガ構文は初版の暫定仕様。将来は名前付き範囲等への置換余地あり。
 
@@ -197,7 +199,7 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
       <grid>
         <cell value="@group.Name" />
       </grid>
-      <repeat from="@group.Items" var="item">
+      <repeat from="@group.Items" var="item" direction="down">
         <use component="ItemRow" />
       </repeat>
     </component>
@@ -205,7 +207,7 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 
   <sheet name="Invoice">
     <use component="Header" />
-    <repeat from="@groups" var="group">
+    <repeat from="@groups" var="group" direction="down">
       <use component="GroupBlock" />
     </repeat>
   </sheet>
@@ -231,8 +233,8 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | `請求書` | 固定文字列 | `<cell value="請求書" />` | そのまま値セル |
 | `@item.Name` | 式評価値 | `<cell value="@item.Name" />` | 実行時評価 |
 | `{{use:Header}}` | コンポーネント挿入 | `<use component="Header" />` | 挿入トリガ |
-| `{{use:ItemRow, from:@items, var:item}}` | 反復+挿入 | `<repeat from="@items" var="item"><use component="ItemRow" /></repeat>` | repeat展開 |
-| `=SUM(B2:B10)` | Excel数式 | `<cell formula="SUM(B2:B10)" />` （または既存規約へ正規化） | 実装時に統一 |
+| `{{use:ItemRow, from:@items, var:item}}` | 反復+挿入 | `<repeat from="@items" var="item" direction="down"><use component="ItemRow" /></repeat>` | repeat展開 |
+| `=SUM(B2:B10)` | Excel数式 | `<cell formula="SUM(B2:B10)" />` | `cell@formula` で保持 |
 
 #### 10.7.2 入れ子構成のセル配置イメージ（Excel側）
 | シート | セル | 入力値 | 役割 |
@@ -412,8 +414,12 @@ var data = new InvoiceData
 - 例:
 
 ```xml
-<use component="GroupBlock" from="@groups" var="group" styleOverflow="none" />
-<use component="GroupBlock" from="@groups" var="group" styleOverflow="edge" />
+<repeat from="@groups" var="group" direction="down">
+  <use component="GroupBlock" styleOverflow="none" />
+</repeat>
+<repeat from="@groups" var="group" direction="down">
+  <use component="GroupBlock" styleOverflow="edge" />
+</repeat>
 ```
 
 - モード定義:
@@ -554,7 +560,7 @@ var data = new InvoiceData
 | 懸念点 | 未合意時のリスク | 事前合意内容 |
 |---|---|---|
 | 数式セルの正規化方式（`cell@formula` vs `cell@value`） | 実装途中でDSL互換崩れ | 初版は `cell@formula` で統一する。C# 側で Excel 関数計算は行わず、計算済み値へ潰さない |
-| 空セル/空白セルの扱い | 余計なセル生成、座標ずれ | 空セルは非出力、空白文字列は値セルとして出力 |
+| 空セル/空白セルの扱い | 余計なセル生成、座標ずれ | 値/数式/書式/結合/useトリガのいずれもない空セルは非出力とする。空白文字列は値セルとして出力し、`styleOverflow` の種になる書式-onlyセルは保持する |
 | 日付/数値の型解釈 | Excel表示とDSL評価の乖離 | まずは生値+numberFormatで保持し、型推論は段階導入 |
 
 ### 12.2 レイアウト展開の境界条件
@@ -588,3 +594,173 @@ var data = new InvoiceData
 
 ### 12.6 実装前レビューで確認する質問
 - 現時点で未解決の確認質問はない。追加の懸念が出た場合は本節へ追記する。
+
+## 13. 実装方針
+
+### 13.1 基本方針
+- 既存の `ReportGenerator -> DslParser -> LayoutEngine -> WorksheetStateBuilder -> XlsxRenderer` は後段の安定基盤として再利用する。
+- `ExcelTemplate` 対応は前段に追加し、Excelブックを DSL へ変換した上で既存パイプラインへ流す。
+- 初版は additive change を優先し、既存の DSL 実行 API は壊さない。
+- 実装は「DSL契約の不足補完」と「ExcelTemplate変換層の追加」を分離して進める。
+
+### 13.2 既存実装との差分整理
+現行コードを前提にすると、設計を実現するには次の差分がある。
+
+1. `ExcelTemplate` 変換層がまだ存在しない
+   - `ExcelTemplateExtractor` / `XmlTemplateSerializer` / `DslEmitter` / facade API は未実装
+2. `cell@formula` 契約が DSL/XSD/AST に未反映
+   - 現行実装は `cell@value=\"=...\"` を数式扱いしているため、`cell@formula` を受ける拡張が必要
+3. `use@styleOverflow` 契約が DSL/XSD/AST/LayoutEngine に未反映
+   - 右/下 trailing edge 拡張ルールを runtime へ追加する必要がある
+4. ExcelTemplate 固有の validation / issue 種別が未実装
+   - `InvalidComponentRange` / `EmptyComponentRange` / `TemplateRangeOverflow` / `MergedCellBoundaryViolation` など
+5. `repeat` は `direction` 必須のため、converter 側で明示出力する必要がある
+   - 初版の ExcelTemplate 由来 repeat は `direction="down"` を必ず出力する
+
+### 13.3 実装単位
+初版は次の単位で実装する。
+
+1. DSL契約拡張
+   - `Design/DslDefinition/DslDefinition_v2.xsd`
+   - `ExcelReport/ExcelReportLib.Tests/TestDsl/DslDefinition_v2.xsd`
+   - `DslContract` の埋め込み schema 読み込み経路
+   - `CellAst` に `formula` 対応を追加
+   - `UseAst` に `styleOverflow` 対応を追加
+   - `DslParser.ValidateDsl` に no-schema mode 用の追加検証を実装
+   - `LayoutEngine` に `cell@formula` と `styleOverflow=edge` の runtime ルールを追加
+   - `IssueKind` に ExcelTemplate 関連種別を追加
+2. レイアウト runtime 補完
+   - `styleOverflow=edge` は `ExpandUse` / `ExpandRepeat` の後段で、アンカー矩形と展開後矩形の差分に対して style-onlyセルを合成する
+   - 挿入先 seed 書式は「値なしでも style を持つ `LayoutCell`」として layout plan に残す
+   - trailing edge copy は row/col/corner ごとに `LayoutCell` を生成し、競合は 11章ルールで解決する
+3. ExcelTemplate 中間モデル
+   - `ExcelTemplateWorkbook`
+   - `ExcelTemplateSheet`
+   - `ExcelTemplateCell`
+   - `ExcelTemplateStyle`
+   - `ExcelTemplateComponentRange`
+   - `ExcelTemplateIssue`
+4. ExcelTemplate 抽出・検証
+   - OpenXML から workbook/sheet/cell/style/defined name/merged cell を読む extractor
+   - シート分類、component 範囲決定、unsupported feature 検出、trigger 解析
+5. 変換出力
+   - XML debug 出力用 serializer
+   - DSL text 出力用 emitter
+6. 統合ファサード
+   - `ConvertToDsl`
+   - `ConvertToXmlTemplate`
+   - `GenerateFromExcelTemplate`
+
+### 13.4 推奨ファイル構成
+```text
+ExcelReportLib/
+  ExcelTemplate/
+    ExcelTemplateConverter.cs
+    ExcelTemplateReportGenerator.cs
+    ExcelTemplateConvertOptions.cs
+    ExcelTemplateExtractor.cs
+    ExcelTemplateValidator.cs
+    ComponentRangeResolver.cs
+    UseTriggerParser.cs
+    DslEmitter.cs
+    XmlTemplateSerializer.cs
+    Model/
+      ExcelTemplateWorkbook.cs
+      ExcelTemplateSheet.cs
+      ExcelTemplateCell.cs
+      ExcelTemplateStyle.cs
+      ExcelTemplateComponentRange.cs
+```
+
+補足:
+- `ExcelTemplateExtractor` は OpenXML 読み取りに専念する。
+- シート分類・範囲解決・unsupported validation は extractor に埋め込まず、小さな協調クラスへ分ける。
+- `ExcelTemplateReportGenerator` は `ExcelTemplateConverter + ReportGenerator` の薄い合成層に留める。
+
+### 13.5 実装順序
+1. DSL契約の不足補完
+   - `cell@formula` と `use@styleOverflow` を先に通す
+   - runtime schema は `Design/DslDefinition/DslDefinition_v2.xsd` と test fixture の両方を更新する
+   - `ValidateDsl` で schema validation 無効時の補完検証も追加する
+   - ここを先に済ませないと、ExcelTemplate 変換器が正しい DSL を吐けない
+2. レイアウト runtime 補完
+   - `styleOverflow=edge` は `LayoutEngine` 内の post-expand 処理として追加する
+   - style-only seed cell を layout plan に保持できることを先に固定する
+3. ExcelTemplate 中間モデルと extractor
+   - 値/数式/最小スタイル/defined name/merged cell を読む
+   - 初版対象外機能は validation で Warning/Error 化する
+4. component 範囲解決と trigger 解析
+   - `__component_<Name>` 判定
+   - `__component_range_<Name>` 解決
+   - `{{use:...}}` / `repeat + use` の解析
+   - repeat は必ず `direction="down"` を明示出力する
+5. DslEmitter / XmlTemplateSerializer
+   - 中間モデルから debug XML と DSL text を生成する
+6. facade API と E2E 接続
+   - ExcelTemplate 入力から最終 Excel 生成までを 1 API で呼べるようにする
+
+### 13.6 API 方針
+- 既存 `ReportGenerator` は DSL 専用のまま維持する。
+- ExcelTemplate 入口は新規 API として追加する。
+
+想定シグネチャ例:
+```csharp
+public sealed class ExcelTemplateConversionResult
+{
+    public string Text { get; }
+    public IReadOnlyList<Issue> Issues { get; }
+}
+
+public sealed class ExcelTemplateConverter
+{
+    public ExcelTemplateConversionResult ConvertToDsl(string xlsxPath, ExcelTemplateConvertOptions? options = null);
+    public ExcelTemplateConversionResult ConvertToXmlTemplate(string xlsxPath, ExcelTemplateConvertOptions? options = null);
+}
+
+public sealed class ExcelTemplateReportGenerator
+{
+    public ReportGeneratorResult GenerateFromExcelTemplate(
+        string xlsxPath,
+        object? data,
+        ExcelTemplateGenerateOptions? options = null,
+        CancellationToken cancellationToken = default);
+}
+```
+
+方針:
+- 最初は `string xlsxPath` を主入口にする。stream overload は必要になった時点で追加する。
+- debug 用に「生成 DSL / XML を返す API」を分離し、最終生成 API に詰め込みすぎない。
+- conversion-only API でも `Issues` を返し、座標付き Warning/Error を失わない。
+
+### 13.7 テスト戦略
+1. Unit
+   - `cell@formula` / `styleOverflow` の parser/runtime
+   - `UseTriggerParser`
+   - `ComponentRangeResolver`
+   - `repeat@direction="down"` 明示出力
+   - extractor の値/数式/スタイル/defined name/merged cell 抽出
+   - 既存後方互換: `cell@value="=..."` が従来どおり数式として動くこと
+2. Integration
+   - xlsx -> xml template snapshot
+   - xlsx -> dsl snapshot
+3. E2E
+   - xlsx template -> dsl -> final xlsx
+   - `GroupBlock` / `ItemRow` の repeat/use 展開
+   - `styleOverflow=edge`
+   - `cell@formula`
+   - merged cell 制約 violation
+
+### 13.8 実装時のガードレール
+- 初版対象外の条件付き書式は extractor/validator で明示的に検出し、silent ignore しない。
+- merged cell は component 定義範囲内で完結している場合だけ許可し、境界跨ぎは Error にする。
+- 数式は値に潰さず保持し、C# 側で Excel 関数計算はしない。
+- `styleOverflow=edge` は現行レイアウトモデルに合わせ、right/down/right-down corner のみ対応する。
+- schema validation を無効化しても契約逸脱を見逃さないよう、`ValidateDsl` で `formula/value` 競合と `styleOverflow` 値を検証する。
+- 既存 `ReportGenerator` の公開挙動を変える変更は避け、必要なら新規 API で閉じる。
+
+### 13.9 完了条件
+- ExcelTemplate から DSL 変換が unit/integration で固定されている
+- ExcelTemplate から最終 Excel 生成まで E2E で通る
+- Issue / logger に座標付き原因が残る
+- 初版対象外機能は validation で検知できる
+- 設計書と実装の契約差分が解消されている

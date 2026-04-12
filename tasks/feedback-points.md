@@ -130,6 +130,7 @@ Last Updated: 2026-04-12
 | FP136 | `gpt-5.4` / `high` レビュー指摘として、現行 `use` 展開モデルでは `styleOverflow=edge` を right/down/right-down corner に限定し、overflow比較SVGも generic 文脈へ修正する | 対応済み | 2026-04-12 |
 | FP137 | 数式セルは原則 `cell@formula` とし、C# 側で Excel 関数計算をしない前提を設計へ明記する | 対応済み | 2026-04-12 |
 | FP138 | 実装前レビュー回答として、merged cell 制約は矩形内完結のみ、条件付き書式は初版対象外、性能閾値は当面不問で進める | 対応済み | 2026-04-12 |
+| FP139 | issue #58 の実装方針を策定し、sub-agent レビューを通して runtime schema 対象、`repeat@direction`、`styleOverflow=edge` 実装位置、conversion API の診断返却まで設計へ固定する | 対応済み | 2026-04-12 |
 ---
 
 ## 対応履歴

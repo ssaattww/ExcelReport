@@ -350,6 +350,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 記録: `reports/issue58-pre-implementation-answers-2026-04-12.md` を作成
 - 2026-04-12 issue #58 合意反映: 大規模テンプレートの性能閾値は当面不問とし、12.6 の未解決質問をクローズ
 - 2026-04-12 記録: `reports/issue58-performance-threshold-closed-2026-04-12.md` を作成
+- 2026-04-12 issue #58 実装方針策定: 既存 `ReportGenerator` 後段を再利用し、前段に `ExcelTemplate` 変換層を追加する実装順序・API方針・テスト戦略を 13章と実装方針レポートへ反映
+- 2026-04-12 記録: `reports/issue58-implementation-approach-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で実装方針レビューを実施し、runtime schema 対象不足、`repeat@direction` 契約不一致、`styleOverflow=edge` 実装位置未固定、conversion API の診断不足を指摘として整理
+- 2026-04-12 issue #58 実装方針修正: runtime schema の更新対象、`direction=\"down\"` 明示、`LayoutEngine` post-expand での `styleOverflow=edge` 実装、conversion result + `Issues`、`ValidateDsl` 補完検証、legacy formula 回帰テストを方針へ反映
+- 2026-04-12 記録: `reports/issue58-implementation-approach-review-2026-04-12.md` を作成
 
 ## Status Definitions
 
