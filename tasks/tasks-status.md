@@ -344,6 +344,12 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で `f64deb4` をレビューし、`styleOverflow=edge` は現行モデル上 right/down trailing edge 限定に揃えるべきこと、overflow比較SVGの文脈分離が必要なことを指摘
 - 2026-04-12 issue #58 修正: `styleOverflow=edge` を right/down/right-down corner へ限定し、10.9.4/11.5 と overflow比較SVGを整合させた
 - 2026-04-12 記録: `reports/issue58-gpt54-review-followup-2026-04-12.md` を作成
+- 2026-04-12 issue #58 方針確定: 数式セルは原則 `cell@formula` へ変換し、C# 側で Excel 関数計算をしない方針を設計へ反映
+- 2026-04-12 記録: `reports/issue58-formula-normalization-decision-2026-04-12.md` を作成
+- 2026-04-12 issue #58 合意反映: merged cell は矩形内完結のみ、条件付き書式は初版対象外、性能閾値は当面不問として 12章を更新
+- 2026-04-12 記録: `reports/issue58-pre-implementation-answers-2026-04-12.md` を作成
+- 2026-04-12 issue #58 合意反映: 大規模テンプレートの性能閾値は当面不問とし、12.6 の未解決質問をクローズ
+- 2026-04-12 記録: `reports/issue58-performance-threshold-closed-2026-04-12.md` を作成
 
 ## Status Definitions
 

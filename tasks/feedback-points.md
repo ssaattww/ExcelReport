@@ -128,6 +128,8 @@ Last Updated: 2026-04-12
 | FP134 | 更新後設計を再度 sub-agent（`gpt-5.3-codex` / `high`）でレビューし、High/Critical が解消済みであることを確認する | 対応済み | 2026-04-12 |
 | FP135 | 再レビューの Low 指摘として、`styleOverflow=edge` の4方向検証不足と 10.9.4 の右方向偏りを設計へ反映する | 対応済み | 2026-04-12 |
 | FP136 | `gpt-5.4` / `high` レビュー指摘として、現行 `use` 展開モデルでは `styleOverflow=edge` を right/down/right-down corner に限定し、overflow比較SVGも generic 文脈へ修正する | 対応済み | 2026-04-12 |
+| FP137 | 数式セルは原則 `cell@formula` とし、C# 側で Excel 関数計算をしない前提を設計へ明記する | 対応済み | 2026-04-12 |
+| FP138 | 実装前レビュー回答として、merged cell 制約は矩形内完結のみ、条件付き書式は初版対象外、性能閾値は当面不問で進める | 対応済み | 2026-04-12 |
 ---
 
 ## 対応履歴
