@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 実装継続: `UseTriggerParser` を追加し、`{{use:...}}` / `repeat + use` の最小文法を構造化して `direction=\"down\"` を固定
+- 2026-04-13 issue#58 検証: `ExcelTemplateUseTriggerParserTests` 5件通過、`ExcelReportLib.Tests` 全体228件通過
+- 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-use-trigger-parser-review-2026-04-13.md` に記録
+- 2026-04-13 issue#58 記録: use trigger parser 実装内容を `reports/issue58-use-trigger-parser-2026-04-13.md` に記録
 - 2026-04-13 issue#58 実装継続: `ExcelTemplateComponentRangeResolver` を追加し、`__component_<Name>` の defined name 優先解決と candidate bbox 自動判定を実装
 - 2026-04-13 issue#58 検証: `ExcelTemplateComponentRangeResolverTests` 5件通過、`ExcelReportLib.Tests` 全体223件通過
 - 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-component-range-resolver-review-2026-04-13.md` に記録
@@ -259,6 +263,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Additional Work
 
+- 2026-04-13 issue #58 実装: `UseTriggerParser` / `ExcelTemplateUseTrigger` / `ExcelTemplateUseTriggerParseResult` を追加
+- 2026-04-13 issue #58 実装: `{{use:Header}}` と `{{use:ItemRow, from:@items, var:item}}` の最小文法を解析し、repeat direction を `down` で正規化
+- 2026-04-13 issue #58 テスト: `ExcelTemplateUseTriggerParserTests` を追加し、通常文字列 / simple use / repeat use / from-var 不整合を固定
+- 2026-04-13 issue #58 review: `gpt-5.4` / `high` review を再試行したが、network 制限で `codex review` が中断したため結果を report に記録
+- 2026-04-13 issue #58 記録: `reports/issue58-use-trigger-parser-2026-04-13.md` / `reports/issue58-use-trigger-parser-review-2026-04-13.md` を追加
 - 2026-04-13 issue #58 実装: `ExcelTemplateComponentRangeResolver` を追加し、`__component_range_<Name>` の明示範囲と candidate bbox 自動判定を実装
 - 2026-04-13 issue #58 実装: `IssueKind.InvalidComponentRange` / `IssueKind.EmptyComponentRange` を追加
 - 2026-04-13 issue #58 テスト: `ExcelTemplateComponentRangeResolverTests` を追加し、defined name優先 / bbox自動判定 / 空範囲Error / 別シート参照Error を固定

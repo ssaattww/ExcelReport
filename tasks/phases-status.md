@@ -4,6 +4,9 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の use trigger 解析第1段として `UseTriggerParser` を追加し、simple use / repeat use を構造化、repeat direction を `down` で固定
+- 2026-04-13: issue #58 の use trigger parser を 5件の unit test と全体228件回帰で検証
+- 2026-04-13: issue #58 の use trigger parser review は `gpt-5.4` / `high` で再試行したが、network 制限により中断したため report に記録
 - 2026-04-13: issue #58 の component range 解決第1段として `ExcelTemplateComponentRangeResolver` を追加し、defined name 優先 + candidate bbox 自動判定を実装
 - 2026-04-13: issue #58 の component range resolver を 5件の unit test と全体223件回帰で検証
 - 2026-04-13: issue #58 の component range resolver review は `gpt-5.4` / `high` で再試行したが、network 制限により中断したため report に記録
