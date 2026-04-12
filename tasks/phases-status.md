@@ -4,6 +4,9 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の ExcelTemplate 中間モデル第1段として `ExcelTemplateExtractor` と workbook/sheet/cell/style/component range モデルを追加
+- 2026-04-13: issue #58 の extractor を xlsx 読取テストで固定し、追加2件 + 全体218件通過を確認
+- 2026-04-13: issue #58 の extractor 実装内容と review 試行結果を `reports/issue58-excel-template-extractor-2026-04-13.md` に記録
 - 2026-04-13: issue #58 の `styleOverflow=edge` runtime 検証を down/corner ケースまで拡張し、関連72件・全体216件通過を確認
 - 2026-04-13: issue #58 の review 試行結果と残留リスクを `reports/issue58-dsl-contract-extension-review-2026-04-13.md` に記録
 - 2026-04-12: issue #58 実装開始として `cell@formula` / `use@styleOverflow` の DSL契約拡張、`ValidateDsl` 補完検証、`LayoutEngine` の `styleOverflow=edge` post-expand 補完、`TemplateRangeOverflow` Warning を実装

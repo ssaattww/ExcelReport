@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateExtractor` と中間モデル（workbook/sheet/cell/style/component range）を追加し、xlsx から sheet/cell/formula/defined name/merged cell を読取可能化
+- 2026-04-13 issue#58 検証: `ExcelTemplateExtractorTests` 2件通過、`ExcelReportLib.Tests` 全体218件通過
+- 2026-04-13 issue#58 記録: extractor 実装と review 試行結果を `reports/issue58-excel-template-extractor-2026-04-13.md` に記録
 - 2026-04-13 issue#58 テスト補強: `styleOverflow=edge` の down/corner runtime テストを追加し、`LayoutNodeTests|ValidateDslTests|DslParserTests|LayoutEngineTests` 72件通過、`ExcelReportLib.Tests` 全体216件通過
 - 2026-04-13 issue#58 review記録: `gpt-5.4` / `high` review 試行結果と残留リスクを `reports/issue58-dsl-contract-extension-review-2026-04-13.md` に記録
 - 2026-04-12 issue#58 実装開始: `cell@formula` / `use@styleOverflow` の DSL 契約拡張、`ValidateDsl` 補完検証、`LayoutEngine` の `styleOverflow=edge` post-expand 補完、`TemplateRangeOverflow` Warning を実装
@@ -259,6 +262,9 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-13 issue #58 テスト補強: `styleOverflow=edge` の down/corner ケースを `LayoutEngineTests` へ追加し、関連72件・全体216件通過を確認
 - 2026-04-12 issue #58 記録: `reports/issue58-dsl-contract-extension-2026-04-12.md` を作成
 - 2026-04-13 issue #58 review記録: `reports/issue58-dsl-contract-extension-review-2026-04-13.md` を作成
+- 2026-04-13 issue #58 実装継続: `ExcelTemplateExtractor` と `ExcelTemplateWorkbook/Sheet/Cell/Style/ComponentRange` を追加し、xlsx から sheet/cell/formula/defined name/merged cell を抽出可能にした
+- 2026-04-13 issue #58 テスト追加: `ExcelTemplateExtractorTests` を追加し、対象2件 + 全体218件通過を確認
+- 2026-04-13 issue #58 記録: `reports/issue58-excel-template-extractor-2026-04-13.md` を作成
 - 2026-04-05 issue #16: `sheet repeat` で増えるシート名を式で参照可能にするため、`cell@value` 式評価後の数式自動判定を実装
 - 2026-04-05 issue #16: 設計書 `Design/SheetReference/SheetReference_DetailDesign.md` を追加
 - 2026-04-05 issue #16 follow-up: `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を設計書へ追記
