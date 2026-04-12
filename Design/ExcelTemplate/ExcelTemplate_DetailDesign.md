@@ -94,7 +94,7 @@ Issue本文（2026-04-07作成）から、以下を設計対象とする。
 
 1. 明示範囲指定（最優先）
    - Workbook DefinedName: `__component_range_<Name>`
-   - 例: `__component_range_GroupBlock` -> `__component_GroupBlock!$A$1:$D$4`
+   - 例: `__component_range_GroupBlock` -> `__component_GroupBlock!$A$1:$C$3`
 2. 自動判定（DefinedName未指定時）
    - 候補セル: 値/数式/挿入トリガ/書式指定/結合セルに関与するセル
    - 候補セルの最小外接矩形を定義範囲とする
@@ -262,12 +262,12 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | 4 |  | `{{use:GroupBlock, from:@groups, var:group}}` |  |
 | 5 |  |  |  |
 
-#### 10.8.2 挿入元 `__component_GroupBlock` シート（3x4、入力テンプレート）
-| Row\Col | A | B | C | D |
-|---|---|---|---|---|
-| 1 | `@group.Name` |  |  |  |
-| 2 | `{{use:ItemRow, from:@group.Items, var:item}}` |  |  |  |
-| 3 |  |  |  |  |
+#### 10.8.2 挿入元 `__component_GroupBlock` シート（3x3、入力テンプレート）
+| Row\Col | A | B | C |
+|---|---|---|---|
+| 1 | `@group.Name` |  |  |
+| 2 | `{{use:ItemRow, from:@group.Items, var:item}}` |  |  |
+| 3 |  |  |  |
 
 #### 10.8.3 挿入先セル値のSVG（表示値ベース）
 ![Insert target cell values](assets/insert-target-cell-values.svg)
@@ -283,6 +283,7 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 - 10.8.3/10.8.4 のSVGは、実運用のExcelTemplate見た目に合わせるため、説明用の背景色強調は行わない。
 - 挿入アンカーや有効範囲の意味づけは本文・表で説明し、セル塗り分けには反映しない。
 - ただしテンプレートで事前定義する罫線（実線/破線）は、入力側SVGにも反映する。
+- 本節の `GroupBlock` 定義範囲は `A1:C3` を採用する。周辺グリッドはシート表示であり、component 有効幅には含めない。
 
 #### 10.8.5 書式説明（Markdownテーブル）
 | 範囲/セル | 意味 | 備考 |
@@ -290,7 +291,7 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | 挿入先 `A3:C5` | 3x3 の親フレーム | 中央 `B4` が `use` アンカー |
 | 挿入先 `A1` | `{{use:Header}}` | ヘッダー挿入トリガ |
 | 挿入先 `A1:C1` | 例: 挿入先上辺の書式シード | 必須ではない（未設定でも展開可） |
-| 挿入元 `A1:D3` | `GroupBlock` の実サイズ | 行3列4を展開先へそのまま挿入 |
+| 挿入元 `A1:C3` | `GroupBlock` の定義範囲 | 行3列3。`repeat` 展開後の高さは item 件数で増加 |
 | 挿入元 `A1` | `@group.Name` | グループ見出し |
 | 挿入元 `A2` | `{{use:ItemRow, from:@group.Items, var:item}}` | 子コンポーネント挿入 |
 
@@ -360,7 +361,7 @@ var data = new InvoiceData
 | Header | `A1:C1` に `{{use:Header}}`、`styleOverflow=edge` | `A1:F1` まで外枠を拡張 |
 | GroupBlock repeat | `A3:C5` 外枠、中央 `B4` に `{{use:GroupBlock,...}}` | 親外枠は連続展開全体をまとめて `A3:E10` へ拡張する |
 | 1件目 GroupBlock | `repeat` の1件目 | `B4:D7` が挿入元実体。外周のみ罫線を持ち、`B7:D7` のみ下破線 |
-| 2件目 GroupBlock | `repeat` の2件目 | `B8:D9` が挿入元実体。外周のみ罫線を持ち、`B9:D9` のみ下破線 |
+| 2件目 GroupBlock | `repeat` の2件目 | `B8:D9` が挿入元実体。上辺は 1件目の `B7:D7` を共有境界として使い、自身は `B9:D9` の下破線を持つ |
 | 子データ列 | 値が2列でも可 | 有効幅 `W=3`（値2列+書式1列）なら外枠幅は `W+2=5` 列（`A:E`） |
 
 注:
@@ -388,6 +389,7 @@ var data = new InvoiceData
   - `use` アンカーセルを `A`
   - `R0` 内でのアンカー余白を `topMargin/bottomMargin/leftMargin/rightMargin`
   - 挿入元展開サイズを `H x W`
+  - `repeat` を含む場合の `H/W` は、`use` 起点で fully expand された結果全体の外接矩形サイズとする
 - 展開後外枠:
   - `rowStart = A.row - topMargin`
   - `rowEnd   = A.row + (H - 1) + bottomMargin`
@@ -396,6 +398,8 @@ var data = new InvoiceData
 - 結果:
   - 3x3で中央use（四辺余白=1）の場合、子component展開範囲を四辺1セルぶん拡張した外枠になる。
   - 行方向だけでなく列方向にも同じルールを適用する。
+  - `repeat` が縦方向に 2 件連続展開される場合、`H` は各インスタンス高の合計、`W` はインスタンス幅の最大値とする。
+  - 本節の `GroupBlock` 例では `H=6`、`W=3` なので、`A3:C5` の親フレームは `A3:E10` へ拡張される。
 
 #### 10.9.2 挿入先書式の overflow 拡張ポリシー（`styleOverflow`）
 「挿入先で定義した書式を、子展開で増えた領域にも伸ばすか」を `use` 単位で選択可能にする。
@@ -414,26 +418,35 @@ var data = new InvoiceData
   - `none`: 挿入先書式は拡張しない。増分領域は挿入元コンポーネント側書式のみで決定する。
   - `edge`: 増分領域に対し、拡張方向の「元範囲の辺セル」を基準に書式をコピーする。
 
-- `edge` の決定ルール（右方向に `deltaCols > 0` の場合）:
-  1. 右辺基準列 `baseCol = originalColEnd` を取る。
-  2. 各行について `baseCol` のセルに書式がある場合のみ、増分列へ同一書式をコピーする。
-  3. `baseCol` が未設定なら、その行はコピーしない。
-  4. コピー後も競合は 11章ルール（辺単位優先順位）で解決する。
+- `edge` の決定ルール:
+  1. 右方向に `deltaCols > 0` の場合、右辺基準列 `baseCol = originalColEnd` を取る。
+  2. 左方向に `deltaCols < 0` の場合、左辺基準列 `baseCol = originalColStart` を取る。
+  3. 下方向に `deltaRows > 0` の場合、下辺基準行 `baseRow = originalRowEnd` を取る。
+  4. 上方向に `deltaRows < 0` の場合、上辺基準行 `baseRow = originalRowStart` を取る。
+  5. 辺拡張では、基準辺セルに書式がある場合のみ、増分領域へ同一書式をコピーする。
+  6. 右下/右上/左下/左上の角領域が同時に増える場合、対応する元範囲の角セルを書式基準にする。
+  7. 基準辺または基準角が未設定なら、その行/列/角にはコピーしない。
+  8. コピー後も競合は 11章ルール（辺単位優先順位）で解決する。
 
-- 3x3 + 中央`use` + `GroupBlock(3x4最小定義)` の具体化:
+- 3x3 + 中央`use` + 4列子component overflow ケースの具体化:
   - `A1:C1` が書式設定され、`styleOverflow=edge` の場合: `D1` へ拡張される。
   - `A1:C1` が書式設定され、`styleOverflow=none` の場合: `D1` へは拡張されない。
   - `A1:B1` のみ書式設定され、`styleOverflow=edge` の場合: 右辺基準 `C1` が未設定のため `D1` は拡張されない。
+  - 同じ考え方で、`A3:A5` が書式設定され、下方向に `deltaRows > 0` の場合は `A6` 以降へ下辺基準で拡張する。
 
-#### 10.9.3 書式 overflow のSVG比較（3x3 -> 3x4）
+#### 10.9.3 書式 overflow のSVG比較（3x3 -> 4列子component）
 ![Style overflow modes](assets/style-overflow-modes-3x3.svg)
 
 #### 10.9.4 書式 overflow の期待結果（Markdownテーブル）
-| ケース | 入力書式シード | 設定 | 拡張列 `D1` の結果 |
-|---|---|---|---|
-| Case 1 | `A1:C1` | `styleOverflow=none` | 拡張しない（未設定） |
-| Case 2 | `A1:C1` | `styleOverflow=edge` | `C1` を基準に拡張（設定される） |
-| Case 3 | `A1:B1` | `styleOverflow=edge` | `C1` が未設定なので拡張しない（未設定） |
+| ケース | 入力書式シード | 設定 | 増分方向 | 期待結果 |
+|---|---|---|---|---|
+| Case 1 | `A1:C1` | `styleOverflow=none` | 右 | `D1` へは拡張しない（未設定） |
+| Case 2 | `A1:C1` | `styleOverflow=edge` | 右 | `C1` を基準に `D1` へ拡張する |
+| Case 3 | `A1:B1` | `styleOverflow=edge` | 右 | `C1` が未設定なので `D1` へは拡張しない |
+| Case 4 | `B1:D1` | `styleOverflow=edge` | 左 | `B1` を基準に `A1` へ拡張する |
+| Case 5 | `A3:A5` | `styleOverflow=edge` | 下 | `A5` を基準に `A6` 以降へ拡張する |
+| Case 6 | `A4:A6` | `styleOverflow=edge` | 上 | `A4` を基準に `A3` へ拡張する |
+| Case 7 | `B2:D4` | `styleOverflow=edge` | 右下角 | 元範囲の右下角 `D4` を基準に角領域へ拡張する |
 
 補足:
 - `A1` は `Header` component 由来の固定値（`請求書`）。
@@ -445,14 +458,14 @@ var data = new InvoiceData
 ### 10.10 コンポーネント定義範囲の具体例
 #### 10.10.1 明示範囲指定
 - 定義名: `__component_range_GroupBlock`
-- 参照先: `__component_GroupBlock!$A$1:$D$4`
+- 参照先: `__component_GroupBlock!$A$1:$C$3`
 - 挙動: この矩形外のセルはコンポーネント抽出対象外とする。
 
 #### 10.10.2 自動判定時
 - 候補セルが `A1`（`@group.Name`）と `A2`（`{{use:ItemRow,...}}`）のみの場合:
   - 初期矩形: `A1:A2`
-  - 書式指定が `D4` に存在する場合:
-    - 拡張矩形: `A1:D4`
+  - 書式指定が `C3` に存在する場合:
+    - 拡張矩形: `A1:C3`
 - この最終矩形を component 展開サイズ（高さ/幅）の基準とする。
 
 #### 10.10.3 バリデーション
@@ -485,6 +498,10 @@ var data = new InvoiceData
 - 親componentと子componentの境界で、同一辺が二重定義された場合は「子component優先」。
 - `repeat + use` で連続展開される行境界は、各行の bottom/top を辺単位で解決する。
 - 列方向の境界（left/right）も同様に辺単位で解決する。
+- 同一 `repeat` から生成された sibling instance 同士が連続配置される場合、共有境界は1本だけ描画する。
+- 縦方向 repeat の共有境界では、先行 instance の `bottom` を採用し、後続 instance の `top` は重ね描きしない。
+- 横方向 repeat の共有境界では、先行 instance の `right` を採用し、後続 instance の `left` は重ね描きしない。
+- 共有境界で同優先度・異値の罫線が衝突した場合は「先行 instance の trailing edge 優先」とし、Warning を記録する。
 - 外枠を親で管理し、内側明細線を子で管理する設計を推奨。
 - 挿入先に外枠（フレーム）を定義する場合は 10.9.1 の追従拡張ルールで再配置する。
 
@@ -497,6 +514,7 @@ var data = new InvoiceData
 このとき:
 - 最終行以外: `ItemRow.bottom` が有効
 - グループ末尾: 親 `GroupBlock.bottom` と子 `ItemRow.bottom` が競合しうるため、子優先で解決し Warning を記録
+- `GroupBlock` が repeat で縦連結される場合: 先行 block の `bottom` を共有境界へ採用し、後続 block の `top` は描画しない
 
 ### 11.5 検証ケース（実装前にテスト化予定）
 1. 親外枠 + 子内罫線の組み合わせが期待どおり描画される
@@ -510,6 +528,11 @@ var data = new InvoiceData
 9. `styleOverflow=none` で `A1:C1` 書式が `D1` へ拡張されない
 10. `styleOverflow=edge` で `A1:C1` 書式が `D1` へ拡張される
 11. `styleOverflow=edge` かつ `A1:B1` のみ書式時、`C1` 未設定のため `D1` へ拡張されない
+12. `styleOverflow=edge` で下方向に `deltaRows > 0` が発生した場合、下辺基準で overflow 行へ書式が拡張される
+13. `styleOverflow=edge` で左方向に `deltaCols < 0` が発生した場合、左辺基準で overflow 列へ書式が拡張される
+14. `styleOverflow=edge` で上方向に `deltaRows < 0` が発生した場合、上辺基準で overflow 行へ書式が拡張される
+15. `styleOverflow=edge` で角領域が増える場合、対応する元範囲の角セルを基準に corner copy される
+16. 同一 `repeat` の連続 instance 境界で、先行 instance の trailing edge が共有境界として1本だけ描画される
 
 ### 11.6 リスクと緩和策
 - リスク: Excel側の自由入力で罫線指定が過剰に衝突する

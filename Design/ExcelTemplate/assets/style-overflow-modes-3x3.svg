@@ -11,8 +11,8 @@
     .child { stroke: #666; stroke-width: 1.2; stroke-dasharray: 5 3; fill: none; }
   </style>
 
-  <text x="20" y="28" class="title">3x3挿入先 + 3x4 GroupBlock: 挿入先書式 overflow 挙動</text>
-  <text x="20" y="48" class="sub">子展開により親範囲が右方向へ1列拡張される想定（A..C → A..D）。</text>
+  <text x="20" y="28" class="title">3x3挿入先 + 4列子component: 挿入先書式 overflow 挙動</text>
+  <text x="20" y="48" class="sub">overflow 比較専用ケース。子展開により親範囲が右方向へ1列拡張される想定（A..C → A..D）。</text>
 
   <g transform="translate(30,86)">
     <text x="0" y="-14" class="title">Case 1: styleOverflow=none / seed=A1:C1</text>

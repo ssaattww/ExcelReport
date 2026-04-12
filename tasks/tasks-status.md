@@ -335,6 +335,12 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 記録: `reports/issue58-repeat-frame-aggregation-2026-04-12.md` を作成
 - 2026-04-12 issue #58 review: sub-agent（`gpt-5.3-codex` / `high`）で 10.8/10.9/10.10 を設計レビューし、`repeat` 時の `H` 定義、`GroupBlock` 有効幅、`styleOverflow=edge` の行方向、連続インスタンス境界罫線の未定義を指摘事項として整理
 - 2026-04-12 記録: `reports/issue58-subagent-design-review-2026-04-12.md` を作成
+- 2026-04-12 issue #58 設計修正: sub-agent 指摘を受け、`GroupBlock` 定義範囲を `A1:C3` に統一し、`repeat` 時の `H/W` 定義、`styleOverflow=edge` の上下左右、連続 instance 境界の trailing edge 優先ルールを設計へ追記
+- 2026-04-12 記録: `reports/issue58-design-fixes-after-subagent-review-2026-04-12.md` を作成
+- 2026-04-12 issue #58 re-review: sub-agent（`gpt-5.3-codex` / `high`）で更新後設計を再レビューし、High/Critical なし、残留は `styleOverflow=edge` の4方向検証不足と 10.9.4 テーブルの右方向偏りのみと確認
+- 2026-04-12 記録: `reports/issue58-subagent-rereview-2026-04-12.md` を作成
+- 2026-04-12 issue #58 follow-up: 再レビューの Low 指摘に対応し、10.9.4 を 右/左/下/上/角 の期待結果表へ拡張、11.5 に left/top/corner copy の検証ケースを追加
+- 2026-04-12 記録: `reports/issue58-low-findings-followup-2026-04-12.md` を作成
 
 ## Status Definitions
 

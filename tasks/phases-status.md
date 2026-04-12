@@ -223,6 +223,9 @@ Last Updated: 2026-04-12
 - 2026-04-12: issue #58 で 10.8.9 出力SVGを `A1:F1` / `A3:E8` 状態整理ケースへ更新し、説明文も先頭GroupBlock抜粋へ整合
 - 2026-04-12: issue #58 で repeat 解釈を修正し、`GroupBlock` 2件は `B4:D7` / `B8:D9` に連続展開、親フレームは `A3:E10` として 10.8.9/10.8.10 を更新
 - 2026-04-12: issue #58 で sub-agent（`gpt-5.3-codex` / `high`）レビューを実施し、`repeat` 高さ定義・`GroupBlock` 幅定義・`styleOverflow=edge` 行方向・連続境界罫線の未定義を残課題として記録
+- 2026-04-12: issue #58 で sub-agent 指摘へ対応し、`GroupBlock` を `A1:C3` に統一、`repeat` 時の aggregate `H/W`、`styleOverflow=edge` の上下左右、連続 instance 境界の trailing edge 優先を設計へ反映
+- 2026-04-12: issue #58 で更新後設計を sub-agent（`gpt-5.3-codex` / `high`）で再レビューし、重大指摘なし、残留は `styleOverflow=edge` の4方向検証と 10.9.4 表の表現改善のみと確認
+- 2026-04-12: issue #58 で再レビューの Low 指摘へ対応し、10.9.4 の期待結果表を4方向+角領域へ拡張、11.5 に left/top/corner copy 検証を追加
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%
