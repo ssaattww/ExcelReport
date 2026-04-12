@@ -1090,6 +1090,14 @@ namespace ExcelReportLib.DSL
         /// </summary>
         EmptyComponentRange,
         /// <summary>
+        /// An ExcelTemplate merged cell crossed the resolved component boundary.
+        /// </summary>
+        MergedCellBoundaryViolation,
+        /// <summary>
+        /// The ExcelTemplate workbook used a feature that is intentionally unsupported in the initial release.
+        /// </summary>
+        UnsupportedExcelTemplateFeature,
+        /// <summary>
         /// A formula reference series must be a single continuous one-dimensional range.
         /// </summary>
         FormulaRefSeriesNot1DContinuous,

@@ -11,14 +11,17 @@ public sealed class ExcelTemplateSheet
     /// <param name="name">The sheet name.</param>
     /// <param name="cells">The extracted cells.</param>
     /// <param name="mergedRanges">The extracted merged ranges.</param>
+    /// <param name="hasConditionalFormatting">Whether the sheet contains conditional formatting.</param>
     public ExcelTemplateSheet(
         string name,
         IReadOnlyList<ExcelTemplateCell>? cells = null,
-        IReadOnlyList<string>? mergedRanges = null)
+        IReadOnlyList<string>? mergedRanges = null,
+        bool hasConditionalFormatting = false)
     {
         Name = name;
         Cells = cells?.ToArray() ?? [];
         MergedRanges = mergedRanges?.ToArray() ?? [];
+        HasConditionalFormatting = hasConditionalFormatting;
     }
 
     /// <summary>
@@ -35,4 +38,9 @@ public sealed class ExcelTemplateSheet
     /// Gets the merged range references.
     /// </summary>
     public IReadOnlyList<string> MergedRanges { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the sheet contains conditional formatting.
+    /// </summary>
+    public bool HasConditionalFormatting { get; }
 }

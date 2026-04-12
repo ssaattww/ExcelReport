@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateValidator` を追加し、merged range 境界違反・malformed use trigger・unsupported conditional formatting を Error 化
+- 2026-04-13 issue#58 実装修正: `UseTriggerParser` を top-level comma tokenizer へ補強し、`from:` 式内カンマを含む trigger を正しく解析可能化
+- 2026-04-13 issue#58 検証: validator/extractor 6件、関連89件、`ExcelReportLib.Tests` 全体233件通過
+- 2026-04-13 issue#58 記録: validator 実装記録と review 記録を `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` / `reports/issue58-validator-review-2026-04-13.md` に保存
 - 2026-04-13 issue#58 実装継続: `UseTriggerParser` を追加し、`{{use:...}}` / `repeat + use` の最小文法を構造化して `direction=\"down\"` を固定
 - 2026-04-13 issue#58 検証: `ExcelTemplateUseTriggerParserTests` 5件通過、`ExcelReportLib.Tests` 全体228件通過
 - 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-use-trigger-parser-review-2026-04-13.md` に記録
@@ -263,6 +267,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Additional Work
 
+- 2026-04-13 issue #58 実装: `ExcelTemplateValidator` を追加し、`MergedCellBoundaryViolation` / `UnsupportedExcelTemplateFeature` / malformed trigger の診断を集約
+- 2026-04-13 issue #58 実装: `ExcelTemplateSheet.HasConditionalFormatting` と extractor の conditional formatting 検出を追加
+- 2026-04-13 issue #58 実装修正: `UseTriggerParser` の comma tokenization を top-level split へ修正し、`from:` 式内カンマの回帰を防止
+- 2026-04-13 issue #58 テスト: validator 4件 + trigger parser 1件 + extractor 1件を追加し、全体233件通過を確認
+- 2026-04-13 issue #58 記録: `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` と `reports/issue58-validator-review-2026-04-13.md` を追加
 - 2026-04-13 issue #58 実装: `UseTriggerParser` / `ExcelTemplateUseTrigger` / `ExcelTemplateUseTriggerParseResult` を追加
 - 2026-04-13 issue #58 実装: `{{use:Header}}` と `{{use:ItemRow, from:@items, var:item}}` の最小文法を解析し、repeat direction を `down` で正規化
 - 2026-04-13 issue #58 テスト: `ExcelTemplateUseTriggerParserTests` を追加し、通常文字列 / simple use / repeat use / from-var 不整合を固定

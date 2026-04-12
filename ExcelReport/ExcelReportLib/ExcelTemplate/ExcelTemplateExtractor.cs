@@ -57,8 +57,9 @@ public sealed class ExcelTemplateExtractor
             .Where(reference => !string.IsNullOrWhiteSpace(reference))
             .Cast<string>()
             .ToArray();
+        var hasConditionalFormatting = worksheet.Elements<ConditionalFormatting>().Any();
 
-        return new ExcelTemplateSheet(sheet.Name?.Value ?? string.Empty, cells, mergedRanges);
+        return new ExcelTemplateSheet(sheet.Name?.Value ?? string.Empty, cells, mergedRanges, hasConditionalFormatting);
     }
 
     private static ExcelTemplateCell ExtractCell(WorkbookPart workbookPart, Cell cell)

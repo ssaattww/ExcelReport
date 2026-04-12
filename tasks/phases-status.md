@@ -4,6 +4,10 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の validator を追加し、merged range 境界違反・malformed use trigger・unsupported conditional formatting を Error として検出可能化
+- 2026-04-13: issue #58 の `UseTriggerParser` を top-level comma tokenizer へ補強し、`from:` 式内カンマを含む repeat trigger の回帰を修正
+- 2026-04-13: issue #58 の validator 実装記録と review 記録を `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` / `reports/issue58-validator-review-2026-04-13.md` に保存
+- 2026-04-13: issue #58 の validator/trigger/extractor 関連89件と全体233件通過を確認
 - 2026-04-13: issue #58 の use trigger 解析第1段として `UseTriggerParser` を追加し、simple use / repeat use を構造化、repeat direction を `down` で固定
 - 2026-04-13: issue #58 の use trigger parser を 5件の unit test と全体228件回帰で検証
 - 2026-04-13: issue #58 の use trigger parser review は `gpt-5.4` / `high` で再試行したが、network 制限により中断したため report に記録

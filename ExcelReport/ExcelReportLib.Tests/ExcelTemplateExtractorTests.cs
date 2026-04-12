@@ -41,6 +41,8 @@ public sealed class ExcelTemplateExtractorTests
             Assert.Null(formulaCell.Value);
             Assert.Equal("42", numericCell.Value);
             Assert.Contains("A1:B1", componentSheet.MergedRanges);
+            Assert.False(componentSheet.HasConditionalFormatting);
+            Assert.True(summarySheet.HasConditionalFormatting);
         }
         finally
         {
@@ -86,7 +88,8 @@ public sealed class ExcelTemplateExtractorTests
             cells:
             [
                 CreateNumberCell("C3", "42"),
-            ]);
+            ],
+            hasConditionalFormatting: true);
 
         sheets.Append(
             CreateSheet(componentSheetPart, workbookPart, "__component_Header", 1U),
@@ -108,7 +111,8 @@ public sealed class ExcelTemplateExtractorTests
         string sheetName,
         uint sheetId,
         IReadOnlyList<Cell> cells,
-        string? mergedRange = null)
+        string? mergedRange = null,
+        bool hasConditionalFormatting = false)
     {
         var worksheetPart = workbookPart.AddNewPart<WorksheetPart>($"rId{sheetId}");
         var worksheet = new Worksheet();
@@ -131,6 +135,15 @@ public sealed class ExcelTemplateExtractorTests
         if (!string.IsNullOrWhiteSpace(mergedRange))
         {
             worksheet.Append(new MergeCells(new MergeCell { Reference = mergedRange }));
+        }
+
+        if (hasConditionalFormatting)
+        {
+            worksheet.Append(
+                new ConditionalFormatting
+                {
+                    SequenceOfReferences = new ListValue<StringValue> { InnerText = "C3" },
+                });
         }
 
         worksheetPart.Worksheet = worksheet;

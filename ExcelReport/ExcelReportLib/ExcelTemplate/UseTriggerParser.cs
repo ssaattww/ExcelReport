@@ -1,4 +1,5 @@
 using ExcelReportLib.DSL;
+using System.Text;
 
 namespace ExcelReportLib.ExcelTemplate;
 
@@ -36,7 +37,7 @@ public sealed class UseTriggerParser
             return ExcelTemplateUseTriggerParseResult.Invalid("<use> trigger must specify a component name.");
         }
 
-        var tokens = body.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var tokens = SplitTopLevelTokens(body);
         if (tokens.Length == 0)
         {
             return ExcelTemplateUseTriggerParseResult.Invalid("<use> trigger must specify a component name.");
@@ -87,6 +88,81 @@ public sealed class UseTriggerParser
             variableName,
             string.IsNullOrWhiteSpace(fromExpression) ? null : "down");
         return ExcelTemplateUseTriggerParseResult.Success(trigger);
+    }
+
+    private static string[] SplitTopLevelTokens(string body)
+    {
+        var tokens = new List<string>();
+        var current = new StringBuilder();
+        var parenthesesDepth = 0;
+        var bracketDepth = 0;
+        var braceDepth = 0;
+        var inSingleQuote = false;
+        var inDoubleQuote = false;
+
+        for (var index = 0; index < body.Length; index++)
+        {
+            var character = body[index];
+            var previous = index > 0 ? body[index - 1] : '\0';
+
+            if (character == '"' && !inSingleQuote && previous != '\\')
+            {
+                inDoubleQuote = !inDoubleQuote;
+                current.Append(character);
+                continue;
+            }
+
+            if (character == '\'' && !inDoubleQuote && previous != '\\')
+            {
+                inSingleQuote = !inSingleQuote;
+                current.Append(character);
+                continue;
+            }
+
+            if (!inSingleQuote && !inDoubleQuote)
+            {
+                switch (character)
+                {
+                    case '(':
+                        parenthesesDepth++;
+                        break;
+                    case ')':
+                        parenthesesDepth = Math.Max(0, parenthesesDepth - 1);
+                        break;
+                    case '[':
+                        bracketDepth++;
+                        break;
+                    case ']':
+                        bracketDepth = Math.Max(0, bracketDepth - 1);
+                        break;
+                    case '{':
+                        braceDepth++;
+                        break;
+                    case '}':
+                        braceDepth = Math.Max(0, braceDepth - 1);
+                        break;
+                    case ',' when parenthesesDepth == 0 && bracketDepth == 0 && braceDepth == 0:
+                        var token = current.ToString().Trim();
+                        if (!string.IsNullOrWhiteSpace(token))
+                        {
+                            tokens.Add(token);
+                        }
+
+                        current.Clear();
+                        continue;
+                }
+            }
+
+            current.Append(character);
+        }
+
+        var lastToken = current.ToString().Trim();
+        if (!string.IsNullOrWhiteSpace(lastToken))
+        {
+            tokens.Add(lastToken);
+        }
+
+        return [.. tokens];
     }
 }
 

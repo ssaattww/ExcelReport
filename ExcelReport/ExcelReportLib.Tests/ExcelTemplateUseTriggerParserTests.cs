@@ -62,6 +62,25 @@ public sealed class ExcelTemplateUseTriggerParserTests
     }
 
     /// <summary>
+    /// Verifies that commas inside from expression do not break trigger tokenization.
+    /// </summary>
+    [Fact]
+    public void Parse_RepeatUse_WithCommaInFromExpression_ReturnsRepeatTrigger()
+    {
+        var parser = new UseTriggerParser();
+
+        var result = parser.Parse("{{use:ItemRow, from:@(root.Items.Select((x, i) => new { x, i })), var:item}}");
+
+        Assert.True(result.IsTrigger);
+        var trigger = Assert.IsType<ExcelTemplateUseTrigger>(result.Trigger);
+        Assert.Equal("ItemRow", trigger.ComponentName);
+        Assert.Equal("@(root.Items.Select((x, i) => new { x, i }))", trigger.FromExpression);
+        Assert.Equal("item", trigger.VariableName);
+        Assert.Equal("down", trigger.RepeatDirection);
+        Assert.Empty(result.Issues);
+    }
+
+    /// <summary>
     /// Verifies that from without var returns error.
     /// </summary>
     [Fact]
