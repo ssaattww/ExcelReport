@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="660" viewBox="0 0 1120 660">
+  <style>
+    .title { font: bold 18px Calibri, sans-serif; fill: #222; }
+    .sub { font: 12px Calibri, sans-serif; fill: #555; }
+    .hdr { font: 12px Calibri, sans-serif; fill: #333; }
+    .txt { font: 12px Calibri, sans-serif; fill: #111; }
+    .head { fill: #f3f3f3; stroke: #c9c9c9; stroke-width: 1; }
+    .cell { fill: #fff; stroke: #d9d9d9; stroke-width: 1; }
+    .solid { stroke: #222; stroke-width: 1.6; fill: none; }
+    .dashed { stroke: #222; stroke-width: 1.3; stroke-dasharray: 6 4; fill: none; }
+  </style>
+
+  <text x="20" y="28" class="title">Invoice シート（出力Excelイメージ）</text>
+  <text x="20" y="48" class="sub">Header は A1:F1 へ拡張。GroupBlock repeat は B4:D9 に連続展開され、親フレームは A3:E10 へ拡張される。</text>
+
+  <g transform="translate(60,80)">
+    <rect x="0" y="0" width="56" height="34" class="head"/>
+    <rect x="56" y="0" width="130" height="34" class="head"/>
+    <rect x="186" y="0" width="130" height="34" class="head"/>
+    <rect x="316" y="0" width="130" height="34" class="head"/>
+    <rect x="446" y="0" width="130" height="34" class="head"/>
+    <rect x="576" y="0" width="130" height="34" class="head"/>
+    <rect x="706" y="0" width="130" height="34" class="head"/>
+
+    <text x="20" y="22" class="hdr">Row</text>
+    <text x="112" y="22" class="hdr">A</text>
+    <text x="242" y="22" class="hdr">B</text>
+    <text x="372" y="22" class="hdr">C</text>
+    <text x="502" y="22" class="hdr">D</text>
+    <text x="632" y="22" class="hdr">E</text>
+    <text x="762" y="22" class="hdr">F</text>
+
+    <g>
+      <rect x="0" y="34" width="56" height="44" class="head"/><rect x="56" y="34" width="130" height="44" class="cell"/><rect x="186" y="34" width="130" height="44" class="cell"/><rect x="316" y="34" width="130" height="44" class="cell"/><rect x="446" y="34" width="130" height="44" class="cell"/><rect x="576" y="34" width="130" height="44" class="cell"/><rect x="706" y="34" width="130" height="44" class="cell"/>
+      <rect x="0" y="78" width="56" height="44" class="head"/><rect x="56" y="78" width="130" height="44" class="cell"/><rect x="186" y="78" width="130" height="44" class="cell"/><rect x="316" y="78" width="130" height="44" class="cell"/><rect x="446" y="78" width="130" height="44" class="cell"/><rect x="576" y="78" width="130" height="44" class="cell"/><rect x="706" y="78" width="130" height="44" class="cell"/>
+      <rect x="0" y="122" width="56" height="44" class="head"/><rect x="56" y="122" width="130" height="44" class="cell"/><rect x="186" y="122" width="130" height="44" class="cell"/><rect x="316" y="122" width="130" height="44" class="cell"/><rect x="446" y="122" width="130" height="44" class="cell"/><rect x="576" y="122" width="130" height="44" class="cell"/><rect x="706" y="122" width="130" height="44" class="cell"/>
+      <rect x="0" y="166" width="56" height="44" class="head"/><rect x="56" y="166" width="130" height="44" class="cell"/><rect x="186" y="166" width="130" height="44" class="cell"/><rect x="316" y="166" width="130" height="44" class="cell"/><rect x="446" y="166" width="130" height="44" class="cell"/><rect x="576" y="166" width="130" height="44" class="cell"/><rect x="706" y="166" width="130" height="44" class="cell"/>
+      <rect x="0" y="210" width="56" height="44" class="head"/><rect x="56" y="210" width="130" height="44" class="cell"/><rect x="186" y="210" width="130" height="44" class="cell"/><rect x="316" y="210" width="130" height="44" class="cell"/><rect x="446" y="210" width="130" height="44" class="cell"/><rect x="576" y="210" width="130" height="44" class="cell"/><rect x="706" y="210" width="130" height="44" class="cell"/>
+      <rect x="0" y="254" width="56" height="44" class="head"/><rect x="56" y="254" width="130" height="44" class="cell"/><rect x="186" y="254" width="130" height="44" class="cell"/><rect x="316" y="254" width="130" height="44" class="cell"/><rect x="446" y="254" width="130" height="44" class="cell"/><rect x="576" y="254" width="130" height="44" class="cell"/><rect x="706" y="254" width="130" height="44" class="cell"/>
+      <rect x="0" y="298" width="56" height="44" class="head"/><rect x="56" y="298" width="130" height="44" class="cell"/><rect x="186" y="298" width="130" height="44" class="cell"/><rect x="316" y="298" width="130" height="44" class="cell"/><rect x="446" y="298" width="130" height="44" class="cell"/><rect x="576" y="298" width="130" height="44" class="cell"/><rect x="706" y="298" width="130" height="44" class="cell"/>
+      <rect x="0" y="342" width="56" height="44" class="head"/><rect x="56" y="342" width="130" height="44" class="cell"/><rect x="186" y="342" width="130" height="44" class="cell"/><rect x="316" y="342" width="130" height="44" class="cell"/><rect x="446" y="342" width="130" height="44" class="cell"/><rect x="576" y="342" width="130" height="44" class="cell"/><rect x="706" y="342" width="130" height="44" class="cell"/>
+      <rect x="0" y="386" width="56" height="44" class="head"/><rect x="56" y="386" width="130" height="44" class="cell"/><rect x="186" y="386" width="130" height="44" class="cell"/><rect x="316" y="386" width="130" height="44" class="cell"/><rect x="446" y="386" width="130" height="44" class="cell"/><rect x="576" y="386" width="130" height="44" class="cell"/><rect x="706" y="386" width="130" height="44" class="cell"/>
+      <rect x="0" y="430" width="56" height="44" class="head"/><rect x="56" y="430" width="130" height="44" class="cell"/><rect x="186" y="430" width="130" height="44" class="cell"/><rect x="316" y="430" width="130" height="44" class="cell"/><rect x="446" y="430" width="130" height="44" class="cell"/><rect x="576" y="430" width="130" height="44" class="cell"/><rect x="706" y="430" width="130" height="44" class="cell"/>
+    </g>
+
+    <text x="22" y="62" class="hdr">1</text><text x="22" y="106" class="hdr">2</text><text x="22" y="150" class="hdr">3</text><text x="22" y="194" class="hdr">4</text><text x="22" y="238" class="hdr">5</text><text x="22" y="282" class="hdr">6</text><text x="22" y="326" class="hdr">7</text><text x="22" y="370" class="hdr">8</text><text x="22" y="414" class="hdr">9</text><text x="22" y="458" class="hdr">10</text>
+
+    <text x="66" y="62" class="txt">請求書</text>
+
+    <text x="196" y="194" class="txt">機械部品</text>
+    <text x="196" y="238" class="txt">Bolt</text><text x="326" y="238" class="txt">12</text><text x="456" y="238" class="txt">35</text>
+    <text x="196" y="282" class="txt">Nut</text><text x="326" y="282" class="txt">12</text><text x="456" y="282" class="txt">18</text>
+    <text x="196" y="326" class="txt">Washer</text><text x="326" y="326" class="txt">12</text><text x="456" y="326" class="txt">9</text>
+
+    <text x="196" y="370" class="txt">電材</text>
+    <text x="196" y="414" class="txt">Cable</text><text x="326" y="414" class="txt">3</text><text x="456" y="414" class="txt">980</text>
+
+    <!-- Header outer border A1:F1 -->
+    <rect x="56" y="34" width="780" height="44" class="solid"/>
+
+    <!-- Parent frame A3:E10 -->
+    <rect x="56" y="122" width="650" height="352" class="solid"/>
+
+    <!-- Inserted GroupBlock #1 B4:D7 -->
+    <line x1="186" y1="166" x2="576" y2="166" class="solid"/>
+    <line x1="186" y1="166" x2="186" y2="342" class="solid"/>
+    <line x1="576" y1="166" x2="576" y2="342" class="solid"/>
+    <line x1="186" y1="342" x2="576" y2="342" class="dashed"/>
+
+    <!-- Inserted GroupBlock #2 B8:D9 -->
+    <line x1="186" y1="342" x2="186" y2="430" class="solid"/>
+    <line x1="576" y1="342" x2="576" y2="430" class="solid"/>
+    <line x1="186" y1="430" x2="576" y2="430" class="dashed"/>
+  </g>
+</svg>

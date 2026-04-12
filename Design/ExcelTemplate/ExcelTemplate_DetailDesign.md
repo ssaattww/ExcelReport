@@ -294,7 +294,7 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | 挿入元 `A1` | `@group.Name` | グループ見出し |
 | 挿入元 `A2` | `{{use:ItemRow, from:@group.Items, var:item}}` | 子コンポーネント挿入 |
 
-#### 10.8.6 挿入データ（C# class 定義）
+使用データ（C# class 定義）:
 `repeat + use` で挿入されるデータモデルは、初版の設計例として以下を基準にする。
 
 ```csharp
@@ -318,7 +318,7 @@ public sealed class ItemData
 }
 ```
 
-#### 10.8.7 サンプル入力（C#）
+サンプル入力（C#）:
 ```csharp
 var data = new InvoiceData
 {
@@ -345,12 +345,12 @@ var data = new InvoiceData
 ```
 
 #### 10.8.8 C#データ展開後の挿入元（`GroupBlock` インスタンス）SVG
-以下は 10.8.7 のサンプルデータを `GroupBlock` 単位へ展開したときの、挿入元インスタンスの表示値イメージである。
+以下は本節のサンプルデータを `GroupBlock` 単位へ展開したときの、挿入元インスタンスの表示値イメージである。
 
 ![Expanded insert source from C# data](assets/expanded-insert-source-from-csharp.svg)
 
 #### 10.8.9 C#データ展開後セル値のSVG（`Invoice` 出力イメージ）
-以下は 10.8.7 のサンプルデータを `Invoice` シートへ挿入した出力イメージである。`Header` は `A1:F1` へ拡張し、`GroupBlock` は 1件目が `A3:E8`、2件目が `A9:E12` へ展開される。
+以下は本節のサンプルデータを `Invoice` シートへ挿入した出力イメージである。`Header` は `A1:F1` へ拡張し、`A3:C5` の 3x3 親フレームは `@groups` の連続展開結果をまとめて囲むため、最終的に `A3:E10` へ拡張される。`GroupBlock` 実体は 1件目が `B4:D7`、2件目が `B8:D9` に配置される。
 
 ![Expanded cell values from C# data](assets/expanded-cell-values-from-csharp.svg)
 
@@ -358,12 +358,13 @@ var data = new InvoiceData
 | 項目 | 入力（テンプレート） | 出力（展開後） |
 |---|---|---|
 | Header | `A1:C1` に `{{use:Header}}`、`styleOverflow=edge` | `A1:F1` まで外枠を拡張 |
-| 1件目 GroupBlock | `A3:C5` 外枠、中央 `B4` に `{{use:GroupBlock,...}}` | `A3:E8` が親外枠、`B4:D7` が挿入元実体。`B7:D7` のみ下破線 |
-| 2件目 GroupBlock | `repeat` により次位置へ展開 | `A9:E12` が親外枠、`B10:D11` が挿入元実体。`B11:D11` のみ下破線 |
+| GroupBlock repeat | `A3:C5` 外枠、中央 `B4` に `{{use:GroupBlock,...}}` | 親外枠は連続展開全体をまとめて `A3:E10` へ拡張する |
+| 1件目 GroupBlock | `repeat` の1件目 | `B4:D7` が挿入元実体。外周のみ罫線を持ち、`B7:D7` のみ下破線 |
+| 2件目 GroupBlock | `repeat` の2件目 | `B8:D9` が挿入元実体。外周のみ罫線を持ち、`B9:D9` のみ下破線 |
 | 子データ列 | 値が2列でも可 | 有効幅 `W=3`（値2列+書式1列）なら外枠幅は `W+2=5` 列（`A:E`） |
 
 注:
-- もし子の有効幅が本当に `W=2` なら、展開後外枠は `A3:D8`（4列）になる。
+- もし子の有効幅が本当に `W=2` なら、展開後外枠は `A3:D10`（4列）になる。
 - 「2列の値」と「コンポーネント有効幅」は同義ではない。幅判定は 10.10 の定義範囲で決まる。
 
 ### 10.9 サイズ不一致時の挿入ルール（挿入元 > 挿入先想定範囲）

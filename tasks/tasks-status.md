@@ -331,6 +331,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 issue #58 修正: 10.8.9 の出力SVGを更新し、`A1:F1` Header拡張 + `A3:E8` 子枠拡張が見える状態整理ケースへ差し替え
 - 2026-04-12 issue #58 修正: 10.8.9/10.10補足を「先頭GroupBlock抜粋」注記へ更新し、図と説明の整合を修正
 - 2026-04-12 記録: `reports/issue58-output-svg-refresh-2026-04-12.md` を作成
+- 2026-04-12 issue #58 再修正: 10.8.9/10.8.10 の repeat 解釈を見直し、2件の `GroupBlock` を `B4:D7` と `B8:D9` へ連続配置、親フレームを `A3:E10` へ拡張する図と説明へ更新
+- 2026-04-12 記録: `reports/issue58-repeat-frame-aggregation-2026-04-12.md` を作成
 
 ## Status Definitions
 
