@@ -400,6 +400,7 @@ var data = new InvoiceData
   - 行方向だけでなく列方向にも同じルールを適用する。
   - `repeat` が縦方向に 2 件連続展開される場合、`H` は各インスタンス高の合計、`W` はインスタンス幅の最大値とする。
   - 本節の `GroupBlock` 例では `H=6`、`W=3` なので、`A3:C5` の親フレームは `A3:E10` へ拡張される。
+  - 現行の `use` 展開はアンカー起点で右方向 / 下方向へ成長するモデルとし、left/up 側の負方向 overflow は発生させない。
 
 #### 10.9.2 挿入先書式の overflow 拡張ポリシー（`styleOverflow`）
 「挿入先で定義した書式を、子展開で増えた領域にも伸ばすか」を `use` 単位で選択可能にする。
@@ -416,17 +417,16 @@ var data = new InvoiceData
 
 - モード定義:
   - `none`: 挿入先書式は拡張しない。増分領域は挿入元コンポーネント側書式のみで決定する。
-  - `edge`: 増分領域に対し、拡張方向の「元範囲の辺セル」を基準に書式をコピーする。
+  - `edge`: 増分領域に対し、現行レイアウトモデルで実際に増える trailing edge（右辺 / 下辺）を基準に書式をコピーする。
 
 - `edge` の決定ルール:
   1. 右方向に `deltaCols > 0` の場合、右辺基準列 `baseCol = originalColEnd` を取る。
-  2. 左方向に `deltaCols < 0` の場合、左辺基準列 `baseCol = originalColStart` を取る。
-  3. 下方向に `deltaRows > 0` の場合、下辺基準行 `baseRow = originalRowEnd` を取る。
-  4. 上方向に `deltaRows < 0` の場合、上辺基準行 `baseRow = originalRowStart` を取る。
-  5. 辺拡張では、基準辺セルに書式がある場合のみ、増分領域へ同一書式をコピーする。
-  6. 右下/右上/左下/左上の角領域が同時に増える場合、対応する元範囲の角セルを書式基準にする。
-  7. 基準辺または基準角が未設定なら、その行/列/角にはコピーしない。
-  8. コピー後も競合は 11章ルール（辺単位優先順位）で解決する。
+  2. 下方向に `deltaRows > 0` の場合、下辺基準行 `baseRow = originalRowEnd` を取る。
+  3. 右辺 / 下辺の辺拡張では、基準辺セルに書式がある場合のみ、増分領域へ同一書式をコピーする。
+  4. 右下角領域が同時に増える場合、元範囲の右下角セルを書式基準にする。
+  5. 基準辺または基準角が未設定なら、その行 / 列 / 角にはコピーしない。
+  6. コピー後も競合は 11章ルール（辺単位優先順位）で解決する。
+  7. left / up 側の負方向 overflow は現行 `use` レイアウトモデルでは発生しないため、本版の対象外とする。
 
 - 3x3 + 中央`use` + 4列子component overflow ケースの具体化:
   - `A1:C1` が書式設定され、`styleOverflow=edge` の場合: `D1` へ拡張される。
@@ -443,13 +443,12 @@ var data = new InvoiceData
 | Case 1 | `A1:C1` | `styleOverflow=none` | 右 | `D1` へは拡張しない（未設定） |
 | Case 2 | `A1:C1` | `styleOverflow=edge` | 右 | `C1` を基準に `D1` へ拡張する |
 | Case 3 | `A1:B1` | `styleOverflow=edge` | 右 | `C1` が未設定なので `D1` へは拡張しない |
-| Case 4 | `B1:D1` | `styleOverflow=edge` | 左 | `B1` を基準に `A1` へ拡張する |
-| Case 5 | `A3:A5` | `styleOverflow=edge` | 下 | `A5` を基準に `A6` 以降へ拡張する |
-| Case 6 | `A4:A6` | `styleOverflow=edge` | 上 | `A4` を基準に `A3` へ拡張する |
-| Case 7 | `B2:D4` | `styleOverflow=edge` | 右下角 | 元範囲の右下角 `D4` を基準に角領域へ拡張する |
+| Case 4 | `A3:A5` | `styleOverflow=edge` | 下 | `A5` を基準に `A6` 以降へ拡張する |
+| Case 5 | `B2:D4` | `styleOverflow=edge` | 右下角 | 元範囲の右下角 `D4` を基準に角領域へ拡張する |
 
 補足:
 - `A1` は `Header` component 由来の固定値（`請求書`）。
+- left / up 側の負方向 overflow は、現行 `use` 展開モデルでは対象外である。
 - 10.8.9 のSVGでは、`@groups` の2件を連続展開した結果を示す。
 - SVGの線種は 11章ルールに対応する。
   - 実線: 親component外枠、または挿入元実体の top/left/right
@@ -529,10 +528,8 @@ var data = new InvoiceData
 10. `styleOverflow=edge` で `A1:C1` 書式が `D1` へ拡張される
 11. `styleOverflow=edge` かつ `A1:B1` のみ書式時、`C1` 未設定のため `D1` へ拡張されない
 12. `styleOverflow=edge` で下方向に `deltaRows > 0` が発生した場合、下辺基準で overflow 行へ書式が拡張される
-13. `styleOverflow=edge` で左方向に `deltaCols < 0` が発生した場合、左辺基準で overflow 列へ書式が拡張される
-14. `styleOverflow=edge` で上方向に `deltaRows < 0` が発生した場合、上辺基準で overflow 行へ書式が拡張される
-15. `styleOverflow=edge` で角領域が増える場合、対応する元範囲の角セルを基準に corner copy される
-16. 同一 `repeat` の連続 instance 境界で、先行 instance の trailing edge が共有境界として1本だけ描画される
+13. `styleOverflow=edge` で右下角領域が増える場合、元範囲の右下角セルを基準に corner copy される
+14. 同一 `repeat` の連続 instance 境界で、先行 instance の trailing edge が共有境界として1本だけ描画される
 
 ### 11.6 リスクと緩和策
 - リスク: Excel側の自由入力で罫線指定が過剰に衝突する

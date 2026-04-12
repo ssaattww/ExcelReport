@@ -226,6 +226,7 @@ Last Updated: 2026-04-12
 - 2026-04-12: issue #58 で sub-agent 指摘へ対応し、`GroupBlock` を `A1:C3` に統一、`repeat` 時の aggregate `H/W`、`styleOverflow=edge` の上下左右、連続 instance 境界の trailing edge 優先を設計へ反映
 - 2026-04-12: issue #58 で更新後設計を sub-agent（`gpt-5.3-codex` / `high`）で再レビューし、重大指摘なし、残留は `styleOverflow=edge` の4方向検証と 10.9.4 表の表現改善のみと確認
 - 2026-04-12: issue #58 で再レビューの Low 指摘へ対応し、10.9.4 の期待結果表を4方向+角領域へ拡張、11.5 に left/top/corner copy 検証を追加
+- 2026-04-12: issue #58 で `gpt-5.4` / `high` レビューを実施し、現行モデルでは `styleOverflow=edge` を right/down/right-down corner に限定すべきと確認、10.9.4/11.5/SVG を整合
 - Completed Phases: 10 / 10
 - In Progress Phases: 0 / 10
 - Overall Progress: 100%

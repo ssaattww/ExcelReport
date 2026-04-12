@@ -341,6 +341,9 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 記録: `reports/issue58-subagent-rereview-2026-04-12.md` を作成
 - 2026-04-12 issue #58 follow-up: 再レビューの Low 指摘に対応し、10.9.4 を 右/左/下/上/角 の期待結果表へ拡張、11.5 に left/top/corner copy の検証ケースを追加
 - 2026-04-12 記録: `reports/issue58-low-findings-followup-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で `f64deb4` をレビューし、`styleOverflow=edge` は現行モデル上 right/down trailing edge 限定に揃えるべきこと、overflow比較SVGの文脈分離が必要なことを指摘
+- 2026-04-12 issue #58 修正: `styleOverflow=edge` を right/down/right-down corner へ限定し、10.9.4/11.5 と overflow比較SVGを整合させた
+- 2026-04-12 記録: `reports/issue58-gpt54-review-followup-2026-04-12.md` を作成
 
 ## Status Definitions
 

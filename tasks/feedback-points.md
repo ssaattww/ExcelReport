@@ -127,6 +127,7 @@ Last Updated: 2026-04-12
 | FP133 | sub-agent 指摘を受け、`GroupBlock` 幅定義、`repeat` 時の aggregate `H/W`、`styleOverflow=edge` の行方向、連続 instance 境界の罫線優先順を設計へ反映する | 対応済み | 2026-04-12 |
 | FP134 | 更新後設計を再度 sub-agent（`gpt-5.3-codex` / `high`）でレビューし、High/Critical が解消済みであることを確認する | 対応済み | 2026-04-12 |
 | FP135 | 再レビューの Low 指摘として、`styleOverflow=edge` の4方向検証不足と 10.9.4 の右方向偏りを設計へ反映する | 対応済み | 2026-04-12 |
+| FP136 | `gpt-5.4` / `high` レビュー指摘として、現行 `use` 展開モデルでは `styleOverflow=edge` を right/down/right-down corner に限定し、overflow比較SVGも generic 文脈へ修正する | 対応済み | 2026-04-12 |
 ---
 
 ## 対応履歴

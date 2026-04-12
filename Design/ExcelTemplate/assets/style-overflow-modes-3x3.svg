@@ -27,7 +27,7 @@
       <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
 
       <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
-      <text x="119" y="102" class="txt">@group.Name</text><text x="119" y="148" class="txt">{{use:ItemRow, from:@group.Items, var:item}}</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
 
       <rect x="44" y="28" width="210" height="46" class="styleSeed"/>
       <rect x="114" y="74" width="280" height="138" class="child"/>
@@ -48,7 +48,7 @@
       <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
 
       <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
-      <text x="119" y="102" class="txt">@group.Name</text><text x="119" y="148" class="txt">{{use:ItemRow, from:@group.Items, var:item}}</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
 
       <rect x="44" y="28" width="280" height="46" class="expanded"/>
       <rect x="114" y="74" width="280" height="138" class="child"/>
@@ -69,7 +69,7 @@
       <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
 
       <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
-      <text x="119" y="102" class="txt">@group.Name</text><text x="119" y="148" class="txt">{{use:ItemRow, from:@group.Items, var:item}}</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
 
       <rect x="44" y="28" width="140" height="46" class="styleSeed"/>
       <rect x="114" y="74" width="280" height="138" class="child"/>
