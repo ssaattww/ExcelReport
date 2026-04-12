@@ -1,9 +1,13 @@
 # Phases Status
 
-Last Updated: 2026-04-12
+Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の `styleOverflow=edge` runtime 検証を down/corner ケースまで拡張し、関連72件・全体216件通過を確認
+- 2026-04-13: issue #58 の review 試行結果と残留リスクを `reports/issue58-dsl-contract-extension-review-2026-04-13.md` に記録
+- 2026-04-12: issue #58 実装開始として `cell@formula` / `use@styleOverflow` の DSL契約拡張、`ValidateDsl` 補完検証、`LayoutEngine` の `styleOverflow=edge` post-expand 補完、`TemplateRangeOverflow` Warning を実装
+- 2026-04-12: issue #58 の実装第1段を全体回帰で検証し、`ExcelReportLib.Tests` 214件全通過を確認
 - 2026-04-12: issue #58 設計へ「挿入先書式は任意」を明記し、3x3外枠+中央use の外枠追従拡張ルール（子範囲+余白）を追加
 - 2026-04-12: issue #58 のサイズ不一致対応を列方向まで拡張し、`TemplateRangeOverflow` の `deltaRows/deltaCols` 記録を定義
 - 2026-04-12: issue #58 挿入元/挿入先SVGへテンプレート定義罫線を反映し、出力結果SVGとの書式整合を改善

@@ -19,6 +19,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// </summary>
         public string? ValueRaw { get; init; }
         /// <summary>
+        /// Gets or sets the formula raw.
+        /// </summary>
+        public string? FormulaRaw { get; init; }
+        /// <summary>
         /// Gets or sets the style ref shortcut.
         /// </summary>
         public string? StyleRefShortcut { get; init; }
@@ -39,6 +43,7 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         public CellAst(XElement elem, List<Issue> issues)
         {
             var valueAttr = elem.Attribute("value");
+            var formulaAttr = elem.Attribute("formula");
             var styleRefAttr = elem.Attribute("styleRef");
             var formulaRefAttr = elem.Attribute("formulaRef");
             var formulaRefScopeAttr = elem.Attribute("formulaRefScope");
@@ -49,10 +54,10 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
                 elem.GetFirstOrDefaultChildElement("value"),
                 "value",
                 issues);
+            FormulaRaw = formulaAttr?.Value;
             StyleRefShortcut = styleRefAttr?.Value;
             FormulaRef = formulaRefAttr?.Value;
             FormulaRefScope = NormalizeFormulaRefScope(formulaRefScopeAttr?.Value, elem, issues);
-            // Todo: ValueRaw から式のパース
         }
 
         private static string? NormalizeFormulaRefScope(string? rawScope, XElement owner, List<Issue> issues)

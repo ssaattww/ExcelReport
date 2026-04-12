@@ -980,6 +980,30 @@ public sealed class LayoutEngineTests
     }
 
     /// <summary>
+    /// Verifies that explicit cell formula is preserved for state build.
+    /// </summary>
+    [Fact]
+    public void Expand_CellFormula_PreservedForStateBuild()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell r="2" c="3" formula="SUM(B2:B10)" />
+              </sheet>
+            </workbook>
+            """);
+
+        var cell = Assert.Single(Assert.Single(plan.Sheets).Cells);
+
+        Assert.Equal(2, cell.Row);
+        Assert.Equal(3, cell.Col);
+        Assert.Null(cell.Value);
+        Assert.Equal("=SUM(B2:B10)", cell.Formula);
+        Assert.Empty(plan.Issues);
+    }
+
+    /// <summary>
     /// Verifies that expression value returning '=...' is treated as Excel formula.
     /// </summary>
     [Fact]
@@ -1069,6 +1093,156 @@ public sealed class LayoutEngineTests
         Assert.Equal(12, cellsByValue["R1"].Col);
         Assert.Equal(1, cellsByValue["R2"].Row);
         Assert.Equal(15, cellsByValue["R2"].Col);
+    }
+
+    /// <summary>
+    /// Verifies that use style overflow none does not extend seed styles into overflow area.
+    /// </summary>
+    [Fact]
+    public void Expand_UseStyleOverflowNone_DoesNotCopySeedStyles()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="WideBlock">
+                <grid cols="4">
+                  <cell c="1" value="A" />
+                  <cell c="2" value="B" />
+                  <cell c="3" value="C" />
+                  <cell c="4" value="D" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <use r="1" c="1" rowSpan="1" colSpan="3" component="WideBlock" styleOverflow="none">
+                  <style>
+                    <fill color="#FFDD99" />
+                  </style>
+                </use>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var overflowCell = sheet.Cells.Single(cell => cell.Row == 1 && cell.Col == 4);
+
+        Assert.Null(overflowCell.StylePlan.FillColor);
+        Assert.DoesNotContain(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.TemplateRangeOverflow && issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
+    /// Verifies that use style overflow edge copies seed styles into overflow area.
+    /// </summary>
+    [Fact]
+    public void Expand_UseStyleOverflowEdge_CopiesSeedStyles()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="WideBlock">
+                <grid cols="4">
+                  <cell c="1" value="A" />
+                  <cell c="2" value="B" />
+                  <cell c="3" value="C" />
+                  <cell c="4" value="D" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <use r="1" c="1" rowSpan="1" colSpan="3" component="WideBlock" styleOverflow="edge">
+                  <style>
+                    <fill color="#FFDD99" />
+                  </style>
+                </use>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var overflowCell = sheet.Cells.Single(cell => cell.Row == 1 && cell.Col == 4);
+        var anchorCell = sheet.Cells.Single(cell => cell.Row == 1 && cell.Col == 3);
+
+        Assert.Equal("#FFDD99", anchorCell.StylePlan.FillColor);
+        Assert.Equal("#FFDD99", overflowCell.StylePlan.FillColor);
+        Assert.Contains(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.TemplateRangeOverflow && issue.Severity == IssueSeverity.Warning);
+    }
+
+    /// <summary>
+    /// Verifies that use style overflow edge copies seed styles downward into overflow rows.
+    /// </summary>
+    [Fact]
+    public void Expand_UseStyleOverflowEdge_CopiesSeedStylesDownward()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="TallBlock">
+                <grid rows="4">
+                  <cell r="1" c="1" value="A" />
+                  <cell r="2" c="1" value="B" />
+                  <cell r="3" c="1" value="C" />
+                  <cell r="4" c="1" value="D" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <use r="1" c="1" rowSpan="3" colSpan="1" component="TallBlock" styleOverflow="edge">
+                  <style>
+                    <fill color="#99DDFF" />
+                  </style>
+                </use>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var anchorCell = sheet.Cells.Single(cell => cell.Row == 3 && cell.Col == 1);
+        var overflowCell = sheet.Cells.Single(cell => cell.Row == 4 && cell.Col == 1);
+
+        Assert.Equal("#99DDFF", anchorCell.StylePlan.FillColor);
+        Assert.Equal("#99DDFF", overflowCell.StylePlan.FillColor);
+        Assert.Contains(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.TemplateRangeOverflow && issue.Severity == IssueSeverity.Warning);
+    }
+
+    /// <summary>
+    /// Verifies that use style overflow edge copies corner seed styles into overflow corner cells.
+    /// </summary>
+    [Fact]
+    public void Expand_UseStyleOverflowEdge_CopiesSeedStylesIntoOverflowCorner()
+    {
+        var plan = Expand(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="LargeBlock">
+                <grid rows="3" cols="4">
+                  <cell r="1" c="1" value="A" />
+                  <cell r="1" c="4" value="B" />
+                  <cell r="3" c="1" value="C" />
+                  <cell r="3" c="4" value="D" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <use r="2" c="2" rowSpan="2" colSpan="3" component="LargeBlock" styleOverflow="edge">
+                  <style>
+                    <fill color="#DDBBFF" />
+                  </style>
+                </use>
+              </sheet>
+            </workbook>
+            """);
+
+        var sheet = Assert.Single(plan.Sheets);
+        var anchorCornerCell = sheet.Cells.Single(cell => cell.Row == 3 && cell.Col == 4);
+        var overflowCornerCell = sheet.Cells.Single(cell => cell.Row == 4 && cell.Col == 5);
+
+        Assert.Equal("#DDBBFF", anchorCornerCell.StylePlan.FillColor);
+        Assert.Equal("#DDBBFF", overflowCornerCell.StylePlan.FillColor);
+        Assert.Contains(
+            plan.Issues,
+            issue => issue.Kind == IssueKind.TemplateRangeOverflow && issue.Severity == IssueSeverity.Warning);
     }
 
     /// <summary>

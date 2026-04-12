@@ -292,6 +292,56 @@ public sealed class ValidateDslTests
                 && issue.Message.Contains("from"));
     }
 
+    /// <summary>
+    /// Verifies that validate DSL formula and value conflict returns error.
+    /// </summary>
+    [Fact]
+    public void ValidateDsl_CellFormulaAndValueConflict_ReturnsError()
+    {
+        var result = ParseDsl(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <sheet name="Summary">
+                <cell r="1" c="1" value="1" formula="SUM(A1:A3)" />
+              </sheet>
+            </workbook>
+            """);
+
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Severity == IssueSeverity.Error
+                && issue.Kind == IssueKind.InvalidAttributeValue
+                && issue.Message.Contains("formula", StringComparison.Ordinal)
+                && issue.Message.Contains("value", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that validate DSL invalid style overflow returns error.
+    /// </summary>
+    [Fact]
+    public void ValidateDsl_InvalidStyleOverflow_ReturnsError()
+    {
+        var result = ParseDsl(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="Body">
+                <grid>
+                  <cell value="A" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <use component="Body" styleOverflow="diagonal" />
+              </sheet>
+            </workbook>
+            """);
+
+        Assert.Contains(
+            result.Issues,
+            issue => issue.Severity == IssueSeverity.Error
+                && issue.Kind == IssueKind.InvalidAttributeValue
+                && issue.Message.Contains("styleOverflow", StringComparison.Ordinal));
+    }
+
     private static DslParseResult ParseDsl(string xml) =>
         DslParser.ParseFromText(
             xml,
@@ -300,5 +350,4 @@ public sealed class ValidateDslTests
                 EnableSchemaValidation = false,
             });
 }
-
 

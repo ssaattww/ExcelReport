@@ -1,10 +1,14 @@
 # Tasks Status
 
-Last Updated: 2026-04-12
-Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応設計 / README刷新（Chart・Async）
+Last Updated: 2026-04-13
+Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応（実装開始） / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 テスト補強: `styleOverflow=edge` の down/corner runtime テストを追加し、`LayoutNodeTests|ValidateDslTests|DslParserTests|LayoutEngineTests` 72件通過、`ExcelReportLib.Tests` 全体216件通過
+- 2026-04-13 issue#58 review記録: `gpt-5.4` / `high` review 試行結果と残留リスクを `reports/issue58-dsl-contract-extension-review-2026-04-13.md` に記録
+- 2026-04-12 issue#58 実装開始: `cell@formula` / `use@styleOverflow` の DSL 契約拡張、`ValidateDsl` 補完検証、`LayoutEngine` の `styleOverflow=edge` post-expand 補完、`TemplateRangeOverflow` Warning を実装
+- 2026-04-12 issue#58 検証: `LayoutNodeTests|ValidateDslTests|DslParserTests|LayoutEngineTests` 70件通過、`ExcelReportLib.Tests` 全体214件通過
 - 2026-04-12 issue#58 設計修正: 挿入先書式は任意（mustではない）を明記し、3x3外枠+中央useの外枠追従拡張ルール（子範囲+余白）を追加
 - 2026-04-12 issue#58 設計修正: サイズ不一致を行方向だけでなく列方向も対象化し、`TemplateRangeOverflow` に `deltaRows/deltaCols` 記録を追加
 - 2026-04-12 issue#58 可視化再修正: 挿入元/挿入先SVGにもテンプレート定義罫線（実線/破線）を反映し、出力SVGとの見た目整合を改善
@@ -248,6 +252,13 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Additional Work
 
+- 2026-04-12 issue #58 実装: `cell@formula` / `use@styleOverflow` を XSD / AST / `ValidateDsl` / `LayoutEngine` へ追加
+- 2026-04-12 issue #58 実装: `styleOverflow=edge` を `LayoutEngine` post-expand で実装し、anchor 矩形 seed 書式の right/down/corner trailing edge copy に対応
+- 2026-04-12 issue #58 実装: `IssueKind.TemplateRangeOverflow` を追加し、ExcelTemplate 向け anchor overflow を Warning として記録
+- 2026-04-12 issue #58 テスト: parser/validation/runtime テストを追加し、`ExcelReportLib.Tests` 全体214件通過を確認
+- 2026-04-13 issue #58 テスト補強: `styleOverflow=edge` の down/corner ケースを `LayoutEngineTests` へ追加し、関連72件・全体216件通過を確認
+- 2026-04-12 issue #58 記録: `reports/issue58-dsl-contract-extension-2026-04-12.md` を作成
+- 2026-04-13 issue #58 review記録: `reports/issue58-dsl-contract-extension-review-2026-04-13.md` を作成
 - 2026-04-05 issue #16: `sheet repeat` で増えるシート名を式で参照可能にするため、`cell@value` 式評価後の数式自動判定を実装
 - 2026-04-05 issue #16: 設計書 `Design/SheetReference/SheetReference_DetailDesign.md` を追加
 - 2026-04-05 issue #16 follow-up: `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を設計書へ追記

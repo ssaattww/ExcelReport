@@ -26,6 +26,14 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
         /// Gets or sets the with expr raw.
         /// </summary>
         public string? WithExprRaw { get; init; }
+        /// <summary>
+        /// Gets the style overflow mode.
+        /// </summary>
+        public string StyleOverflow { get; init; } = "none";
+        /// <summary>
+        /// Gets a value indicating whether style overflow was explicitly specified.
+        /// </summary>
+        public bool HasStyleOverflowAttribute { get; init; }
 
         /// <summary>
         /// コンポーネント参照先（解析フェーズで設定される）s
@@ -65,10 +73,33 @@ namespace ExcelReportLib.DSL.AST.LayoutNode
 
             var areaAttr = elem.Attribute("area");
             var withAttr = elem.Attribute("with");
+            var styleOverflowAttr = elem.Attribute("styleOverflow");
 
             ComponentName = nameAttr.Value;
             AreaName = string.IsNullOrWhiteSpace(areaAttr?.Value) ? null : areaAttr.Value.Trim();
             WithExprRaw = withAttr?.Value;
+            StyleOverflow = NormalizeStyleOverflow(styleOverflowAttr?.Value);
+            HasStyleOverflowAttribute = styleOverflowAttr is not null;
+        }
+
+        private static string NormalizeStyleOverflow(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return "none";
+            }
+
+            if (string.Equals(raw, "none", StringComparison.OrdinalIgnoreCase))
+            {
+                return "none";
+            }
+
+            if (string.Equals(raw, "edge", StringComparison.OrdinalIgnoreCase))
+            {
+                return "edge";
+            }
+
+            return raw.Trim();
         }
     }
 }

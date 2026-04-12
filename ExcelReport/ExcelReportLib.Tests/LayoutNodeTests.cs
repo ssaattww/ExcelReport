@@ -91,6 +91,24 @@ public sealed class LayoutNodeTests
     }
 
     /// <summary>
+    /// Verifies that parse cell formula attribute reads formula raw.
+    /// </summary>
+    [Fact]
+    public void Parse_Cell_Formula_ReadsAttribute()
+    {
+        var issues = new List<Issue>();
+        var cellElement = XElement.Parse(
+            """
+            <cell xmlns="urn:excelreport:v2" formula="SUM(B2:B10)" />
+            """);
+
+        var cell = Assert.IsType<CellAst>(LayoutNodeAst.LayoutNodeAstFactory(cellElement, issues));
+
+        Assert.Equal("SUM(B2:B10)", cell.FormulaRaw);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
     /// Verifies that parse cell invalid formula ref scope falls back to global with warning.
     /// </summary>
     [Fact]
@@ -192,6 +210,24 @@ public sealed class LayoutNodeTests
     }
 
     /// <summary>
+    /// Verifies that parse use reads style overflow attribute.
+    /// </summary>
+    [Fact]
+    public void Parse_Use_StyleOverflow_ReadsAttribute()
+    {
+        var issues = new List<Issue>();
+        var useElement = XElement.Parse(
+            """
+            <use xmlns="urn:excelreport:v2" component="Title" styleOverflow="edge" />
+            """);
+
+        var use = Assert.IsType<UseAst>(LayoutNodeAst.LayoutNodeAstFactory(useElement, issues));
+
+        Assert.Equal("edge", use.StyleOverflow);
+        Assert.DoesNotContain(issues, issue => issue.Severity is IssueSeverity.Error or IssueSeverity.Fatal);
+    }
+
+    /// <summary>
     /// Verifies that parse grid child nodes.
     /// </summary>
     [Fact]
@@ -231,4 +267,3 @@ public sealed class LayoutNodeTests
         Assert.Equal("GridArea", grid.AreaName);
     }
 }
-
