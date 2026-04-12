@@ -355,6 +355,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で実装方針レビューを実施し、runtime schema 対象不足、`repeat@direction` 契約不一致、`styleOverflow=edge` 実装位置未固定、conversion API の診断不足を指摘として整理
 - 2026-04-12 issue #58 実装方針修正: runtime schema の更新対象、`direction=\"down\"` 明示、`LayoutEngine` post-expand での `styleOverflow=edge` 実装、conversion result + `Issues`、`ValidateDsl` 補完検証、legacy formula 回帰テストを方針へ反映
 - 2026-04-12 記録: `reports/issue58-implementation-approach-review-2026-04-12.md` を作成
+- 2026-04-12 引き継ぎ: 新しいチャットで issue #58 実装を再開できるよう、背景・決定事項・未解決事項・次アクションを整理した handover 文書を作成
+- 2026-04-12 記録: `reports/chat-handover-for-new-thread-20260412_153728.md` を作成
 
 ## Status Definitions
 
