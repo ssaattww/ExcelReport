@@ -173,4 +173,105 @@ public sealed class ExcelTemplateOutputContractBuilderTests
         Assert.Equal("@(root.Items)", repeatUse.FromExpression);
     }
 
+    /// <summary>
+    /// Verifies that simple shorthand local variables are not rewritten to root scope.
+    /// </summary>
+    [Fact]
+    public void Build_SimpleIdentifierValue_UsesLocalRepeatScopeWhenVariableExists()
+    {
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet(
+                    "__component_ItemRow",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "@item", null, null),
+                    ]),
+                new ExcelTemplateSheet(
+                    "Invoice",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "{{use:ItemRow, from:@items, var:item}}", null, null),
+                    ]),
+            ]);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        var itemRow = Assert.Single(contract.Components);
+        var itemCell = Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(itemRow.Items));
+        Assert.Equal("@(item)", itemCell.Value);
+
+        var invoice = Assert.Single(contract.Sheets);
+        var repeatUse = Assert.IsType<ExcelTemplateOutputRepeatUse>(Assert.Single(invoice.Items));
+        Assert.Equal("@(root.Items)", repeatUse.FromExpression);
+    }
+
+    /// <summary>
+    /// Verifies that repeat variable names do not leak to unrelated components.
+    /// </summary>
+    [Fact]
+    public void Build_SimpleIdentifierValue_DoesNotLeakVariableScopeAcrossComponents()
+    {
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet(
+                    "__component_Target",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "@item", null, null),
+                    ]),
+                new ExcelTemplateSheet(
+                    "__component_Other",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "X", null, null),
+                    ]),
+                new ExcelTemplateSheet(
+                    "Invoice",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "{{use:Other, from:@items, var:item}}", null, null),
+                    ]),
+            ]);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        var target = contract.Components.Single(component => component.Name == "Target");
+        var targetCell = Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(target.Items));
+        Assert.Equal("@(root.Item)", targetCell.Value);
+    }
+
+    /// <summary>
+    /// Verifies that reusing one component with multiple variable names is reported as an ambiguous normalization error.
+    /// </summary>
+    [Fact]
+    public void Build_ComponentReferencedByMultipleVariables_ReportsAmbiguousNormalization()
+    {
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet(
+                    "__component_ItemRow",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "@item", null, null),
+                    ]),
+                new ExcelTemplateSheet(
+                    "Invoice",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "{{use:ItemRow, from:@items, var:item}}", null, null),
+                        new ExcelTemplateCell("A2", 2, 1, "{{use:ItemRow, from:@rows, var:row}}", null, null),
+                    ]),
+            ]);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        var itemRow = Assert.Single(contract.Components);
+        var itemCell = Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(itemRow.Items));
+        Assert.Equal("@(root.Item)", itemCell.Value);
+        Assert.Contains(
+            contract.Issues,
+            issue => issue.Kind == IssueKind.InvalidAttributeValue &&
+                     issue.Message.Contains("multiple repeat variables", StringComparison.Ordinal));
+    }
+
 }

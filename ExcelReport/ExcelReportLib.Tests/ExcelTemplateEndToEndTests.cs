@@ -62,7 +62,14 @@ public sealed class ExcelTemplateEndToEndTests
                             Items = new[]
                             {
                                 new { Name = "Mouse", Qty = 2, Price = 1200 },
-                                new { Name = "Keyboard", Qty = 1, Price = 4800 },
+                            },
+                        },
+                        new
+                        {
+                            Name = "Wiring",
+                            Items = new[]
+                            {
+                                new { Name = "Cable", Qty = 3, Price = 980 },
                             },
                         },
                     },
@@ -80,7 +87,8 @@ public sealed class ExcelTemplateEndToEndTests
             Assert.Equal("Mouse", ReadCellValue(document, GetCell(document, "Invoice", "A4")));
             Assert.Equal("2", ReadCellValue(document, GetCell(document, "Invoice", "B4")));
             Assert.Equal("1200", ReadCellValue(document, GetCell(document, "Invoice", "C4")));
-            Assert.Equal("Keyboard", ReadCellValue(document, GetCell(document, "Invoice", "A5")));
+            Assert.Equal("Wiring", ReadCellValue(document, GetCell(document, "Invoice", "A5")));
+            Assert.Equal("Cable", ReadCellValue(document, GetCell(document, "Invoice", "A6")));
             Assert.Equal("SUM(B4:B8)", GetCell(document, "Invoice", "B1").CellFormula?.Text);
         }
         finally

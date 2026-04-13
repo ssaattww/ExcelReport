@@ -10,6 +10,7 @@ namespace ExcelReportLib.ExcelTemplate;
 public sealed class ExcelTemplateOutputContractBuilder
 {
     private const string ComponentSheetPrefix = "__component_";
+    private static readonly IReadOnlySet<string> EmptyVariableNames = new HashSet<string>(StringComparer.Ordinal);
     private readonly ExcelTemplateComponentRangeResolver componentRangeResolver = new();
     private readonly ExcelTemplateValidator validator = new();
     private readonly UseTriggerParser useTriggerParser = new();
@@ -25,7 +26,11 @@ public sealed class ExcelTemplateOutputContractBuilder
 
         var rangeResolution = componentRangeResolver.Resolve(workbook);
         var validation = validator.Validate(workbook, rangeResolution.Ranges);
-        var aggregatedIssues = rangeResolution.Issues.Concat(validation.Issues).ToArray();
+        var variableScope = ResolveComponentVariableScopes(workbook);
+        var aggregatedIssues = rangeResolution.Issues
+            .Concat(validation.Issues)
+            .Concat(variableScope.Issues)
+            .ToArray();
         var rangesBySheet = rangeResolution.Ranges.ToDictionary(range => range.SheetName, StringComparer.Ordinal);
 
         var components = workbook.Sheets
@@ -33,24 +38,31 @@ public sealed class ExcelTemplateOutputContractBuilder
             .Select(sheet =>
             {
                 var hasRange = rangesBySheet.TryGetValue(sheet.Name, out var range);
+                var componentName = sheet.Name[ComponentSheetPrefix.Length..];
+                var valueVariableNames = variableScope.ComponentVariableNames.TryGetValue(componentName, out var variables)
+                    ? variables
+                    : EmptyVariableNames;
                 return new ExcelTemplateOutputComponent(
-                    sheet.Name[ComponentSheetPrefix.Length..],
+                    componentName,
                     sheet.Name,
                     hasRange ? range!.Reference : null,
                     hasRange,
-                    BuildItems(sheet, hasRange ? range!.Reference : null));
+                    BuildItems(sheet, hasRange ? range!.Reference : null, valueVariableNames));
             })
             .ToArray();
 
         var sheets = workbook.Sheets
             .Where(sheet => !IsComponentSheet(sheet))
-            .Select(sheet => new ExcelTemplateOutputSheet(sheet.Name, BuildItems(sheet, rangeReference: null)))
+            .Select(sheet => new ExcelTemplateOutputSheet(sheet.Name, BuildItems(sheet, rangeReference: null, EmptyVariableNames)))
             .ToArray();
 
         return new ExcelTemplateOutputContract(components, sheets, aggregatedIssues);
     }
 
-    private IReadOnlyList<ExcelTemplateOutputItem> BuildItems(ExcelTemplateSheet sheet, string? rangeReference)
+    private IReadOnlyList<ExcelTemplateOutputItem> BuildItems(
+        ExcelTemplateSheet sheet,
+        string? rangeReference,
+        IReadOnlySet<string> localVariableNames)
     {
         var filter = TryParseRange(rangeReference, out var topRow, out var leftColumn, out var bottomRow, out var rightColumn);
         var items = new List<ExcelTemplateOutputItem>();
@@ -64,13 +76,13 @@ public sealed class ExcelTemplateOutputContractBuilder
                 continue;
             }
 
-            items.Add(NormalizeItem(cell));
+            items.Add(NormalizeItem(cell, localVariableNames));
         }
 
         return items;
     }
 
-    private ExcelTemplateOutputItem NormalizeItem(ExcelTemplateCell cell)
+    private ExcelTemplateOutputItem NormalizeItem(ExcelTemplateCell cell, IReadOnlySet<string> localVariableNames)
     {
         var styleIndex = cell.Style?.Index;
         var triggerResult = useTriggerParser.Parse(cell.Value);
@@ -82,7 +94,7 @@ public sealed class ExcelTemplateOutputContractBuilder
                 cell.Row,
                 cell.Column,
                 styleIndex,
-                ExcelTemplateExpressionNormalizer.Normalize(cell.Value),
+                ExcelTemplateExpressionNormalizer.Normalize(cell.Value, localVariableNames),
                 cell.Formula);
         }
 
@@ -107,6 +119,111 @@ public sealed class ExcelTemplateOutputContractBuilder
             triggerResult.Trigger.VariableName!,
             triggerResult.Trigger.RepeatDirection ?? "down",
             triggerResult.Trigger.StyleOverflow);
+    }
+
+    private ComponentVariableScopeResolution ResolveComponentVariableScopes(ExcelTemplateWorkbook workbook)
+    {
+        var discoveredVariables = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var componentsWithSimpleShorthand = CollectComponentsWithSimpleShorthand(workbook);
+        var issues = new List<Issue>();
+        var componentVariableNames = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal);
+
+        foreach (var cell in workbook.Sheets.SelectMany(sheet => sheet.Cells))
+        {
+            var triggerResult = useTriggerParser.Parse(cell.Value);
+            if (!triggerResult.IsTrigger ||
+                triggerResult.Trigger is null ||
+                string.IsNullOrWhiteSpace(triggerResult.Trigger.ComponentName) ||
+                string.IsNullOrWhiteSpace(triggerResult.Trigger.VariableName))
+            {
+                continue;
+            }
+
+            if (!discoveredVariables.TryGetValue(triggerResult.Trigger.ComponentName, out var variableNames))
+            {
+                variableNames = new HashSet<string>(StringComparer.Ordinal);
+                discoveredVariables[triggerResult.Trigger.ComponentName] = variableNames;
+            }
+
+            variableNames.Add(triggerResult.Trigger.VariableName);
+        }
+
+        foreach (var discovered in discoveredVariables)
+        {
+            if (discovered.Value.Count == 1)
+            {
+                componentVariableNames[discovered.Key] = discovered.Value;
+                continue;
+            }
+
+            componentVariableNames[discovered.Key] = EmptyVariableNames;
+            if (componentsWithSimpleShorthand.Contains(discovered.Key))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = $"component '{discovered.Key}' is referenced by multiple repeat variables ({string.Join(", ", discovered.Value.OrderBy(value => value, StringComparer.Ordinal))}); simple shorthand local variable normalization is ambiguous.",
+                    });
+            }
+        }
+
+        return new ComponentVariableScopeResolution(componentVariableNames, issues);
+    }
+
+    private HashSet<string> CollectComponentsWithSimpleShorthand(ExcelTemplateWorkbook workbook)
+    {
+        var components = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var sheet in workbook.Sheets.Where(IsComponentSheet))
+        {
+            var componentName = sheet.Name[ComponentSheetPrefix.Length..];
+            var hasSimpleShorthand = sheet.Cells.Any(
+                cell =>
+                {
+                    var triggerResult = useTriggerParser.Parse(cell.Value);
+                    return (!triggerResult.IsTrigger || triggerResult.Trigger is null) && IsSimpleShorthandExpression(cell.Value);
+                });
+            if (hasSimpleShorthand)
+            {
+                components.Add(componentName);
+            }
+        }
+
+        return components;
+    }
+
+    private static bool IsSimpleShorthandExpression(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (!trimmed.StartsWith('@') || trimmed.StartsWith("@(", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var body = trimmed[1..].Trim();
+        return body.Length > 0 && body.All(character => char.IsLetterOrDigit(character) || character == '_');
+    }
+
+    private sealed class ComponentVariableScopeResolution
+    {
+        public ComponentVariableScopeResolution(
+            IReadOnlyDictionary<string, IReadOnlySet<string>> componentVariableNames,
+            IReadOnlyList<Issue> issues)
+        {
+            ComponentVariableNames = componentVariableNames;
+            Issues = issues;
+        }
+
+        public IReadOnlyDictionary<string, IReadOnlySet<string>> ComponentVariableNames { get; }
+
+        public IReadOnlyList<Issue> Issues { get; }
     }
 
     private static bool IsComponentSheet(ExcelTemplateSheet sheet) =>

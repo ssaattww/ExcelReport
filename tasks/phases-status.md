@@ -78,7 +78,7 @@ Last Updated: 2026-04-14
 - 現在位置: issue #58 完了
 - 残見積り: 0 phases / 0 tasks / 0 実装サイクル
 - 注記: 下部の `Phase Summary` / `Completed Phases` は既存プロジェクト全体の旧集計であり、issue #58 の残作業はこの節を正として扱う
-- 棚卸し結果: phase 追加は不要だが、Phase 14 に DSL互換 hardening task を追加
+- 棚卸し結果: phase 追加は不要。Phase 14 で追加した DSL互換 hardening task も同サイクルで完了済み
 
 | Phase | Status | Scope | Exit Criteria | Estimate |
 |---|---|---|---|---|

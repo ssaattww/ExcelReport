@@ -89,7 +89,7 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 現在位置: issue #58 完了
 - 残見積り: 0 tasks / 0 実装サイクル
 - 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
-- 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、Phase 14 へ `styleOverflow` trigger 対応と expression DSL互換 hardening を追加
+- 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、Phase 14 へ追加した `styleOverflow` trigger 対応と expression DSL互換 hardening も同サイクルで完了済み
 
 | Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
 |---|---|---|---|---|---|---|
