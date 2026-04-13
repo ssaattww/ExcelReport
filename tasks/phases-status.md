@@ -4,6 +4,10 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の出力契約第1段として `ExcelTemplateOutputContractBuilder` と normalized output model を追加し、component/sheet 分類・cell/use/repeat-use 正規化・issue 集約を固定
+- 2026-04-13: issue #58 の output contract review で指摘された `styleOverflow` 未指定区別、未解決 component 文脈保持、style-only cell / malformed trigger テスト不足を修正
+- 2026-04-13: issue #58 の output contract を `gpt-5.4` / `high` sub-agent で再 review し、findings なしを確認
+- 2026-04-13: issue #58 の output contract 検証として output contract 3件、ExcelTemplate 系20件、全体236件通過を確認
 - 2026-04-13: issue #58 の validator を追加し、merged range 境界違反・malformed use trigger・unsupported conditional formatting を Error として検出可能化
 - 2026-04-13: issue #58 の `UseTriggerParser` を top-level comma tokenizer へ補強し、`from:` 式内カンマを含む repeat trigger の回帰を修正
 - 2026-04-13: issue #58 の validator 実装記録と review 記録を `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` / `reports/issue58-validator-review-2026-04-13.md` に保存
@@ -45,13 +49,13 @@ Last Updated: 2026-04-13
 ## Issue #58 Remaining Phases
 
 - 基準日: 2026-04-13
-- 現在位置: foundation 実装完了、出力器フェーズ着手前
-- 残見積り: 4 phases / 12 tasks / 3-5 実装サイクル
+- 現在位置: foundation 実装完了、`R58-01` 完了、Phase 11 の serializer/emitter 着手待ち
+- 残見積り: 4 phases / 11 tasks / 3-4 実装サイクル
 - 注記: 下部の `Phase Summary` / `Completed Phases` は既存プロジェクト全体の旧集計であり、issue #58 の残作業はこの節を正として扱う
 
 | Phase | Status | Scope | Exit Criteria | Estimate |
 |---|---|---|---|---|
-| Phase 11: Conversion Output Core | Not Started | `DslEmitter` / `XmlTemplateSerializer` / 変換用fixture整備 | ExcelTemplate から XML debug / DSL text を安定出力でき、snapshot unit が通る | 1-2 cycles |
+| Phase 11: Conversion Output Core | In Progress | `DslEmitter` / `XmlTemplateSerializer` / 変換用fixture整備 | ExcelTemplate から XML debug / DSL text を安定出力でき、snapshot unit が通る | 1-2 cycles |
 | Phase 12: Conversion API Integration | Not Started | `ExcelTemplateConverter` / options / result object / issue集約 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返し、conversion-only API を integration test で固定 | 1 cycle |
 | Phase 13: Report Generation Facade | Not Started | `ExcelTemplateReportGenerator` / 既存 `ReportGenerator` 接続 / happy-path統合 | `GenerateFromExcelTemplate` で既存 DSL 経路まで接続し、基本生成ケースが通る | 1 cycle |
 | Phase 14: E2E Stabilization And Closeout | Not Started | xlsx->dsl->final xlsx E2E / negative E2E / docs同期 / 最終review | happy-path + negative-path を含む E2E と records/tasks/phases 更新が完了 | 1-2 cycles |
