@@ -3,7 +3,7 @@
   <component name="Header">
     <grid rows="2" cols="2">
       <cell r="1" c="1" value="請求書" />
-      <repeat from="@items" var="item" direction="down" r="2" c="1">
+      <repeat from="@(root.Items)" var="item" direction="down" r="2" c="1">
         <use component="ItemRow" />
       </repeat>
       <cell r="2" c="2" formula="SUM(C1:C3)" />
@@ -12,7 +12,7 @@
   <!--component name=ItemRow sourceSheet=__component_ItemRow rangeResolved=true range=A1-->
   <component name="ItemRow">
     <grid rows="1" cols="1">
-      <cell r="1" c="1" value="@item.Name" />
+      <cell r="1" c="1" value="@(item.Name)" />
     </grid>
   </component>
   <sheet name="Invoice">

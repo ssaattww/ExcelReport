@@ -38,7 +38,7 @@ public sealed class XmlTemplateSerializerTests
         Assert.Equal("repeat", headerItems[1].Name.LocalName);
         Assert.Equal("2", (string?)headerItems[1].Attribute("r"));
         Assert.Equal("1", (string?)headerItems[1].Attribute("c"));
-        Assert.Equal("@items", (string?)headerItems[1].Attribute("from"));
+        Assert.Equal("@(root.Items)", (string?)headerItems[1].Attribute("from"));
         Assert.Equal("item", (string?)headerItems[1].Attribute("var"));
         Assert.Equal("down", (string?)headerItems[1].Attribute("direction"));
         Assert.Equal("use", headerItems[1].Elements().Single().Name.LocalName);
@@ -50,6 +50,9 @@ public sealed class XmlTemplateSerializerTests
         Assert.Equal("Invoice", (string?)invoice.Attribute("name"));
         Assert.Equal("use", invoice.Elements().First().Name.LocalName);
         Assert.Equal("Header", (string?)invoice.Elements().First().Attribute("component"));
+        var itemRow = root.Elements(root.Name.Namespace + "component").Single(element => (string?)element.Attribute("name") == "ItemRow");
+        var itemNameCell = Assert.Single(itemRow.Descendants(root.Name.Namespace + "cell"));
+        Assert.Equal("@(item.Name)", (string?)itemNameCell.Attribute("value"));
 
         var parseResult = DslParser.ParseFromText(
             document.ToString(),

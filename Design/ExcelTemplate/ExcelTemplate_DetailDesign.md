@@ -165,9 +165,11 @@ Issue本文（2026-04-07作成）から、以下を設計対象とする。
 ### 10.3 コンポーネント挿入の表し方（use）
 Excel側で次の記法を挿入トリガとして扱う（初版案）:
 - セル値: `{{use:Header}}`  -> `<use component="Header" />`
-- セル値: `{{use:ItemRow, from:@items, var:item}}` -> `<repeat from="@items" var="item" direction="down"><use component="ItemRow" /></repeat>`
+- セル値: `{{use:Header, styleOverflow:edge}}` -> `<use component="Header" styleOverflow="edge" />`
+- セル値: `{{use:ItemRow, from:@items, var:item, styleOverflow:edge}}` -> `<repeat from="@(root.Items)" var="item" direction="down"><use component="ItemRow" styleOverflow="edge" /></repeat>`
 
 > 注: 文字列トリガ構文は初版の暫定仕様。将来は名前付き範囲等への置換余地あり。
+> 注: Excel側の shorthand expression（例: `@items`, `@group.Items`, `@item.Name`）は converter が emitted DSL 上で `@(root.Items)`, `@(group.Items)`, `@(item.Name)` へ正規化する。
 
 ### 10.4 入れ子コンポーネント定義の例
 
@@ -189,26 +191,26 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 
     <component name="ItemRow">
       <grid>
-        <cell value="@item.Name" />
-        <cell value="@item.Qty" />
-        <cell value="@item.Price" />
+        <cell value="@(item.Name)" />
+        <cell value="@(item.Qty)" />
+        <cell value="@(item.Price)" />
       </grid>
     </component>
 
     <component name="GroupBlock">
       <grid>
-        <cell value="@group.Name" />
+        <cell value="@(group.Name)" />
       </grid>
-      <repeat from="@group.Items" var="item" direction="down">
-        <use component="ItemRow" />
+      <repeat from="@(group.Items)" var="item" direction="down">
+        <use component="ItemRow" styleOverflow="edge" />
       </repeat>
     </component>
   </components>
 
   <sheet name="Invoice">
     <use component="Header" />
-    <repeat from="@groups" var="group" direction="down">
-      <use component="GroupBlock" />
+    <repeat from="@(root.Groups)" var="group" direction="down">
+      <use component="GroupBlock" styleOverflow="edge" />
     </repeat>
   </sheet>
 </workbook>
@@ -231,9 +233,9 @@ Excel側で次の記法を挿入トリガとして扱う（初版案）:
 | Excelセル値（例） | 意味 | 変換後DSL（例） | 備考 |
 |---|---|---|---|
 | `請求書` | 固定文字列 | `<cell value="請求書" />` | そのまま値セル |
-| `@item.Name` | 式評価値 | `<cell value="@item.Name" />` | 実行時評価 |
+| `@item.Name` | 式評価値 | `<cell value="@(item.Name)" />` | converter が DSL runtime 互換形へ正規化 |
 | `{{use:Header}}` | コンポーネント挿入 | `<use component="Header" />` | 挿入トリガ |
-| `{{use:ItemRow, from:@items, var:item}}` | 反復+挿入 | `<repeat from="@items" var="item" direction="down"><use component="ItemRow" /></repeat>` | repeat展開 |
+| `{{use:ItemRow, from:@items, var:item, styleOverflow:edge}}` | 反復+挿入 | `<repeat from="@(root.Items)" var="item" direction="down"><use component="ItemRow" styleOverflow="edge" /></repeat>` | repeat展開 + styleOverflow |
 | `=SUM(B2:B10)` | Excel数式 | `<cell formula="SUM(B2:B10)" />` | `cell@formula` で保持 |
 
 #### 10.7.2 入れ子構成のセル配置イメージ（Excel側）

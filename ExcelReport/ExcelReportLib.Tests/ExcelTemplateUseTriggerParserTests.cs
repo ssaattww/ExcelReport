@@ -62,6 +62,24 @@ public sealed class ExcelTemplateUseTriggerParserTests
     }
 
     /// <summary>
+    /// Verifies that styleOverflow token is parsed for both use and repeat-use triggers.
+    /// </summary>
+    [Fact]
+    public void Parse_UseWithStyleOverflow_ReturnsOverflowMode()
+    {
+        var parser = new UseTriggerParser();
+
+        var simpleResult = parser.Parse("{{use:Header, styleOverflow:edge}}");
+        var repeatResult = parser.Parse("{{use:ItemRow, from:@items, var:item, styleOverflow:edge}}");
+
+        Assert.True(simpleResult.IsTrigger);
+        Assert.Equal("edge", Assert.IsType<ExcelTemplateUseTrigger>(simpleResult.Trigger).StyleOverflow);
+
+        Assert.True(repeatResult.IsTrigger);
+        Assert.Equal("edge", Assert.IsType<ExcelTemplateUseTrigger>(repeatResult.Trigger).StyleOverflow);
+    }
+
+    /// <summary>
     /// Verifies that commas inside from expression do not break trigger tokenization.
     /// </summary>
     [Fact]

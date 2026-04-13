@@ -94,6 +94,58 @@ internal static class ExcelTemplateTestWorkbookFactory
     }
 
     /// <summary>
+    /// Creates a workbook fixture that emits a DSL cell with both value and formula attributes.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateFormulaValueConflictWorkbookFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var worksheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 1U,
+            cells:
+            [
+                CreateFormulaInlineStringCell("A1", "TemplateValue", "SUM(B1:B2)"),
+            ]);
+
+        sheets.Append(CreateSheet(worksheetPart, workbookPart, "Invoice", 1U));
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
+    /// <summary>
+    /// Creates a workbook fixture with a well-formed use trigger that references an undefined component.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateUndefinedComponentWorkbookFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var worksheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 1U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "{{use:Missing}}"),
+            ]);
+
+        sheets.Append(CreateSheet(worksheetPart, workbookPart, "Invoice", 1U));
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
+    /// <summary>
     /// Creates a workbook fixture for end-to-end report generation through the ExcelTemplate facade.
     /// </summary>
     /// <returns>The temporary workbook path.</returns>
@@ -148,6 +200,126 @@ internal static class ExcelTemplateTestWorkbookFactory
         return path;
     }
 
+    /// <summary>
+    /// Creates a nested workbook fixture that exercises GroupBlock, ItemRow, styleOverflow, and formula preservation.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateNestedReportWorkbookFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var headerSheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 1U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "Invoice"),
+                CreateFormulaCell("B1", "SUM(B4:B8)"),
+            ]);
+        var itemRowSheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 2U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "@item.Name"),
+                CreateInlineStringCell("B1", "@item.Qty"),
+                CreateInlineStringCell("C1", "@item.Price"),
+            ]);
+        var groupBlockSheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 3U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "@group.Name"),
+                CreateInlineStringCell("A2", "{{use:ItemRow, from:@group.Items, var:item, styleOverflow:edge}}"),
+            ]);
+        var invoiceSheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 4U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "{{use:Header, styleOverflow:edge}}"),
+                CreateInlineStringCell("A3", "{{use:GroupBlock, from:@groups, var:group, styleOverflow:edge}}"),
+            ]);
+
+        sheets.Append(
+            CreateSheet(headerSheetPart, workbookPart, "__component_Header", 1U),
+            CreateSheet(itemRowSheetPart, workbookPart, "__component_ItemRow", 2U),
+            CreateSheet(groupBlockSheetPart, workbookPart, "__component_GroupBlock", 3U),
+            CreateSheet(invoiceSheetPart, workbookPart, "Invoice", 4U));
+
+        workbookPart.Workbook.DefinedNames = new DefinedNames(
+            new DefinedName
+            {
+                Name = "__component_range_Header",
+                Text = "'__component_Header'!$A$1:$B$1",
+            },
+            new DefinedName
+            {
+                Name = "__component_range_ItemRow",
+                Text = "'__component_ItemRow'!$A$1:$C$1",
+            },
+            new DefinedName
+            {
+                Name = "__component_range_GroupBlock",
+                Text = "'__component_GroupBlock'!$A$1:$C$2",
+            });
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
+    /// <summary>
+    /// Creates a workbook fixture that emits merged-boundary and unsupported-feature issues.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateValidationIssueWorkbookFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var badComponentSheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 1U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "Broken"),
+            ],
+            mergedRanges:
+            [
+                "A1:C1",
+            ]);
+        var summarySheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 2U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "Ready"),
+            ],
+            hasConditionalFormatting: true);
+
+        sheets.Append(
+            CreateSheet(badComponentSheetPart, workbookPart, "__component_Bad", 1U),
+            CreateSheet(summarySheetPart, workbookPart, "Summary", 2U));
+
+        workbookPart.Workbook.DefinedNames = new DefinedNames(
+            new DefinedName
+            {
+                Name = "__component_range_Bad",
+                Text = "'__component_Bad'!$A$1:$B$1",
+            });
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
     private static string CreateEmptyWorkbookFile()
     {
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xlsx");
@@ -165,7 +337,8 @@ internal static class ExcelTemplateTestWorkbookFactory
         WorkbookPart workbookPart,
         uint sheetId,
         IReadOnlyList<Cell> cells,
-        bool hasConditionalFormatting = false)
+        bool hasConditionalFormatting = false,
+        IReadOnlyList<string>? mergedRanges = null)
     {
         var worksheetPart = workbookPart.AddNewPart<WorksheetPart>($"rId{sheetId}");
         var worksheet = new Worksheet();
@@ -194,6 +367,17 @@ internal static class ExcelTemplateTestWorkbookFactory
                 });
         }
 
+        if (mergedRanges is { Count: > 0 })
+        {
+            var mergeCells = new MergeCells();
+            foreach (var mergedRange in mergedRanges)
+            {
+                mergeCells.Append(new MergeCell { Reference = mergedRange });
+            }
+
+            worksheet.Append(mergeCells);
+        }
+
         worksheetPart.Worksheet = worksheet;
         worksheetPart.Worksheet.Save();
         return worksheetPart;
@@ -219,6 +403,15 @@ internal static class ExcelTemplateTestWorkbookFactory
         new()
         {
             CellReference = reference,
+            CellFormula = new CellFormula(formula),
+        };
+
+    private static Cell CreateFormulaInlineStringCell(string reference, string value, string formula) =>
+        new()
+        {
+            CellReference = reference,
+            DataType = CellValues.InlineString,
+            InlineString = new InlineString(new Text(value)),
             CellFormula = new CellFormula(formula),
         };
 

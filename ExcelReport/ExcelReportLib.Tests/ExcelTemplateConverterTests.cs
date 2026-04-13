@@ -89,29 +89,25 @@ public sealed class ExcelTemplateConverterTests
     }
 
     /// <summary>
-    /// Verifies that schema validation can be disabled while keeping conversion issues.
+    /// Verifies that disabling schema validation still keeps non-schema DSL contract validation.
     /// </summary>
     [Fact]
-    public void ConvertToXmlTemplate_WhenSchemaValidationDisabled_DoesNotAddParserIssues()
+    public void ConvertToDsl_WhenSchemaValidationDisabled_StillValidatesDslContracts()
     {
-        var xlsxPath = ExcelTemplateTestWorkbookFactory.CreateIssueWorkbookFile();
+        var xlsxPath = ExcelTemplateTestWorkbookFactory.CreateUndefinedComponentWorkbookFile();
 
         try
         {
             var converter = new ExcelTemplateConverter();
 
-            var result = converter.ConvertToXmlTemplate(
+            var result = converter.ConvertToDsl(
                 xlsxPath,
                 new ExcelTemplateConvertOptions { EnableSchemaValidation = false });
 
             Assert.Contains("<workbook xmlns=\"urn:excelreport:v2\">", result.Text, StringComparison.Ordinal);
-            Assert.Equal(
-                [
-                    IssueKind.EmptyComponentRange,
-                    IssueKind.InvalidAttributeValue,
-                    IssueKind.UnsupportedExcelTemplateFeature,
-                ],
-                result.Issues.Select(issue => issue.Kind).OrderBy(kind => kind.ToString(), StringComparer.Ordinal).ToArray());
+            Assert.True(
+                result.Issues.Count(issue => issue.Kind == IssueKind.UndefinedComponent) >= 2,
+                "UndefinedComponent issues should include validator + parser results.");
         }
         finally
         {

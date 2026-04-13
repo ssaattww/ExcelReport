@@ -5,6 +5,14 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-14 issue#58 review対応: `EnableSchemaValidation=false` でも `DslParser` の非schema検証を継続するよう `ExcelTemplateConverter` を修正し、review round 2 記録を `reports/issue58-converter-review-2026-04-14-round2.md` に保存
+- 2026-04-14 issue#58 実装完了: `UseTriggerParser` に `styleOverflow` を追加し、Excel shorthand expression を emitted DSL の runtime 互換 `@(...)` 形へ正規化
+- 2026-04-14 issue#58 E2E追加: nested `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` の happy-path と、`MergedCellBoundaryViolation` / `UnsupportedExcelTemplateFeature` の negative-path を facade 経由で固定
+- 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `timeout 15s codex exec review` で再試行したが、sandbox の network 制限により timeout したため `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に記録
+- 2026-04-14 issue#58 設計同期: emitted DSL の expression 正規化と `styleOverflow` trigger を `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` に反映
+- 2026-04-14 issue#58 検証: `ExcelTemplateEndToEndTests` 3件、関連86件、`ExcelReportLib.Tests` 全体256件通過
+- 2026-04-14 issue#58 記録: DSL互換 hardening/E2E 実装記録と review 記録を `reports/issue58-dsl-compatibility-e2e-2026-04-14.md` / `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に保存
+- 2026-04-14 issue#58 残件補正: Phase 14 着手前の棚卸しで、`styleOverflow` の trigger 未対応と Excel shorthand expression の DSL runtime 非互換を確認し、残taskへ追加
 - 2026-04-14 issue#58 実装継続: `ExcelTemplateReportGenerator` / `ExcelTemplateGenerateOptions` を追加し、`xlsx -> dsl -> final xlsx` の facade API を既存 `ReportGenerator` 経路へ接続
 - 2026-04-14 issue#58 実装補強: non-fatal conversion issue を最終 `ReportGeneratorResult.Issues` に保持しつつ生成を継続し、fatal conversion issue は facade で short-circuit する契約を固定
 - 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `timeout 15s codex exec review` で再試行したが、sandbox の network 制限により timeout したため `reports/issue58-excel-template-facade-review-2026-04-14.md` に記録
@@ -78,10 +86,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 ## Issue #58 Remaining Tasks
 
 - 基準日: 2026-04-14
-- 現在位置: Phase 13 完了、残りは「E2E」
-- 残見積り: 2 tasks / 1-2 実装サイクル
+- 現在位置: issue #58 完了
+- 残見積り: 0 tasks / 0 実装サイクル
 - 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
-- 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、残件の追加は不要と判断
+- 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、Phase 14 へ `styleOverflow` trigger 対応と expression DSL互換 hardening を追加
 
 | Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
 |---|---|---|---|---|---|---|
@@ -95,8 +103,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 | R58-08 | conversion-only API の issue 集約と integration test を追加する | Done | 12 | R58-07 | validator/resolver/parser の issues が conversion result に保持される | 0.5 cycle |
 | R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Done | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
 | R58-10 | facade の happy-path integration test を追加する | Done | 13 | R58-09 | 基本帳票生成ケースが API 経由で通る | 0.5 cycle |
-| R58-11 | xlsx -> dsl -> final xlsx E2E を追加する | Not Started | 14 | R58-09, R58-10 | `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` を含む E2E が通る | 1 cycle |
-| R58-12 | negative E2E と最終記録を追加する | Not Started | 14 | R58-09, R58-10 | merged violation / unsupported conditional formatting の negative case、reports/tasks/phases の最終同期が完了 | 1 cycle |
+| R58-11 | use trigger で `styleOverflow` を受け取り emitted DSL へ反映する | Done | 14 | R58-09, R58-10 | `{{use:..., styleOverflow:edge}}` が `use@styleOverflow="edge"` として最終 DSL に残る | 0.5 cycle |
+| R58-12 | Excel expression を DSL runtime 互換形へ揃える | Done | 14 | R58-09, R58-10 | Excel cell / trigger の expression が E2E で実行可能な DSL 互換形になる | 0.5 cycle |
+| R58-13 | xlsx -> dsl -> final xlsx E2E を追加する | Done | 14 | R58-11, R58-12 | `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` を含む E2E が通る | 1 cycle |
+| R58-14 | negative E2E と最終記録を追加する | Done | 14 | R58-11, R58-12, R58-13 | merged violation / unsupported conditional formatting の negative case、reports/tasks/phases の最終同期が完了 | 1 cycle |
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義
 - 2026-04-05 issue#16 仕様化: `cell@value` の式評価結果が `=` 始まり文字列なら数式扱いとする仕様を DSL 設計書へ反映
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持

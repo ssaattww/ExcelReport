@@ -4,6 +4,12 @@ Last Updated: 2026-04-14
 
 ## Overall Progress
 
+- 2026-04-14: issue #58 の converter review round 2 として、`EnableSchemaValidation=false` 時も `DslParser` の非schema検証を継続する修正を反映し、`reports/issue58-converter-review-2026-04-14-round2.md` に記録
+- 2026-04-14: issue #58 の Phase 14 として `UseTriggerParser` の `styleOverflow` 対応、Excel shorthand expression の emitted DSL 正規化、nested/negative E2E を完了
+- 2026-04-14: issue #58 の Phase 14 review を `gpt-5.4` / `high` で `timeout 15s codex exec review` により再試行したが、sandbox の network 制限で timeout したため `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に記録
+- 2026-04-14: issue #58 の設計書を emitted DSL の expression 正規化と `styleOverflow` trigger 仕様へ同期
+- 2026-04-14: issue #58 の Phase 14 検証として E2E 3件、関連86件、全体256件通過を確認
+- 2026-04-14: issue #58 の Phase 14 着手前棚卸しで、`styleOverflow` trigger 未対応と Excel shorthand expression の DSL runtime 非互換を確認し、残taskへ追加
 - 2026-04-14: issue #58 の Phase 13 として `ExcelTemplateReportGenerator` / `ExcelTemplateGenerateOptions` を追加し、ExcelTemplate facade から既存 `ReportGenerator` まで接続
 - 2026-04-14: issue #58 の Phase 13 で non-fatal conversion issue の最終結果集約と fatal conversion issue の short-circuit を実装
 - 2026-04-14: issue #58 の Phase 13 review を `gpt-5.4` / `high` で `timeout 15s codex exec review` により再試行したが、sandbox の network 制限で timeout したため `reports/issue58-excel-template-facade-review-2026-04-14.md` に記録
@@ -69,17 +75,17 @@ Last Updated: 2026-04-14
 ## Issue #58 Remaining Phases
 
 - 基準日: 2026-04-14
-- 現在位置: Phase 13 完了、次は Phase 14 の E2E 固定
-- 残見積り: 1 phase / 2 tasks / 1-2 実装サイクル
+- 現在位置: issue #58 完了
+- 残見積り: 0 phases / 0 tasks / 0 実装サイクル
 - 注記: 下部の `Phase Summary` / `Completed Phases` は既存プロジェクト全体の旧集計であり、issue #58 の残作業はこの節を正として扱う
-- 棚卸し結果: 現時点で追加 phase は不要
+- 棚卸し結果: phase 追加は不要だが、Phase 14 に DSL互換 hardening task を追加
 
 | Phase | Status | Scope | Exit Criteria | Estimate |
 |---|---|---|---|---|
 | Phase 11: Conversion Output Core | Done | `DslEmitter` / `XmlTemplateSerializer` / 変換用fixture整備 | ExcelTemplate から XML debug / DSL text を安定出力でき、snapshot unit が通る | 1-2 cycles |
 | Phase 12: Conversion API Integration | Done | `ExcelTemplateConverter` / options / result object / issue集約 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返し、conversion-only API を integration test で固定 | 1 cycle |
 | Phase 13: Report Generation Facade | Done | `ExcelTemplateReportGenerator` / 既存 `ReportGenerator` 接続 / happy-path統合 | `GenerateFromExcelTemplate` で既存 DSL 経路まで接続し、基本生成ケースが通る | 1 cycle |
-| Phase 14: E2E Stabilization And Closeout | Not Started | xlsx->dsl->final xlsx E2E / negative E2E / docs同期 / 最終review | happy-path + negative-path を含む E2E と records/tasks/phases 更新が完了 | 1-2 cycles |
+| Phase 14: DSL Compatibility Hardening And E2E Closeout | Done | trigger/styleOverflow hardening / expression DSL互換化 / xlsx->dsl->final xlsx E2E / negative E2E / docs同期 / 最終review | DSL互換 hardening 後に happy-path + negative-path を含む E2E と records/tasks/phases 更新が完了 | 1-2 cycles |
 - 2026-04-05: issue #16 向けに `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat 生成シート間参照の仕様を定義
 - 2026-04-05: `cell@value` 式評価結果が `=` 始まり文字列の場合に数式として扱う仕様を `DslDefinition_DetailDesign.md` へ追記
 - 2026-04-05: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を数式として保持する実装を追加

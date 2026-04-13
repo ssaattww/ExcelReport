@@ -68,13 +68,10 @@ public sealed class ExcelTemplateConverter
 
             var text = emitter(contract);
 
-            if (effectiveOptions.EnableSchemaValidation)
-            {
-                var parseResult = DslParser.ParseFromText(
-                    text,
-                    new DslParserOptions { EnableSchemaValidation = true });
-                issues.AddRange(parseResult.Issues);
-            }
+            var parseResult = DslParser.ParseFromText(
+                text,
+                new DslParserOptions { EnableSchemaValidation = effectiveOptions.EnableSchemaValidation });
+            issues.AddRange(parseResult.Issues);
 
             return new ExcelTemplateConversionResult(text, issues);
         }

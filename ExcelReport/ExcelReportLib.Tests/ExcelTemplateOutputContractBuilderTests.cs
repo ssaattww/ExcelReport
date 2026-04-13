@@ -38,7 +38,7 @@ public sealed class ExcelTemplateOutputContractBuilderTests
         var repeatUse = Assert.IsType<ExcelTemplateOutputRepeatUse>(header.Items[1]);
         Assert.Equal("A2", repeatUse.Reference);
         Assert.Equal("ItemRow", repeatUse.ComponentName);
-        Assert.Equal("@items", repeatUse.FromExpression);
+        Assert.Equal("@(root.Items)", repeatUse.FromExpression);
         Assert.Equal("item", repeatUse.VariableName);
         Assert.Equal("down", repeatUse.Direction);
         Assert.Null(repeatUse.StyleOverflow);
@@ -63,6 +63,10 @@ public sealed class ExcelTemplateOutputContractBuilderTests
         var invoiceFormula = Assert.IsType<ExcelTemplateOutputCell>(invoice.Items[1]);
         Assert.Equal("B3", invoiceFormula.Reference);
         Assert.Equal("SUM(B4:B8)", invoiceFormula.Formula);
+
+        var itemRow = contract.Components.Single(component => component.Name == "ItemRow");
+        var itemNameCell = Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(itemRow.Items));
+        Assert.Equal("@(item.Name)", itemNameCell.Value);
     }
 
     /// <summary>
@@ -138,6 +142,35 @@ public sealed class ExcelTemplateOutputContractBuilderTests
         Assert.Null(styledCell.Value);
         Assert.Null(styledCell.Formula);
         Assert.Equal((uint)11, styledCell.StyleIndex);
+    }
+
+    /// <summary>
+    /// Verifies that styleOverflow from Excel use triggers is preserved in the output contract.
+    /// </summary>
+    [Fact]
+    public void Build_UseTriggerWithStyleOverflow_PreservesExplicitOverflow()
+    {
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet(
+                    "Invoice",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "{{use:Header, styleOverflow:edge}}", null, null),
+                        new ExcelTemplateCell("A2", 2, 1, "{{use:ItemRow, from:@items, var:item, styleOverflow:edge}}", null, null),
+                    ]),
+            ]);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        var invoice = Assert.Single(contract.Sheets);
+        var simpleUse = Assert.IsType<ExcelTemplateOutputUse>(invoice.Items[0]);
+        Assert.Equal("edge", simpleUse.StyleOverflow);
+
+        var repeatUse = Assert.IsType<ExcelTemplateOutputRepeatUse>(invoice.Items[1]);
+        Assert.Equal("edge", repeatUse.StyleOverflow);
+        Assert.Equal("@(root.Items)", repeatUse.FromExpression);
     }
 
 }

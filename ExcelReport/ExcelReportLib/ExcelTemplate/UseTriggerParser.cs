@@ -51,6 +51,7 @@ public sealed class UseTriggerParser
 
         string? fromExpression = null;
         string? variableName = null;
+        string? styleOverflow = null;
 
         for (var index = 1; index < tokens.Length; index++)
         {
@@ -68,9 +69,12 @@ public sealed class UseTriggerParser
                 case "var":
                     variableName = parts[1];
                     break;
+                case "styleOverflow":
+                    styleOverflow = parts[1];
+                    break;
                 default:
                     return ExcelTemplateUseTriggerParseResult.Invalid(
-                        $"<use> trigger token '{parts[0]}' is unsupported. Supported keys are from and var.");
+                        $"<use> trigger token '{parts[0]}' is unsupported. Supported keys are from, var, and styleOverflow.");
             }
         }
 
@@ -86,7 +90,8 @@ public sealed class UseTriggerParser
             componentName,
             fromExpression,
             variableName,
-            string.IsNullOrWhiteSpace(fromExpression) ? null : "down");
+            string.IsNullOrWhiteSpace(fromExpression) ? null : "down",
+            styleOverflow);
         return ExcelTemplateUseTriggerParseResult.Success(trigger);
     }
 
@@ -178,16 +183,19 @@ public sealed class ExcelTemplateUseTrigger
     /// <param name="fromExpression">The repeat source expression.</param>
     /// <param name="variableName">The repeat variable name.</param>
     /// <param name="repeatDirection">The normalized repeat direction.</param>
+    /// <param name="styleOverflow">The requested style overflow mode.</param>
     public ExcelTemplateUseTrigger(
         string componentName,
         string? fromExpression,
         string? variableName,
-        string? repeatDirection)
+        string? repeatDirection,
+        string? styleOverflow)
     {
         ComponentName = componentName;
         FromExpression = fromExpression;
         VariableName = variableName;
         RepeatDirection = repeatDirection;
+        StyleOverflow = styleOverflow;
     }
 
     /// <summary>
@@ -209,6 +217,11 @@ public sealed class ExcelTemplateUseTrigger
     /// Gets the normalized repeat direction.
     /// </summary>
     public string? RepeatDirection { get; }
+
+    /// <summary>
+    /// Gets the requested style overflow mode.
+    /// </summary>
+    public string? StyleOverflow { get; }
 }
 
 /// <summary>

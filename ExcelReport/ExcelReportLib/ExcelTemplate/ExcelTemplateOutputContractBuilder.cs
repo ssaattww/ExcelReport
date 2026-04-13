@@ -77,7 +77,13 @@ public sealed class ExcelTemplateOutputContractBuilder
 
         if (!triggerResult.IsTrigger || triggerResult.Trigger is null)
         {
-            return new ExcelTemplateOutputCell(cell.Reference, cell.Row, cell.Column, styleIndex, cell.Value, cell.Formula);
+            return new ExcelTemplateOutputCell(
+                cell.Reference,
+                cell.Row,
+                cell.Column,
+                styleIndex,
+                ExcelTemplateExpressionNormalizer.Normalize(cell.Value),
+                cell.Formula);
         }
 
         if (string.IsNullOrWhiteSpace(triggerResult.Trigger.FromExpression))
@@ -88,7 +94,7 @@ public sealed class ExcelTemplateOutputContractBuilder
                 cell.Column,
                 styleIndex,
                 triggerResult.Trigger.ComponentName,
-                styleOverflow: null);
+                triggerResult.Trigger.StyleOverflow);
         }
 
         return new ExcelTemplateOutputRepeatUse(
@@ -97,10 +103,10 @@ public sealed class ExcelTemplateOutputContractBuilder
             cell.Column,
             styleIndex,
             triggerResult.Trigger.ComponentName,
-            triggerResult.Trigger.FromExpression!,
+            ExcelTemplateExpressionNormalizer.Normalize(triggerResult.Trigger.FromExpression)!,
             triggerResult.Trigger.VariableName!,
             triggerResult.Trigger.RepeatDirection ?? "down",
-            styleOverflow: null);
+            triggerResult.Trigger.StyleOverflow);
     }
 
     private static bool IsComponentSheet(ExcelTemplateSheet sheet) =>
