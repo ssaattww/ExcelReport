@@ -5,6 +5,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 実装継続: `DslEmitter` を追加し、DSL 互換 `XDocument` を UTF-8 declaration 付き DSL text へ出力可能化
+- 2026-04-13 issue#58 実装完了: `cell@formula` / explicit `styleOverflow` / `direction=\"down\"` を emitted DSL text に保持する経路を固定
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent review で `DslEmitter` 差分の findings なしを確認
+- 2026-04-13 issue#58 検証: `DslEmitterTests` 2件、関連26件、`ExcelReportLib.Tests` 全体242件通過
+- 2026-04-13 issue#58 記録: emitter 実装記録と review 記録を `reports/issue58-dsl-emitter-2026-04-13.md` / `reports/issue58-dsl-emitter-review-2026-04-13.md` に保存
 - 2026-04-13 issue#58 実装継続: `XmlTemplateSerializer` を追加し、`workbook/component/grid/sheet/cell/use/repeat` の DSL 互換 XML 出力を実装
 - 2026-04-13 issue#58 review対応: serializer の XSD validation 検証を追加し、未解決 component は DSL 本体から除外して comment に退避、style-only empty cell / explicit `styleOverflow` の分岐テストを補強
 - 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent 再 review で findings なしを確認
@@ -58,16 +63,16 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 ## Issue #58 Remaining Tasks
 
 - 基準日: 2026-04-13
-- 現在位置: foundation 実装完了、`R58-02` 完了、残りは「DslEmitter -> API -> E2E」
-- 残見積り: 10 tasks / 3-4 実装サイクル
+- 現在位置: foundation 実装完了、`R58-04` 完了、残りは「snapshot -> API -> E2E」
+- 残見積り: 8 tasks / 2-4 実装サイクル
 - 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
 
 | Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
 |---|---|---|---|---|---|---|
 | R58-01 | 変換出力の最小契約を固定する | Done | 11 | 66a09b1, 1103fbb, fb24ba2 | XML/DSL の出力対象、issue 集約方針、fixture 形式をコード上で固定 | 0.5 cycle |
 | R58-02 | `XmlTemplateSerializer` の workbook/component/sheet 出力を実装する | Done | 11 | R58-01 | debug XML が component/sheet/cell/use/repeat を表現できる | 1 cycle |
-| R58-03 | `DslEmitter` の基本出力を実装する | Not Started | 11 | R58-01 | workbook/components/sheets/cells が DSL text へ変換される | 1 cycle |
-| R58-04 | `DslEmitter` で `cell@formula` / `styleOverflow` / `direction=\"down\"` を反映する | Not Started | 11 | R58-03 | 設計どおりの契約が emitted DSL に反映される | 0.5 cycle |
+| R58-03 | `DslEmitter` の基本出力を実装する | Done | 11 | R58-01 | workbook/components/sheets/cells が DSL text へ変換される | 1 cycle |
+| R58-04 | `DslEmitter` で `cell@formula` / `styleOverflow` / `direction=\"down\"` を反映する | Done | 11 | R58-03 | 設計どおりの契約が emitted DSL に反映される | 0.5 cycle |
 | R58-05 | xlsx -> xml snapshot テストを追加する | Not Started | 11 | R58-02 | debug XML の snapshot が固定される | 0.5 cycle |
 | R58-06 | xlsx -> dsl snapshot テストを追加する | Not Started | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
 | R58-07 | `ExcelTemplateConverter` と result/options を実装する | Not Started | 12 | R58-02, R58-03, R58-04 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返す | 0.5 cycle |
