@@ -4,6 +4,10 @@ Last Updated: 2026-04-13
 
 ## Overall Progress
 
+- 2026-04-13: issue #58 の `XmlTemplateSerializer` を追加し、`workbook/component/grid/sheet/cell/use/repeat` の DSL 互換 XML 出力を実装
+- 2026-04-13: issue #58 の serializer review で指摘された XSD validation 検証不足、未解決 component の DSL 化、serializer 分岐テスト不足を修正
+- 2026-04-13: issue #58 の `XmlTemplateSerializer` を `gpt-5.4` / `high` sub-agent で再 review し、findings なしを確認
+- 2026-04-13: issue #58 の serializer 検証として serializer 4件、関連24件、全体240件通過を確認
 - 2026-04-13: issue #58 の出力契約第1段として `ExcelTemplateOutputContractBuilder` と normalized output model を追加し、component/sheet 分類・cell/use/repeat-use 正規化・issue 集約を固定
 - 2026-04-13: issue #58 の output contract review で指摘された `styleOverflow` 未指定区別、未解決 component 文脈保持、style-only cell / malformed trigger テスト不足を修正
 - 2026-04-13: issue #58 の output contract を `gpt-5.4` / `high` sub-agent で再 review し、findings なしを確認
@@ -49,8 +53,8 @@ Last Updated: 2026-04-13
 ## Issue #58 Remaining Phases
 
 - 基準日: 2026-04-13
-- 現在位置: foundation 実装完了、`R58-01` 完了、Phase 11 の serializer/emitter 着手待ち
-- 残見積り: 4 phases / 11 tasks / 3-4 実装サイクル
+- 現在位置: foundation 実装完了、`R58-02` 完了、Phase 11 で `DslEmitter` 着手待ち
+- 残見積り: 4 phases / 10 tasks / 3-4 実装サイクル
 - 注記: 下部の `Phase Summary` / `Completed Phases` は既存プロジェクト全体の旧集計であり、issue #58 の残作業はこの節を正として扱う
 
 | Phase | Status | Scope | Exit Criteria | Estimate |

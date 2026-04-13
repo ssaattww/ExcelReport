@@ -39,4 +39,21 @@ internal static class ExcelTemplateOutputContractFixture
             {
                 ["__component_range_Header"] = "'__component_Header'!$A$1:$B$2",
             });
+
+    /// <summary>
+    /// Creates a workbook fixture containing unresolved component and validation issues.
+    /// </summary>
+    /// <returns>The workbook fixture.</returns>
+    public static ExcelTemplateWorkbook CreateWorkbookWithIssues() =>
+        new(
+            sheets:
+            [
+                new ExcelTemplateSheet("__component_Empty"),
+                new ExcelTemplateSheet(
+                    "Summary",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "{{use:Missing", null, null),
+                    ],
+                    hasConditionalFormatting: true),
+            ]);
 }
