@@ -1,0 +1,22 @@
+<workbook xmlns="urn:excelreport:v2">
+  <!--component name=Header sourceSheet=__component_Header rangeResolved=true range=A1:B2-->
+  <component name="Header">
+    <grid rows="2" cols="2">
+      <cell r="1" c="1" value="請求書" />
+      <repeat from="@items" var="item" direction="down" r="2" c="1">
+        <use component="ItemRow" />
+      </repeat>
+      <cell r="2" c="2" formula="SUM(C1:C3)" />
+    </grid>
+  </component>
+  <!--component name=ItemRow sourceSheet=__component_ItemRow rangeResolved=true range=A1-->
+  <component name="ItemRow">
+    <grid rows="1" cols="1">
+      <cell r="1" c="1" value="@item.Name" />
+    </grid>
+  </component>
+  <sheet name="Invoice">
+    <use component="Header" r="1" c="1" />
+    <cell r="3" c="2" formula="SUM(B4:B8)" />
+  </sheet>
+</workbook>

@@ -5,6 +5,10 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-13 issue#58 テスト追加: serializer/emitter の external snapshot として `Issue58_StandardTemplate_Debug.xml` / `Issue58_StandardTemplate_Dsl.xml` を追加
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent review で snapshot 差分の findings なしを確認
+- 2026-04-13 issue#58 検証: `ExcelTemplateSnapshotTests` 2件、関連28件、`ExcelReportLib.Tests` 全体244件通過
+- 2026-04-13 issue#58 記録: snapshot 実装記録と review 記録を `reports/issue58-snapshots-2026-04-13.md` / `reports/issue58-snapshots-review-2026-04-13.md` に保存
 - 2026-04-13 issue#58 実装継続: `DslEmitter` を追加し、DSL 互換 `XDocument` を UTF-8 declaration 付き DSL text へ出力可能化
 - 2026-04-13 issue#58 実装完了: `cell@formula` / explicit `styleOverflow` / `direction=\"down\"` を emitted DSL text に保持する経路を固定
 - 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent review で `DslEmitter` 差分の findings なしを確認
@@ -63,8 +67,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 ## Issue #58 Remaining Tasks
 
 - 基準日: 2026-04-13
-- 現在位置: foundation 実装完了、`R58-04` 完了、残りは「snapshot -> API -> E2E」
-- 残見積り: 8 tasks / 2-4 実装サイクル
+- 現在位置: Phase 11 完了、残りは「API -> facade -> E2E」
+- 残見積り: 6 tasks / 2-3 実装サイクル
 - 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
 
 | Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
@@ -73,8 +77,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 | R58-02 | `XmlTemplateSerializer` の workbook/component/sheet 出力を実装する | Done | 11 | R58-01 | debug XML が component/sheet/cell/use/repeat を表現できる | 1 cycle |
 | R58-03 | `DslEmitter` の基本出力を実装する | Done | 11 | R58-01 | workbook/components/sheets/cells が DSL text へ変換される | 1 cycle |
 | R58-04 | `DslEmitter` で `cell@formula` / `styleOverflow` / `direction=\"down\"` を反映する | Done | 11 | R58-03 | 設計どおりの契約が emitted DSL に反映される | 0.5 cycle |
-| R58-05 | xlsx -> xml snapshot テストを追加する | Not Started | 11 | R58-02 | debug XML の snapshot が固定される | 0.5 cycle |
-| R58-06 | xlsx -> dsl snapshot テストを追加する | Not Started | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
+| R58-05 | xlsx -> xml snapshot テストを追加する | Done | 11 | R58-02 | debug XML の snapshot が固定される | 0.5 cycle |
+| R58-06 | xlsx -> dsl snapshot テストを追加する | Done | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
 | R58-07 | `ExcelTemplateConverter` と result/options を実装する | Not Started | 12 | R58-02, R58-03, R58-04 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返す | 0.5 cycle |
 | R58-08 | conversion-only API の issue 集約と integration test を追加する | Not Started | 12 | R58-07 | validator/resolver/parser の issues が conversion result に保持される | 0.5 cycle |
 | R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Not Started | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
