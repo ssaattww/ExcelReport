@@ -5,6 +5,11 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-14 issue#58 実装継続: `ExcelTemplateReportGenerator` / `ExcelTemplateGenerateOptions` を追加し、`xlsx -> dsl -> final xlsx` の facade API を既存 `ReportGenerator` 経路へ接続
+- 2026-04-14 issue#58 実装補強: non-fatal conversion issue を最終 `ReportGeneratorResult.Issues` に保持しつつ生成を継続し、fatal conversion issue は facade で short-circuit する契約を固定
+- 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `timeout 15s codex exec review` で再試行したが、sandbox の network 制限により timeout したため `reports/issue58-excel-template-facade-review-2026-04-14.md` に記録
+- 2026-04-14 issue#58 検証: `ExcelTemplateReportGeneratorTests` 3件、関連81件、`ExcelReportLib.Tests` 全体251件通過
+- 2026-04-14 issue#58 記録: facade 実装記録と review 記録を `reports/issue58-excel-template-facade-2026-04-14.md` / `reports/issue58-excel-template-facade-review-2026-04-14.md` に保存
 - 2026-04-14 issue#58 残件再棚卸し: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と tasks/phases を突合し、残作業は `Phase 12-14 / R58-07..R58-12` で網羅されていることを確認（追加 task/phase なし）
 - 2026-04-14 issue#58 実装継続: `ExcelTemplateConverter` / `ExcelTemplateConversionResult` / `ExcelTemplateConvertOptions` を追加し、conversion-only API を `Text + Issues` 返却へ統合
 - 2026-04-14 issue#58 review対応: corrupt workbook 入力で漏れていた `FileFormatException` を fatal `IssueKind.LoadFile` へ集約し、schema validation opt-out を含む integration test を補強
@@ -73,8 +78,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 ## Issue #58 Remaining Tasks
 
 - 基準日: 2026-04-14
-- 現在位置: Phase 12 完了、残りは「facade -> E2E」
-- 残見積り: 4 tasks / 2 実装サイクル
+- 現在位置: Phase 13 完了、残りは「E2E」
+- 残見積り: 2 tasks / 1-2 実装サイクル
 - 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
 - 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、残件の追加は不要と判断
 
@@ -88,8 +93,8 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 | R58-06 | xlsx -> dsl snapshot テストを追加する | Done | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
 | R58-07 | `ExcelTemplateConverter` と result/options を実装する | Done | 12 | R58-02, R58-03, R58-04 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返す | 0.5 cycle |
 | R58-08 | conversion-only API の issue 集約と integration test を追加する | Done | 12 | R58-07 | validator/resolver/parser の issues が conversion result に保持される | 0.5 cycle |
-| R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Not Started | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
-| R58-10 | facade の happy-path integration test を追加する | Not Started | 13 | R58-09 | 基本帳票生成ケースが API 経由で通る | 0.5 cycle |
+| R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Done | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
+| R58-10 | facade の happy-path integration test を追加する | Done | 13 | R58-09 | 基本帳票生成ケースが API 経由で通る | 0.5 cycle |
 | R58-11 | xlsx -> dsl -> final xlsx E2E を追加する | Not Started | 14 | R58-09, R58-10 | `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` を含む E2E が通る | 1 cycle |
 | R58-12 | negative E2E と最終記録を追加する | Not Started | 14 | R58-09, R58-10 | merged violation / unsupported conditional formatting の negative case、reports/tasks/phases の最終同期が完了 | 1 cycle |
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義

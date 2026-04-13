@@ -93,6 +93,61 @@ internal static class ExcelTemplateTestWorkbookFactory
         return path;
     }
 
+    /// <summary>
+    /// Creates a workbook fixture for end-to-end report generation through the ExcelTemplate facade.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateReportWorkbookFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var summarySheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 1U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "@(root.Title)"),
+            ]);
+
+        sheets.Append(CreateSheet(summarySheetPart, workbookPart, "Summary", 1U));
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
+    /// <summary>
+    /// Creates a report workbook fixture that carries a non-fatal conversion issue.
+    /// </summary>
+    /// <returns>The temporary workbook path.</returns>
+    public static string CreateReportWorkbookWithConversionIssueFile()
+    {
+        var path = CreateEmptyWorkbookFile();
+
+        using var document = SpreadsheetDocument.Open(path, true);
+        var workbookPart = document.WorkbookPart ?? throw new InvalidOperationException("WorkbookPart was not created.");
+        var sheets = workbookPart.Workbook.GetFirstChild<Sheets>() ?? workbookPart.Workbook.AppendChild(new Sheets());
+
+        var emptyComponentSheetPart = CreateWorksheetPart(workbookPart, sheetId: 1U, cells: []);
+        var summarySheetPart = CreateWorksheetPart(
+            workbookPart,
+            sheetId: 2U,
+            cells:
+            [
+                CreateInlineStringCell("A1", "Ready"),
+            ]);
+
+        sheets.Append(
+            CreateSheet(emptyComponentSheetPart, workbookPart, "__component_Empty", 1U),
+            CreateSheet(summarySheetPart, workbookPart, "Summary", 2U));
+        workbookPart.Workbook.Save();
+
+        return path;
+    }
+
     private static string CreateEmptyWorkbookFile()
     {
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xlsx");
