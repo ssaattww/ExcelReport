@@ -44,6 +44,28 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-04-07 issue#58 要件取得: `gh` 非依存で GitHub issue URL から本文を取得し、設計ドラフトを承認依頼版へ更新
 - 2026-04-07 issue#58 着手: 要件本文未取得のため調査レポート `reports/issue58-investigation-2026-04-07.md` を作成
 - 2026-04-07 issue#58 設計: 承認前ドラフト `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` を作成（要件確定待ち）
+
+## Issue #58 Remaining Tasks
+
+- 基準日: 2026-04-13
+- 現在位置: foundation 実装完了、残りは「出力器 -> API -> E2E」
+- 残見積り: 12 tasks / 3-5 実装サイクル
+- 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
+
+| Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
+|---|---|---|---|---|---|---|
+| R58-01 | 変換出力の最小契約を固定する | Not Started | 11 | 66a09b1, 1103fbb, fb24ba2 | XML/DSL の出力対象、issue 集約方針、fixture 形式をコード上で固定 | 0.5 cycle |
+| R58-02 | `XmlTemplateSerializer` の workbook/component/sheet 出力を実装する | Not Started | 11 | R58-01 | debug XML が component/sheet/cell/use/repeat を表現できる | 1 cycle |
+| R58-03 | `DslEmitter` の基本出力を実装する | Not Started | 11 | R58-01 | workbook/components/sheets/cells が DSL text へ変換される | 1 cycle |
+| R58-04 | `DslEmitter` で `cell@formula` / `styleOverflow` / `direction=\"down\"` を反映する | Not Started | 11 | R58-03 | 設計どおりの契約が emitted DSL に反映される | 0.5 cycle |
+| R58-05 | xlsx -> xml snapshot テストを追加する | Not Started | 11 | R58-02 | debug XML の snapshot が固定される | 0.5 cycle |
+| R58-06 | xlsx -> dsl snapshot テストを追加する | Not Started | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
+| R58-07 | `ExcelTemplateConverter` と result/options を実装する | Not Started | 12 | R58-02, R58-03, R58-04 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返す | 0.5 cycle |
+| R58-08 | conversion-only API の issue 集約と integration test を追加する | Not Started | 12 | R58-07 | validator/resolver/parser の issues が conversion result に保持される | 0.5 cycle |
+| R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Not Started | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
+| R58-10 | facade の happy-path integration test を追加する | Not Started | 13 | R58-09 | 基本帳票生成ケースが API 経由で通る | 0.5 cycle |
+| R58-11 | xlsx -> dsl -> final xlsx E2E を追加する | Not Started | 14 | R58-09, R58-10 | `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` を含む E2E が通る | 1 cycle |
+| R58-12 | negative E2E と最終記録を追加する | Not Started | 14 | R58-09, R58-10 | merged violation / unsupported conditional formatting の negative case、reports/tasks/phases の最終同期が完了 | 1 cycle |
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義
 - 2026-04-05 issue#16 仕様化: `cell@value` の式評価結果が `=` 始まり文字列なら数式扱いとする仕様を DSL 設計書へ反映
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持

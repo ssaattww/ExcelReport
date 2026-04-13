@@ -133,6 +133,7 @@ Last Updated: 2026-04-13
 | FP139 | issue #58 の実装方針を策定し、sub-agent レビューを通して runtime schema 対象、`repeat@direction`、`styleOverflow=edge` 実装位置、conversion API の診断返却まで設計へ固定する | 対応済み | 2026-04-12 |
 | FP140 | 新しいチャットに移っても issue #58 実装を追加確認なしで再開できる handover 文書を作成する | 対応済み | 2026-04-12 |
 | FP141 | 外部仕様変更やブロッカーがない限り、確認待ちを増やさず極力自走して進める | 対応中 | 2026-04-13 |
+| FP142 | issue #58 の残作業は、phase を task より大きい粒度で全洗い出しし、残件数と完了見込みが追えるように tasks/phases へ明示する | 対応中 | 2026-04-13 |
 ---
 
 ## 対応履歴
