@@ -1,9 +1,14 @@
 # Phases Status
 
-Last Updated: 2026-04-13
+Last Updated: 2026-04-14
 
 ## Overall Progress
 
+- 2026-04-14: issue #58 の残phase/taskを `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と再突合し、`Phase 12-14 / R58-07..R58-12` でゴールまでの手順が網羅されていることを確認
+- 2026-04-14: issue #58 の Phase 12 として `ExcelTemplateConverter` / conversion result / options を追加し、conversion-only API を `Text + Issues` 契約へ統合
+- 2026-04-14: issue #58 の Phase 12 review対応として、corrupt workbook の `FileFormatException` 漏れを fatal `LoadFile` issue 集約へ修正し、失敗系 integration test を追加
+- 2026-04-14: issue #58 の Phase 12 review を `gpt-5.4` / `high` で `codex exec review` により再試行したが、sandbox の network 制限で中断したため `reports/issue58-conversion-api-review-2026-04-14.md` に記録
+- 2026-04-14: issue #58 の Phase 12 検証として converter 4件、関連32件、全体248件通過を確認
 - 2026-04-13: issue #58 の snapshot task として debug XML / DSL text の external fixture を追加し、serializer/emitter の canonical shape を固定
 - 2026-04-13: issue #58 の snapshot を `gpt-5.4` / `high` sub-agent で review し、findings なしを確認
 - 2026-04-13: issue #58 の snapshot 検証として snapshot 2件、関連28件、全体244件通過を確認
@@ -59,15 +64,16 @@ Last Updated: 2026-04-13
 
 ## Issue #58 Remaining Phases
 
-- 基準日: 2026-04-13
-- 現在位置: Phase 11 完了、Phase 12 の conversion API 着手待ち
-- 残見積り: 3 phases / 6 tasks / 2-3 実装サイクル
+- 基準日: 2026-04-14
+- 現在位置: Phase 12 完了、次は Phase 13 の facade 実装
+- 残見積り: 2 phases / 4 tasks / 2 実装サイクル
 - 注記: 下部の `Phase Summary` / `Completed Phases` は既存プロジェクト全体の旧集計であり、issue #58 の残作業はこの節を正として扱う
+- 棚卸し結果: 現時点で追加 phase は不要
 
 | Phase | Status | Scope | Exit Criteria | Estimate |
 |---|---|---|---|---|
 | Phase 11: Conversion Output Core | Done | `DslEmitter` / `XmlTemplateSerializer` / 変換用fixture整備 | ExcelTemplate から XML debug / DSL text を安定出力でき、snapshot unit が通る | 1-2 cycles |
-| Phase 12: Conversion API Integration | Not Started | `ExcelTemplateConverter` / options / result object / issue集約 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返し、conversion-only API を integration test で固定 | 1 cycle |
+| Phase 12: Conversion API Integration | Done | `ExcelTemplateConverter` / options / result object / issue集約 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返し、conversion-only API を integration test で固定 | 1 cycle |
 | Phase 13: Report Generation Facade | Not Started | `ExcelTemplateReportGenerator` / 既存 `ReportGenerator` 接続 / happy-path統合 | `GenerateFromExcelTemplate` で既存 DSL 経路まで接続し、基本生成ケースが通る | 1 cycle |
 | Phase 14: E2E Stabilization And Closeout | Not Started | xlsx->dsl->final xlsx E2E / negative E2E / docs同期 / 最終review | happy-path + negative-path を含む E2E と records/tasks/phases 更新が完了 | 1-2 cycles |
 - 2026-04-05: issue #16 向けに `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat 生成シート間参照の仕様を定義
