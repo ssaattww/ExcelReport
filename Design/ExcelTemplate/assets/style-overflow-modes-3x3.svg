@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="520" viewBox="0 0 1280 520">
+  <style>
+    .title { font: bold 18px Calibri, sans-serif; fill: #222; }
+    .sub { font: 12px Calibri, sans-serif; fill: #555; }
+    .hdr { font: 11px Calibri, sans-serif; fill: #333; }
+    .txt { font: 11px Calibri, sans-serif; fill: #111; }
+    .head { fill: #f3f3f3; stroke: #c9c9c9; stroke-width: 1; }
+    .cell { fill: #fff; stroke: #d9d9d9; stroke-width: 1; }
+    .styleSeed { stroke: #222; stroke-width: 1.8; fill: none; }
+    .expanded { stroke: #1f6f8b; stroke-width: 1.8; fill: none; }
+    .child { stroke: #666; stroke-width: 1.2; stroke-dasharray: 5 3; fill: none; }
+  </style>
+
+  <text x="20" y="28" class="title">3x3挿入先 + 4列子component: 挿入先書式 overflow 挙動</text>
+  <text x="20" y="48" class="sub">overflow 比較専用ケース。子展開により親範囲が右方向へ1列拡張される想定（A..C → A..D）。</text>
+
+  <g transform="translate(30,86)">
+    <text x="0" y="-14" class="title">Case 1: styleOverflow=none / seed=A1:C1</text>
+    <g transform="translate(0,0)">
+      <rect x="0" y="0" width="44" height="28" class="head"/>
+      <rect x="44" y="0" width="70" height="28" class="head"/><rect x="114" y="0" width="70" height="28" class="head"/><rect x="184" y="0" width="70" height="28" class="head"/><rect x="254" y="0" width="70" height="28" class="head"/><rect x="324" y="0" width="70" height="28" class="head"/>
+      <text x="14" y="19" class="hdr">Row</text><text x="75" y="19" class="hdr">A</text><text x="145" y="19" class="hdr">B</text><text x="215" y="19" class="hdr">C</text><text x="285" y="19" class="hdr">D</text><text x="355" y="19" class="hdr">E</text>
+
+      <rect x="0" y="28" width="44" height="46" class="head"/><rect x="44" y="28" width="70" height="46" class="cell"/><rect x="114" y="28" width="70" height="46" class="cell"/><rect x="184" y="28" width="70" height="46" class="cell"/><rect x="254" y="28" width="70" height="46" class="cell"/><rect x="324" y="28" width="70" height="46" class="cell"/>
+      <rect x="0" y="74" width="44" height="46" class="head"/><rect x="44" y="74" width="70" height="46" class="cell"/><rect x="114" y="74" width="70" height="46" class="cell"/><rect x="184" y="74" width="70" height="46" class="cell"/><rect x="254" y="74" width="70" height="46" class="cell"/><rect x="324" y="74" width="70" height="46" class="cell"/>
+      <rect x="0" y="120" width="44" height="46" class="head"/><rect x="44" y="120" width="70" height="46" class="cell"/><rect x="114" y="120" width="70" height="46" class="cell"/><rect x="184" y="120" width="70" height="46" class="cell"/><rect x="254" y="120" width="70" height="46" class="cell"/><rect x="324" y="120" width="70" height="46" class="cell"/>
+      <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
+
+      <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
+
+      <rect x="44" y="28" width="210" height="46" class="styleSeed"/>
+      <rect x="114" y="74" width="280" height="138" class="child"/>
+      <text x="44" y="236" class="sub">拡張列 D1 へはコピーしない</text>
+    </g>
+  </g>
+
+  <g transform="translate(445,86)">
+    <text x="0" y="-14" class="title">Case 2: styleOverflow=edge / seed=A1:C1</text>
+    <g transform="translate(0,0)">
+      <rect x="0" y="0" width="44" height="28" class="head"/>
+      <rect x="44" y="0" width="70" height="28" class="head"/><rect x="114" y="0" width="70" height="28" class="head"/><rect x="184" y="0" width="70" height="28" class="head"/><rect x="254" y="0" width="70" height="28" class="head"/><rect x="324" y="0" width="70" height="28" class="head"/>
+      <text x="14" y="19" class="hdr">Row</text><text x="75" y="19" class="hdr">A</text><text x="145" y="19" class="hdr">B</text><text x="215" y="19" class="hdr">C</text><text x="285" y="19" class="hdr">D</text><text x="355" y="19" class="hdr">E</text>
+
+      <rect x="0" y="28" width="44" height="46" class="head"/><rect x="44" y="28" width="70" height="46" class="cell"/><rect x="114" y="28" width="70" height="46" class="cell"/><rect x="184" y="28" width="70" height="46" class="cell"/><rect x="254" y="28" width="70" height="46" class="cell"/><rect x="324" y="28" width="70" height="46" class="cell"/>
+      <rect x="0" y="74" width="44" height="46" class="head"/><rect x="44" y="74" width="70" height="46" class="cell"/><rect x="114" y="74" width="70" height="46" class="cell"/><rect x="184" y="74" width="70" height="46" class="cell"/><rect x="254" y="74" width="70" height="46" class="cell"/><rect x="324" y="74" width="70" height="46" class="cell"/>
+      <rect x="0" y="120" width="44" height="46" class="head"/><rect x="44" y="120" width="70" height="46" class="cell"/><rect x="114" y="120" width="70" height="46" class="cell"/><rect x="184" y="120" width="70" height="46" class="cell"/><rect x="254" y="120" width="70" height="46" class="cell"/><rect x="324" y="120" width="70" height="46" class="cell"/>
+      <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
+
+      <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
+
+      <rect x="44" y="28" width="280" height="46" class="expanded"/>
+      <rect x="114" y="74" width="280" height="138" class="child"/>
+      <text x="44" y="236" class="sub">拡張列 D1 へ edge 方式でコピー</text>
+    </g>
+  </g>
+
+  <g transform="translate(860,86)">
+    <text x="0" y="-14" class="title">Case 3: styleOverflow=edge / seed=A1:B1</text>
+    <g transform="translate(0,0)">
+      <rect x="0" y="0" width="44" height="28" class="head"/>
+      <rect x="44" y="0" width="70" height="28" class="head"/><rect x="114" y="0" width="70" height="28" class="head"/><rect x="184" y="0" width="70" height="28" class="head"/><rect x="254" y="0" width="70" height="28" class="head"/><rect x="324" y="0" width="70" height="28" class="head"/>
+      <text x="14" y="19" class="hdr">Row</text><text x="75" y="19" class="hdr">A</text><text x="145" y="19" class="hdr">B</text><text x="215" y="19" class="hdr">C</text><text x="285" y="19" class="hdr">D</text><text x="355" y="19" class="hdr">E</text>
+
+      <rect x="0" y="28" width="44" height="46" class="head"/><rect x="44" y="28" width="70" height="46" class="cell"/><rect x="114" y="28" width="70" height="46" class="cell"/><rect x="184" y="28" width="70" height="46" class="cell"/><rect x="254" y="28" width="70" height="46" class="cell"/><rect x="324" y="28" width="70" height="46" class="cell"/>
+      <rect x="0" y="74" width="44" height="46" class="head"/><rect x="44" y="74" width="70" height="46" class="cell"/><rect x="114" y="74" width="70" height="46" class="cell"/><rect x="184" y="74" width="70" height="46" class="cell"/><rect x="254" y="74" width="70" height="46" class="cell"/><rect x="324" y="74" width="70" height="46" class="cell"/>
+      <rect x="0" y="120" width="44" height="46" class="head"/><rect x="44" y="120" width="70" height="46" class="cell"/><rect x="114" y="120" width="70" height="46" class="cell"/><rect x="184" y="120" width="70" height="46" class="cell"/><rect x="254" y="120" width="70" height="46" class="cell"/><rect x="324" y="120" width="70" height="46" class="cell"/>
+      <rect x="0" y="166" width="44" height="46" class="head"/><rect x="44" y="166" width="70" height="46" class="cell"/><rect x="114" y="166" width="70" height="46" class="cell"/><rect x="184" y="166" width="70" height="46" class="cell"/><rect x="254" y="166" width="70" height="46" class="cell"/><rect x="324" y="166" width="70" height="46" class="cell"/>
+
+      <text x="17" y="56" class="hdr">1</text><text x="17" y="102" class="hdr">2</text><text x="17" y="148" class="hdr">3</text><text x="17" y="194" class="hdr">4</text>
+      <text x="119" y="102" class="txt">@child.Header</text><text x="119" y="148" class="txt">{{use:ChildRow, from:@child.Rows, var:row}}</text>
+
+      <rect x="44" y="28" width="140" height="46" class="styleSeed"/>
+      <rect x="114" y="74" width="280" height="138" class="child"/>
+      <text x="44" y="236" class="sub">C1が未設定のため D1へはコピーしない</text>
+    </g>
+  </g>
+</svg>

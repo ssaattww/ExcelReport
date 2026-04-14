@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520">
+  <style>
+    .title { font: bold 18px Calibri, sans-serif; fill: #222; }
+    .sub { font: 12px Calibri, sans-serif; fill: #555; }
+    .hdr { font: 12px Calibri, sans-serif; fill: #333; }
+    .txt { font: 12px Calibri, sans-serif; fill: #111; }
+    .head { fill: #f3f3f3; stroke: #c9c9c9; stroke-width: 1; }
+    .cell { fill: #fff; stroke: #d9d9d9; stroke-width: 1; }
+    .solid { stroke: #222; stroke-width: 1.6; fill: none; }
+    .seed { stroke: #444; stroke-width: 1.2; stroke-dasharray: 5 3; fill: none; }
+  </style>
+
+  <text x="20" y="28" class="title">挿入先シート（Header + 3x3中央use）</text>
+  <text x="20" y="48" class="sub">入力テンプレート。A1:C1 に Header、A3:C5 外枠の中央 B4 に GroupBlock を配置。</text>
+
+  <g transform="translate(80,88)">
+    <rect x="0" y="0" width="56" height="34" class="head"/>
+    <rect x="56" y="0" width="250" height="34" class="head"/>
+    <rect x="306" y="0" width="250" height="34" class="head"/>
+    <rect x="556" y="0" width="250" height="34" class="head"/>
+
+    <text x="20" y="22" class="hdr">Row</text>
+    <text x="170" y="22" class="hdr">A</text>
+    <text x="420" y="22" class="hdr">B</text>
+    <text x="670" y="22" class="hdr">C</text>
+
+    <rect x="0" y="34" width="56" height="62" class="head"/>
+    <rect x="56" y="34" width="250" height="62" class="cell"/>
+    <rect x="306" y="34" width="250" height="62" class="cell"/>
+    <rect x="556" y="34" width="250" height="62" class="cell"/>
+
+    <rect x="0" y="96" width="56" height="62" class="head"/>
+    <rect x="56" y="96" width="250" height="62" class="cell"/>
+    <rect x="306" y="96" width="250" height="62" class="cell"/>
+    <rect x="556" y="96" width="250" height="62" class="cell"/>
+
+    <rect x="0" y="158" width="56" height="62" class="head"/>
+    <rect x="56" y="158" width="250" height="62" class="cell"/>
+    <rect x="306" y="158" width="250" height="62" class="cell"/>
+    <rect x="556" y="158" width="250" height="62" class="cell"/>
+
+    <rect x="0" y="220" width="56" height="62" class="head"/>
+    <rect x="56" y="220" width="250" height="62" class="cell"/>
+    <rect x="306" y="220" width="250" height="62" class="cell"/>
+    <rect x="556" y="220" width="250" height="62" class="cell"/>
+
+    <rect x="0" y="282" width="56" height="62" class="head"/>
+    <rect x="56" y="282" width="250" height="62" class="cell"/>
+    <rect x="306" y="282" width="250" height="62" class="cell"/>
+    <rect x="556" y="282" width="250" height="62" class="cell"/>
+
+    <text x="22" y="72" class="hdr">1</text>
+    <text x="22" y="134" class="hdr">2</text>
+    <text x="22" y="196" class="hdr">3</text>
+    <text x="22" y="258" class="hdr">4</text>
+    <text x="22" y="320" class="hdr">5</text>
+
+    <text x="66" y="72" class="txt">{{use:Header}}</text>
+    <text x="316" y="258" class="txt">{{use:GroupBlock, from:@groups, var:group}}</text>
+
+    <!-- Header style seed (A1:C1) -->
+    <rect x="56" y="34" width="750" height="62" class="seed"/>
+
+    <!-- Child insert frame (A3:C5) -->
+    <rect x="56" y="158" width="750" height="186" class="solid"/>
+  </g>
+</svg>

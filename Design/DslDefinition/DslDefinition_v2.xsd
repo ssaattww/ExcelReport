@@ -295,6 +295,7 @@
     </xs:sequence>
     <xs:attributeGroup ref="PlacementAttrs"/>
     <xs:attribute name="value"      type="ExprString"/>
+    <xs:attribute name="formula"    type="ExprString"/>
     <!-- 単一参照用ショートカット -->
     <xs:attribute name="styleRef"   type="xs:string"/>
     <xs:attribute name="formulaRef" type="xs:string"/>
@@ -313,6 +314,7 @@
     <xs:attribute name="component" type="xs:string"  use="required"/>
     <xs:attribute name="area"  type="xs:string"/>
     <xs:attribute name="with"      type="ExprString"/>
+    <xs:attribute name="styleOverflow" type="StyleOverflowType" use="optional" default="none"/>
   </xs:complexType>
 
   <!-- repeat 方向 -->
@@ -327,6 +329,13 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="local"/>
       <xs:enumeration value="global"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="StyleOverflowType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="edge"/>
     </xs:restriction>
   </xs:simpleType>
 

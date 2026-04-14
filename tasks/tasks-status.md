@@ -1,10 +1,115 @@
 # Tasks Status
 
-Last Updated: 2026-04-05
-Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / README刷新（Chart・Async）
+Last Updated: 2026-04-14
+Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応（実装開始） / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-14 issue#58 最終review完了: `gpt-5.4` / `high` round 7 で findings なしを確認し、`reports/issue58-final-review-2026-04-14-round7.md` に記録
+- 2026-04-14 issue#58 最終検証: `ExcelTemplateOutputContractBuilderTests|ExcelTemplateEndToEndTests|ExcelTemplateConverterTests|ExcelTemplateReportGeneratorTests` 17件通過、`ExcelReportLib.Tests` 全体259件通過
+- 2026-04-14 issue#58 収束確認: shorthand/local scope 正規化、複数 `GroupBlock` happy-path E2E、tasks/phases の残件0整合を確認
+- 2026-04-14 issue#58 review対応: `EnableSchemaValidation=false` でも `DslParser` の非schema検証を継続するよう `ExcelTemplateConverter` を修正し、review round 2 記録を `reports/issue58-converter-review-2026-04-14-round2.md` に保存
+- 2026-04-14 issue#58 実装完了: `UseTriggerParser` に `styleOverflow` を追加し、Excel shorthand expression を emitted DSL の runtime 互換 `@(...)` 形へ正規化
+- 2026-04-14 issue#58 E2E追加: nested `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` の happy-path と、`MergedCellBoundaryViolation` / `UnsupportedExcelTemplateFeature` の negative-path を facade 経由で固定
+- 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `timeout 15s codex exec review` で再試行したが、sandbox の network 制限により timeout したため `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に記録
+- 2026-04-14 issue#58 設計同期: emitted DSL の expression 正規化と `styleOverflow` trigger を `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` に反映
+- 2026-04-14 issue#58 検証: `ExcelTemplateEndToEndTests` 3件、関連86件、`ExcelReportLib.Tests` 全体256件通過
+- 2026-04-14 issue#58 記録: DSL互換 hardening/E2E 実装記録と review 記録を `reports/issue58-dsl-compatibility-e2e-2026-04-14.md` / `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に保存
+- 2026-04-14 issue#58 残件補正: Phase 14 着手前の棚卸しで、`styleOverflow` の trigger 未対応と Excel shorthand expression の DSL runtime 非互換を確認し、残taskへ追加
+- 2026-04-14 issue#58 実装継続: `ExcelTemplateReportGenerator` / `ExcelTemplateGenerateOptions` を追加し、`xlsx -> dsl -> final xlsx` の facade API を既存 `ReportGenerator` 経路へ接続
+- 2026-04-14 issue#58 実装補強: non-fatal conversion issue を最終 `ReportGeneratorResult.Issues` に保持しつつ生成を継続し、fatal conversion issue は facade で short-circuit する契約を固定
+- 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `timeout 15s codex exec review` で再試行したが、sandbox の network 制限により timeout したため `reports/issue58-excel-template-facade-review-2026-04-14.md` に記録
+- 2026-04-14 issue#58 検証: `ExcelTemplateReportGeneratorTests` 3件、関連81件、`ExcelReportLib.Tests` 全体251件通過
+- 2026-04-14 issue#58 記録: facade 実装記録と review 記録を `reports/issue58-excel-template-facade-2026-04-14.md` / `reports/issue58-excel-template-facade-review-2026-04-14.md` に保存
+- 2026-04-14 issue#58 残件再棚卸し: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と tasks/phases を突合し、残作業は `Phase 12-14 / R58-07..R58-12` で網羅されていることを確認（追加 task/phase なし）
+- 2026-04-14 issue#58 実装継続: `ExcelTemplateConverter` / `ExcelTemplateConversionResult` / `ExcelTemplateConvertOptions` を追加し、conversion-only API を `Text + Issues` 返却へ統合
+- 2026-04-14 issue#58 review対応: corrupt workbook 入力で漏れていた `FileFormatException` を fatal `IssueKind.LoadFile` へ集約し、schema validation opt-out を含む integration test を補強
+- 2026-04-14 issue#58 review試行: `gpt-5.4` / `high` review を `codex exec review` で再試行したが、sandbox の network 制限（dns/websocket `Operation not permitted`）で完了できず、結果を `reports/issue58-conversion-api-review-2026-04-14.md` に記録
+- 2026-04-14 issue#58 検証: `ExcelTemplateConverterTests` 4件、関連32件、`ExcelReportLib.Tests` 全体248件通過
+- 2026-04-14 issue#58 記録: conversion API 実装記録と review 記録を `reports/issue58-conversion-api-2026-04-14.md` / `reports/issue58-conversion-api-review-2026-04-14.md` に保存
+- 2026-04-13 issue#58 テスト追加: serializer/emitter の external snapshot として `Issue58_StandardTemplate_Debug.xml` / `Issue58_StandardTemplate_Dsl.xml` を追加
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent review で snapshot 差分の findings なしを確認
+- 2026-04-13 issue#58 検証: `ExcelTemplateSnapshotTests` 2件、関連28件、`ExcelReportLib.Tests` 全体244件通過
+- 2026-04-13 issue#58 記録: snapshot 実装記録と review 記録を `reports/issue58-snapshots-2026-04-13.md` / `reports/issue58-snapshots-review-2026-04-13.md` に保存
+- 2026-04-13 issue#58 実装継続: `DslEmitter` を追加し、DSL 互換 `XDocument` を UTF-8 declaration 付き DSL text へ出力可能化
+- 2026-04-13 issue#58 実装完了: `cell@formula` / explicit `styleOverflow` / `direction=\"down\"` を emitted DSL text に保持する経路を固定
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent review で `DslEmitter` 差分の findings なしを確認
+- 2026-04-13 issue#58 検証: `DslEmitterTests` 2件、関連26件、`ExcelReportLib.Tests` 全体242件通過
+- 2026-04-13 issue#58 記録: emitter 実装記録と review 記録を `reports/issue58-dsl-emitter-2026-04-13.md` / `reports/issue58-dsl-emitter-review-2026-04-13.md` に保存
+- 2026-04-13 issue#58 実装継続: `XmlTemplateSerializer` を追加し、`workbook/component/grid/sheet/cell/use/repeat` の DSL 互換 XML 出力を実装
+- 2026-04-13 issue#58 review対応: serializer の XSD validation 検証を追加し、未解決 component は DSL 本体から除外して comment に退避、style-only empty cell / explicit `styleOverflow` の分岐テストを補強
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent 再 review で findings なしを確認
+- 2026-04-13 issue#58 検証: `XmlTemplateSerializerTests` 4件、関連24件、`ExcelReportLib.Tests` 全体240件通過
+- 2026-04-13 issue#58 記録: serializer 実装記録と review 記録を `reports/issue58-xml-template-serializer-2026-04-13.md` / `reports/issue58-xml-template-serializer-review-2026-04-13.md` に保存
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateOutputContractBuilder` と output contract model を追加し、component/sheet 分類・cell/use/repeat-use 正規化・issue 集約を固定
+- 2026-04-13 issue#58 review対応: `styleOverflow` を未指定と明示 `none` で区別できる contract に修正し、未解決 component 文脈保持と style-only/malformed trigger の契約テストを補強
+- 2026-04-13 issue#58 review完了: `gpt-5.4` / `high` sub-agent 再 review で findings なしを確認
+- 2026-04-13 issue#58 検証: output contract 3件、ExcelTemplate 系20件、`ExcelReportLib.Tests` 全体236件通過
+- 2026-04-13 issue#58 記録: output contract 実装記録と review 記録を `reports/issue58-output-contract-2026-04-13.md` / `reports/issue58-output-contract-review-2026-04-13.md` に保存
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateValidator` を追加し、merged range 境界違反・malformed use trigger・unsupported conditional formatting を Error 化
+- 2026-04-13 issue#58 実装修正: `UseTriggerParser` を top-level comma tokenizer へ補強し、`from:` 式内カンマを含む trigger を正しく解析可能化
+- 2026-04-13 issue#58 検証: validator/extractor 6件、関連89件、`ExcelReportLib.Tests` 全体233件通過
+- 2026-04-13 issue#58 記録: validator 実装記録と review 記録を `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` / `reports/issue58-validator-review-2026-04-13.md` に保存
+- 2026-04-13 issue#58 実装継続: `UseTriggerParser` を追加し、`{{use:...}}` / `repeat + use` の最小文法を構造化して `direction=\"down\"` を固定
+- 2026-04-13 issue#58 検証: `ExcelTemplateUseTriggerParserTests` 5件通過、`ExcelReportLib.Tests` 全体228件通過
+- 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-use-trigger-parser-review-2026-04-13.md` に記録
+- 2026-04-13 issue#58 記録: use trigger parser 実装内容を `reports/issue58-use-trigger-parser-2026-04-13.md` に記録
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateComponentRangeResolver` を追加し、`__component_<Name>` の defined name 優先解決と candidate bbox 自動判定を実装
+- 2026-04-13 issue#58 検証: `ExcelTemplateComponentRangeResolverTests` 5件通過、`ExcelReportLib.Tests` 全体223件通過
+- 2026-04-13 issue#58 review試行: `gpt-5.4` / `high` review は network 制限で中断し、結果を `reports/issue58-component-range-resolver-review-2026-04-13.md` に記録
+- 2026-04-13 issue#58 記録: component range resolver 実装内容を `reports/issue58-component-range-resolver-2026-04-13.md` に記録
+- 2026-04-13 issue#58 実装継続: `ExcelTemplateExtractor` と中間モデル（workbook/sheet/cell/style/component range）を追加し、xlsx から sheet/cell/formula/defined name/merged cell を読取可能化
+- 2026-04-13 issue#58 検証: `ExcelTemplateExtractorTests` 2件通過、`ExcelReportLib.Tests` 全体218件通過
+- 2026-04-13 issue#58 記録: extractor 実装と review 試行結果を `reports/issue58-excel-template-extractor-2026-04-13.md` に記録
+- 2026-04-13 issue#58 テスト補強: `styleOverflow=edge` の down/corner runtime テストを追加し、`LayoutNodeTests|ValidateDslTests|DslParserTests|LayoutEngineTests` 72件通過、`ExcelReportLib.Tests` 全体216件通過
+- 2026-04-13 issue#58 review記録: `gpt-5.4` / `high` review 試行結果と残留リスクを `reports/issue58-dsl-contract-extension-review-2026-04-13.md` に記録
+- 2026-04-12 issue#58 実装開始: `cell@formula` / `use@styleOverflow` の DSL 契約拡張、`ValidateDsl` 補完検証、`LayoutEngine` の `styleOverflow=edge` post-expand 補完、`TemplateRangeOverflow` Warning を実装
+- 2026-04-12 issue#58 検証: `LayoutNodeTests|ValidateDslTests|DslParserTests|LayoutEngineTests` 70件通過、`ExcelReportLib.Tests` 全体214件通過
+- 2026-04-12 issue#58 設計修正: 挿入先書式は任意（mustではない）を明記し、3x3外枠+中央useの外枠追従拡張ルール（子範囲+余白）を追加
+- 2026-04-12 issue#58 設計修正: サイズ不一致を行方向だけでなく列方向も対象化し、`TemplateRangeOverflow` に `deltaRows/deltaCols` 記録を追加
+- 2026-04-12 issue#58 可視化再修正: 挿入元/挿入先SVGにもテンプレート定義罫線（実線/破線）を反映し、出力SVGとの見た目整合を改善
+- 2026-04-12 issue#58 可視化方針修正: SVGを説明用着色から実運用見た目へ変更し、ExcelTemplate/出力Excelに寄せた表記へ統一
+- 2026-04-12 issue#58 可視化修正: 展開後SVGの書式表現を再設計し、親外枠/子明細bottom/競合辺(子優先+Warning)を線種で明示
+- 2026-04-12 issue#58 可視化追加: C#サンプルデータ展開後のセル値SVG（`expanded-cell-values-from-csharp.svg`）を設計書へ追加
+- 2026-04-12 issue#58 可視化更新: セル表示値のSVGを挿入先/挿入元で分離（`insert-target-cell-values.svg` / `insert-source-cell-values.svg`）、書式説明はMarkdown表へ移管
+- 2026-04-12 issue#58 設計補完: 挿入データ用C# class（`InvoiceData/GroupData/ItemData`）とサンプルデータを設計書へ追加
+- 2026-04-12 issue#58 範囲定義設計: コンポーネント定義範囲を「DefinedName明示指定 + 自動判定フォールバック」で定義し、検証/エラー条件を追加
+- 2026-04-12 issue#58 設計補強: 挿入元サイズ > 挿入先想定範囲（例: 3行を1行定義領域へ挿入）の書式保持ルール、`TemplateRangeOverflow` Warning、結合セル境界Errorを追記
+- 2026-04-12 issue#58 命名改善: 設計書タイトルを「Excelテンプレート対応」へ変更し、ファイル名を `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` へ更新
+- 2026-04-11 issue#58 可視化強化: Excelセル座標と一致するセルマトリクス表 + SVG図を設計書へ追加
+- 2026-04-07 issue#58 懸念深掘り: 実装前チェックリスト（変換契約/展開境界/罫線/性能）を設計書へ追加
+- 2026-04-07 issue#58 具体例拡張: セル値/挿入トリガ/罫線競合をMarkdownテーブルで設計書に追記
+- 2026-04-07 issue#58 罫線方針追加: 入れ子component時のborder優先順位・辺単位合成・競合Warning・検証ケースを設計へ追記
+- 2026-04-07 issue#58 設計具体化: 入れ子コンポーネント定義/シート表現/挿入表現をDSL例付きで追記（実装は未着手）
+- 2026-04-07 issue#58 方針見直し: A/B案にC案を加えて比較し、初期採用はA案を維持。対象範囲外へグラフ作成機能を明記
+- 2026-04-07 issue#58 要件取得: `gh` 非依存で GitHub issue URL から本文を取得し、設計ドラフトを承認依頼版へ更新
+- 2026-04-07 issue#58 着手: 要件本文未取得のため調査レポート `reports/issue58-investigation-2026-04-07.md` を作成
+- 2026-04-07 issue#58 設計: 承認前ドラフト `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` を作成（要件確定待ち）
+
+## Issue #58 Remaining Tasks
+
+- 基準日: 2026-04-14
+- 現在位置: issue #58 完了
+- 残見積り: 0 tasks / 0 実装サイクル
+- 注記: 下部の既存 `Task List` は旧来の全体タスク集計であり、issue #58 の残タスクはこの節を正として扱う
+- 棚卸し結果: `Design/ExcelTemplate/ExcelTemplate_DetailDesign.md` と突合し、Phase 14 へ追加した `styleOverflow` trigger 対応と expression DSL互換 hardening も同サイクルで完了済み
+
+| Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
+|---|---|---|---|---|---|---|
+| R58-01 | 変換出力の最小契約を固定する | Done | 11 | 66a09b1, 1103fbb, fb24ba2 | XML/DSL の出力対象、issue 集約方針、fixture 形式をコード上で固定 | 0.5 cycle |
+| R58-02 | `XmlTemplateSerializer` の workbook/component/sheet 出力を実装する | Done | 11 | R58-01 | debug XML が component/sheet/cell/use/repeat を表現できる | 1 cycle |
+| R58-03 | `DslEmitter` の基本出力を実装する | Done | 11 | R58-01 | workbook/components/sheets/cells が DSL text へ変換される | 1 cycle |
+| R58-04 | `DslEmitter` で `cell@formula` / `styleOverflow` / `direction=\"down\"` を反映する | Done | 11 | R58-03 | 設計どおりの契約が emitted DSL に反映される | 0.5 cycle |
+| R58-05 | xlsx -> xml snapshot テストを追加する | Done | 11 | R58-02 | debug XML の snapshot が固定される | 0.5 cycle |
+| R58-06 | xlsx -> dsl snapshot テストを追加する | Done | 11 | R58-03, R58-04 | DSL text の snapshot が固定される | 0.5 cycle |
+| R58-07 | `ExcelTemplateConverter` と result/options を実装する | Done | 12 | R58-02, R58-03, R58-04 | `ConvertToDsl` / `ConvertToXmlTemplate` が `Text + Issues` を返す | 0.5 cycle |
+| R58-08 | conversion-only API の issue 集約と integration test を追加する | Done | 12 | R58-07 | validator/resolver/parser の issues が conversion result に保持される | 0.5 cycle |
+| R58-09 | `ExcelTemplateReportGenerator` facade を実装する | Done | 13 | R58-07, R58-08 | `GenerateFromExcelTemplate` が既存 `ReportGenerator` 経路を呼べる | 1 cycle |
+| R58-10 | facade の happy-path integration test を追加する | Done | 13 | R58-09 | 基本帳票生成ケースが API 経由で通る | 0.5 cycle |
+| R58-11 | use trigger で `styleOverflow` を受け取り emitted DSL へ反映する | Done | 14 | R58-09, R58-10 | `{{use:..., styleOverflow:edge}}` が `use@styleOverflow="edge"` として最終 DSL に残る | 0.5 cycle |
+| R58-12 | Excel expression を DSL runtime 互換形へ揃える | Done | 14 | R58-09, R58-10 | Excel cell / trigger の expression が E2E で実行可能な DSL 互換形になる | 0.5 cycle |
+| R58-13 | xlsx -> dsl -> final xlsx E2E を追加する | Done | 14 | R58-11, R58-12 | `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` を含む E2E が通る | 1 cycle |
+| R58-14 | negative E2E と最終記録を追加する | Done | 14 | R58-11, R58-12, R58-13 | merged violation / unsupported conditional formatting の negative case、reports/tasks/phases の最終同期が完了 | 1 cycle |
 - 2026-04-05 issue#16 設計: `Design/SheetReference/SheetReference_DetailDesign.md` を追加し、sheet repeat での動的シート間参照方式を定義
 - 2026-04-05 issue#16 仕様化: `cell@value` の式評価結果が `=` 始まり文字列なら数式扱いとする仕様を DSL 設計書へ反映
 - 2026-04-05 issue#16 実装: `LayoutEngine.EvaluateCellValue` を拡張し、式評価結果 `=...` を `Formula` として保持
@@ -228,6 +333,31 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Additional Work
 
+- 2026-04-13 issue #58 実装: `ExcelTemplateValidator` を追加し、`MergedCellBoundaryViolation` / `UnsupportedExcelTemplateFeature` / malformed trigger の診断を集約
+- 2026-04-13 issue #58 実装: `ExcelTemplateSheet.HasConditionalFormatting` と extractor の conditional formatting 検出を追加
+- 2026-04-13 issue #58 実装修正: `UseTriggerParser` の comma tokenization を top-level split へ修正し、`from:` 式内カンマの回帰を防止
+- 2026-04-13 issue #58 テスト: validator 4件 + trigger parser 1件 + extractor 1件を追加し、全体233件通過を確認
+- 2026-04-13 issue #58 記録: `reports/issue58-validator-and-trigger-hardening-2026-04-13.md` と `reports/issue58-validator-review-2026-04-13.md` を追加
+- 2026-04-13 issue #58 実装: `UseTriggerParser` / `ExcelTemplateUseTrigger` / `ExcelTemplateUseTriggerParseResult` を追加
+- 2026-04-13 issue #58 実装: `{{use:Header}}` と `{{use:ItemRow, from:@items, var:item}}` の最小文法を解析し、repeat direction を `down` で正規化
+- 2026-04-13 issue #58 テスト: `ExcelTemplateUseTriggerParserTests` を追加し、通常文字列 / simple use / repeat use / from-var 不整合を固定
+- 2026-04-13 issue #58 review: `gpt-5.4` / `high` review を再試行したが、network 制限で `codex review` が中断したため結果を report に記録
+- 2026-04-13 issue #58 記録: `reports/issue58-use-trigger-parser-2026-04-13.md` / `reports/issue58-use-trigger-parser-review-2026-04-13.md` を追加
+- 2026-04-13 issue #58 実装: `ExcelTemplateComponentRangeResolver` を追加し、`__component_range_<Name>` の明示範囲と candidate bbox 自動判定を実装
+- 2026-04-13 issue #58 実装: `IssueKind.InvalidComponentRange` / `IssueKind.EmptyComponentRange` を追加
+- 2026-04-13 issue #58 テスト: `ExcelTemplateComponentRangeResolverTests` を追加し、defined name優先 / bbox自動判定 / 空範囲Error / 別シート参照Error を固定
+- 2026-04-13 issue #58 review: `gpt-5.4` / `high` review を再試行したが、network 制限で `codex review` が中断したため結果を report に記録
+- 2026-04-13 issue #58 記録: `reports/issue58-component-range-resolver-2026-04-13.md` / `reports/issue58-component-range-resolver-review-2026-04-13.md` を追加
+- 2026-04-12 issue #58 実装: `cell@formula` / `use@styleOverflow` を XSD / AST / `ValidateDsl` / `LayoutEngine` へ追加
+- 2026-04-12 issue #58 実装: `styleOverflow=edge` を `LayoutEngine` post-expand で実装し、anchor 矩形 seed 書式の right/down/corner trailing edge copy に対応
+- 2026-04-12 issue #58 実装: `IssueKind.TemplateRangeOverflow` を追加し、ExcelTemplate 向け anchor overflow を Warning として記録
+- 2026-04-12 issue #58 テスト: parser/validation/runtime テストを追加し、`ExcelReportLib.Tests` 全体214件通過を確認
+- 2026-04-13 issue #58 テスト補強: `styleOverflow=edge` の down/corner ケースを `LayoutEngineTests` へ追加し、関連72件・全体216件通過を確認
+- 2026-04-12 issue #58 記録: `reports/issue58-dsl-contract-extension-2026-04-12.md` を作成
+- 2026-04-13 issue #58 review記録: `reports/issue58-dsl-contract-extension-review-2026-04-13.md` を作成
+- 2026-04-13 issue #58 実装継続: `ExcelTemplateExtractor` と `ExcelTemplateWorkbook/Sheet/Cell/Style/ComponentRange` を追加し、xlsx から sheet/cell/formula/defined name/merged cell を抽出可能にした
+- 2026-04-13 issue #58 テスト追加: `ExcelTemplateExtractorTests` を追加し、対象2件 + 全体218件通過を確認
+- 2026-04-13 issue #58 記録: `reports/issue58-excel-template-extractor-2026-04-13.md` を作成
 - 2026-04-05 issue #16: `sheet repeat` で増えるシート名を式で参照可能にするため、`cell@value` 式評価後の数式自動判定を実装
 - 2026-04-05 issue #16: 設計書 `Design/SheetReference/SheetReference_DetailDesign.md` を追加
 - 2026-04-05 issue #16 follow-up: `sheet repeat` の完全例（データモデル/DSL全文/展開結果）を設計書へ追記
@@ -294,6 +424,49 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 - 2026-03-19 CI/CD: GitHub Releaseのpre-release/release種別に連動してNuGet版種を同期するよう `publish-nuget.yml` を更新
 
 - 2026-03-19 ドキュメント運用: READMEからNuGet公開手順を削除し、`reports/nuget-publish-process-2026-03-19.md` に移管
+
+- 2026-04-12 issue #58 設計補足: `Invoice` の `use` セル書式は必須ではない旨を `ExcelTemplate_DetailDesign.md` 10.8.3 注記に明記
+- 2026-04-12 記録: `reports/issue58-invoice-use-style-optional-note-2026-04-12.md` を作成
+- 2026-04-12 issue #58 設計更新: SVG例を `3x3挿入先 + 中央use` / `3x4子component` に差し替え、書式overflow比較SVGを追加
+- 2026-04-12 issue #58 設計更新: `styleOverflow`（`none`/`edge`、既定`none`）を追加し、`A1:C1` / `A1:B1` の拡張挙動を明確化
+- 2026-04-12 記録: `reports/issue58-style-overflow-policy-2026-04-12.md` を作成
+- 2026-04-12 issue #58 修正: 10.10.1 に挿入元（C#展開後 GroupBlock インスタンス）SVGを復元し、既存出力図を 10.10.2 へ再配置
+- 2026-04-12 issue #58 修正: `ChildBlock/ヘッダー/なにかの値` の簡略例を廃止し、`GroupBlock/ItemRow` の正式フォーマットへ差し戻し
+- 2026-04-12 記録: `reports/issue58-svg-format-restoration-2026-04-12.md` を作成
+- 2026-04-12 issue #58 視認性改善: 展開後図を 10.8 節へ集約（10.8.8/10.8.9）し、10.10.1 は参照節へ整理
+- 2026-04-12 issue #58 修正: 10.8.3 の破線境界を除去し、挿入先3x3図に `{{use:Header}}` を追加して出力イメージとの差異を縮小
+- 2026-04-12 記録: `reports/issue58-section-layout-and-target-svg-fix-2026-04-12.md` を作成
+- 2026-04-12 issue #58 方針調整: 10.8.10 は状態遷移図を持たず、状態整理テーブルのみで記載する方針へ変更
+- 2026-04-12 記録: `reports/issue58-state-table-only-adjustment-2026-04-12.md` を作成
+- 2026-04-12 issue #58 修正: 10.8.9 の出力SVGを更新し、`A1:F1` Header拡張 + `A3:E8` 子枠拡張が見える状態整理ケースへ差し替え
+- 2026-04-12 issue #58 修正: 10.8.9/10.10補足を「先頭GroupBlock抜粋」注記へ更新し、図と説明の整合を修正
+- 2026-04-12 記録: `reports/issue58-output-svg-refresh-2026-04-12.md` を作成
+- 2026-04-12 issue #58 再修正: 10.8.9/10.8.10 の repeat 解釈を見直し、2件の `GroupBlock` を `B4:D7` と `B8:D9` へ連続配置、親フレームを `A3:E10` へ拡張する図と説明へ更新
+- 2026-04-12 記録: `reports/issue58-repeat-frame-aggregation-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.3-codex` / `high`）で 10.8/10.9/10.10 を設計レビューし、`repeat` 時の `H` 定義、`GroupBlock` 有効幅、`styleOverflow=edge` の行方向、連続インスタンス境界罫線の未定義を指摘事項として整理
+- 2026-04-12 記録: `reports/issue58-subagent-design-review-2026-04-12.md` を作成
+- 2026-04-12 issue #58 設計修正: sub-agent 指摘を受け、`GroupBlock` 定義範囲を `A1:C3` に統一し、`repeat` 時の `H/W` 定義、`styleOverflow=edge` の上下左右、連続 instance 境界の trailing edge 優先ルールを設計へ追記
+- 2026-04-12 記録: `reports/issue58-design-fixes-after-subagent-review-2026-04-12.md` を作成
+- 2026-04-12 issue #58 re-review: sub-agent（`gpt-5.3-codex` / `high`）で更新後設計を再レビューし、High/Critical なし、残留は `styleOverflow=edge` の4方向検証不足と 10.9.4 テーブルの右方向偏りのみと確認
+- 2026-04-12 記録: `reports/issue58-subagent-rereview-2026-04-12.md` を作成
+- 2026-04-12 issue #58 follow-up: 再レビューの Low 指摘に対応し、10.9.4 を 右/左/下/上/角 の期待結果表へ拡張、11.5 に left/top/corner copy の検証ケースを追加
+- 2026-04-12 記録: `reports/issue58-low-findings-followup-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で `f64deb4` をレビューし、`styleOverflow=edge` は現行モデル上 right/down trailing edge 限定に揃えるべきこと、overflow比較SVGの文脈分離が必要なことを指摘
+- 2026-04-12 issue #58 修正: `styleOverflow=edge` を right/down/right-down corner へ限定し、10.9.4/11.5 と overflow比較SVGを整合させた
+- 2026-04-12 記録: `reports/issue58-gpt54-review-followup-2026-04-12.md` を作成
+- 2026-04-12 issue #58 方針確定: 数式セルは原則 `cell@formula` へ変換し、C# 側で Excel 関数計算をしない方針を設計へ反映
+- 2026-04-12 記録: `reports/issue58-formula-normalization-decision-2026-04-12.md` を作成
+- 2026-04-12 issue #58 合意反映: merged cell は矩形内完結のみ、条件付き書式は初版対象外、性能閾値は当面不問として 12章を更新
+- 2026-04-12 記録: `reports/issue58-pre-implementation-answers-2026-04-12.md` を作成
+- 2026-04-12 issue #58 合意反映: 大規模テンプレートの性能閾値は当面不問とし、12.6 の未解決質問をクローズ
+- 2026-04-12 記録: `reports/issue58-performance-threshold-closed-2026-04-12.md` を作成
+- 2026-04-12 issue #58 実装方針策定: 既存 `ReportGenerator` 後段を再利用し、前段に `ExcelTemplate` 変換層を追加する実装順序・API方針・テスト戦略を 13章と実装方針レポートへ反映
+- 2026-04-12 記録: `reports/issue58-implementation-approach-2026-04-12.md` を作成
+- 2026-04-12 issue #58 review: sub-agent（`gpt-5.4` / `high`）で実装方針レビューを実施し、runtime schema 対象不足、`repeat@direction` 契約不一致、`styleOverflow=edge` 実装位置未固定、conversion API の診断不足を指摘として整理
+- 2026-04-12 issue #58 実装方針修正: runtime schema の更新対象、`direction=\"down\"` 明示、`LayoutEngine` post-expand での `styleOverflow=edge` 実装、conversion result + `Issues`、`ValidateDsl` 補完検証、legacy formula 回帰テストを方針へ反映
+- 2026-04-12 記録: `reports/issue58-implementation-approach-review-2026-04-12.md` を作成
+- 2026-04-12 引き継ぎ: 新しいチャットで issue #58 実装を再開できるよう、背景・決定事項・未解決事項・次アクションを整理した handover 文書を作成
+- 2026-04-12 記録: `reports/chat-handover-for-new-thread-20260412_153728.md` を作成
 
 ## Status Definitions
 

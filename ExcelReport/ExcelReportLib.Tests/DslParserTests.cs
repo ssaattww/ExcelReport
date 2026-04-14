@@ -255,6 +255,44 @@ public sealed class DslParserTests
     }
 
     /// <summary>
+    /// Verifies that parse cell formula and use style overflow with schema validation succeeds.
+    /// </summary>
+    [Fact]
+    public void ParseFromText_CellFormulaAndUseStyleOverflow_WithSchemaValidation_Succeeds()
+    {
+        var result = DslParser.ParseFromText(
+            """
+            <workbook xmlns="urn:excelreport:v2">
+              <component name="Header">
+                <grid>
+                  <cell r="1" c="1" value="A" />
+                </grid>
+              </component>
+              <sheet name="Summary">
+                <cell r="1" c="1" formula="SUM(B2:B10)" />
+                <use r="2" c="1" component="Header" styleOverflow="edge" />
+              </sheet>
+            </workbook>
+            """,
+            new DslParserOptions
+            {
+                EnableSchemaValidation = true,
+            });
+
+        Assert.False(result.HasFatal);
+        var root = Assert.IsType<WorkbookAst>(result.Root);
+        var sheet = Assert.Single(root.Sheets);
+        var cell = Assert.IsType<CellAst>(sheet.Children.Values.First());
+        var use = Assert.IsType<UseAst>(sheet.Children.Values.Last());
+
+        Assert.Equal("SUM(B2:B10)", cell.FormulaRaw);
+        Assert.Equal("edge", use.StyleOverflow);
+        Assert.DoesNotContain(
+            result.Issues,
+            issue => issue.Kind == IssueKind.SchemaViolation && issue.Severity == IssueSeverity.Fatal);
+    }
+
+    /// <summary>
     /// Verifies that static chart bounds validation checks Excel limits even when sheet rows and cols are omitted.
     /// </summary>
     [Fact]

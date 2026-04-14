@@ -248,6 +248,8 @@ namespace ExcelReportLib.DSL
             ValidateDuplicateSheetNames(root, issues);
             ValidateStyleReferences(root, styleIndex, issues);
             ValidateComponentReferences(root, componentIndex, issues);
+            ValidateCellContracts(root, issues);
+            ValidateUseContracts(root, issues);
             ValidateRepeatConstraints(root, issues);
             ValidateSheetConstraints(root, issues);
             ValidateSheetOptions(root, issues);
@@ -566,6 +568,43 @@ namespace ExcelReportLib.DSL
                         Span = use.Span,
                     });
                 }
+            }
+        }
+
+        private static void ValidateCellContracts(WorkbookAst root, List<Issue> issues)
+        {
+            foreach (var cell in EnumerateLayoutNodes(root).OfType<CellAst>())
+            {
+                if (!string.IsNullOrWhiteSpace(cell.ValueRaw) && !string.IsNullOrWhiteSpace(cell.FormulaRaw))
+                {
+                    issues.Add(new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = "<cell> 要素で value 属性と formula 属性は同時に指定できません。",
+                        Span = cell.Span,
+                    });
+                }
+            }
+        }
+
+        private static void ValidateUseContracts(WorkbookAst root, List<Issue> issues)
+        {
+            foreach (var use in EnumerateLayoutNodes(root).OfType<UseAst>())
+            {
+                if (string.Equals(use.StyleOverflow, "none", StringComparison.Ordinal) ||
+                    string.Equals(use.StyleOverflow, "edge", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                issues.Add(new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = $"<use> 要素の styleOverflow には 'none' または 'edge' を指定してください。'{use.StyleOverflow}' は無効です。",
+                    Span = use.Span,
+                });
             }
         }
 
@@ -1038,6 +1077,26 @@ namespace ExcelReportLib.DSL
         /// Represents the coordinate out of range option.
         /// </summary>
         CoordinateOutOfRange,
+        /// <summary>
+        /// A template expansion exceeded the anchor range and emitted an overflow warning.
+        /// </summary>
+        TemplateRangeOverflow,
+        /// <summary>
+        /// An ExcelTemplate component range definition was malformed or pointed to the wrong sheet.
+        /// </summary>
+        InvalidComponentRange,
+        /// <summary>
+        /// An ExcelTemplate component range could not be inferred because it had no candidate cells.
+        /// </summary>
+        EmptyComponentRange,
+        /// <summary>
+        /// An ExcelTemplate merged cell crossed the resolved component boundary.
+        /// </summary>
+        MergedCellBoundaryViolation,
+        /// <summary>
+        /// The ExcelTemplate workbook used a feature that is intentionally unsupported in the initial release.
+        /// </summary>
+        UnsupportedExcelTemplateFeature,
         /// <summary>
         /// A formula reference series must be a single continuous one-dimensional range.
         /// </summary>

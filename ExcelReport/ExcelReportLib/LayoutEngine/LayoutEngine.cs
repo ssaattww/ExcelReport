@@ -317,7 +317,7 @@ public sealed class LayoutEngine : ILayoutEngine
             styleScope = styleScope.Append([CreateStyleRef(cell.StyleRefShortcut, issues)], null);
         }
 
-        var rendered = EvaluateCellValue(cell.ValueRaw, rootData, dataContext, vars, issues);
+        var rendered = EvaluateCellValue(cell.ValueRaw, cell.FormulaRaw, rootData, dataContext, vars, issues);
         var stylePlan = styleResolver.BuildPlan(
             styleScope.StyleRefs,
             styleScope.InlineStyles,
@@ -561,9 +561,7 @@ public sealed class LayoutEngine : ILayoutEngine
 
         var componentBaseRow = baseRow + ResolveOffset(component.Placement.Row);
         var componentBaseCol = baseCol + ResolveOffset(component.Placement.Col);
-        var styleScope = inheritedStyles
-            .Append(component.StyleRefs, component.Style)
-            .Append(use.StyleRefs, use.Style);
+        var componentStyleScope = inheritedStyles.Append(component.StyleRefs, component.Style);
 
         var result = ExpandNode(
             component.Body,
@@ -573,10 +571,14 @@ public sealed class LayoutEngine : ILayoutEngine
             boundData,
             vars,
             $"{scopePath}/use",
-            styleScope,
+            componentStyleScope,
             componentIndex,
             styleResolver,
             issues);
+        var useSeedScope = StyleScope.From(use.StyleRefs, use.Style);
+        var seedResult = CreateUseSeedResult(use, baseRow, baseCol, $"{scopePath}/use-seed", useSeedScope, styleResolver, issues);
+        result = MergeSeedCells(result, seedResult.Cells);
+        result = ApplyUseStyleOverflow(result, seedResult.Cells, use, baseRow, baseCol, $"{scopePath}/use-overflow", issues);
         var conditionalFormattings = new List<LayoutConditionalFormatting>(result.ConditionalFormattings);
         conditionalFormattings.AddRange(
             CreateScopedConditionalFormattings(
@@ -638,11 +640,19 @@ public sealed class LayoutEngine : ILayoutEngine
 
     private RenderedValue EvaluateCellValue(
         string? valueRaw,
+        string? formulaRaw,
         object? rootData,
         object? dataContext,
         IReadOnlyDictionary<string, object?> vars,
         IList<Issue> issues)
     {
+        if (!string.IsNullOrWhiteSpace(formulaRaw))
+        {
+            return new RenderedValue(
+                Value: null,
+                Formula: EvaluateFormulaText(formulaRaw, rootData, dataContext, vars, issues));
+        }
+
         if (string.IsNullOrWhiteSpace(valueRaw))
         {
             return RenderedValue.Empty;
@@ -668,6 +678,35 @@ public sealed class LayoutEngine : ILayoutEngine
         }
 
         return new RenderedValue(valueRaw, Formula: null);
+    }
+
+    private string? EvaluateFormulaText(
+        string formulaRaw,
+        object? rootData,
+        object? dataContext,
+        IReadOnlyDictionary<string, object?> vars,
+        IList<Issue> issues)
+    {
+        if (LooksLikeExpression(formulaRaw))
+        {
+            var evaluated = EvaluateExpressionValue(formulaRaw, rootData, dataContext, vars, issues);
+            return NormalizeFormulaText(evaluated?.ToString());
+        }
+
+        return NormalizeFormulaText(formulaRaw);
+    }
+
+    private static string? NormalizeFormulaText(string? formula)
+    {
+        var normalized = formula?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        return normalized.StartsWith("=", StringComparison.Ordinal)
+            ? normalized
+            : "=" + normalized;
     }
 
     private bool ShouldRender(
@@ -1191,6 +1230,261 @@ public sealed class LayoutEngine : ILayoutEngine
         }
     }
 
+    private static ExpandResult CreateUseSeedResult(
+        UseAst use,
+        int baseRow,
+        int baseCol,
+        string scopePath,
+        StyleScope useSeedScope,
+        IStyleResolver styleResolver,
+        IList<Issue> issues)
+    {
+        if (!HasUseSeedStyles(useSeedScope))
+        {
+            return ExpandResult.Empty;
+        }
+
+        var stylePlan = styleResolver.BuildPlan(
+            useSeedScope.StyleRefs,
+            useSeedScope.InlineStyles,
+            sheetDefault: null,
+            workbookDefault: null,
+            StyleTarget.Cell,
+            issues);
+        var seedCells = new List<LayoutCell>(use.Placement.RowSpan * use.Placement.ColSpan);
+        var anchorBottom = baseRow + use.Placement.RowSpan - 1;
+        var anchorRight = baseCol + use.Placement.ColSpan - 1;
+
+        for (var row = baseRow; row <= anchorBottom; row++)
+        {
+            for (var col = baseCol; col <= anchorRight; col++)
+            {
+                seedCells.Add(
+                    new LayoutCell(
+                        row,
+                        col,
+                        rowSpan: 1,
+                        colSpan: 1,
+                        value: null,
+                        formula: null,
+                        formulaRef: null,
+                        formulaRefScope: null,
+                        scopePath,
+                        stylePlan));
+            }
+        }
+
+        var seedResult = new ExpandResult(
+            seedCells,
+            use.Placement.RowSpan,
+            use.Placement.ColSpan,
+            Array.Empty<LayoutNamedArea>(),
+            Array.Empty<LayoutConditionalFormatting>());
+
+        return ApplyGridBorders(seedResult, useSeedScope, styleResolver);
+    }
+
+    private static bool HasUseSeedStyles(StyleScope useSeedScope) =>
+        useSeedScope.StyleRefs.Count > 0 || useSeedScope.InlineStyles.Count > 0;
+
+    private static ExpandResult MergeSeedCells(ExpandResult result, IReadOnlyList<LayoutCell> seedCells)
+    {
+        if (seedCells.Count == 0)
+        {
+            return result;
+        }
+
+        var mergedCells = result.Cells.ToList();
+        var updatedHeads = new HashSet<(int Row, int Col)>();
+
+        foreach (var seedCell in seedCells)
+        {
+            if (!HasStyleContent(seedCell.StylePlan))
+            {
+                continue;
+            }
+
+            if (TryFindCoveringCellIndex(mergedCells, seedCell.Row, seedCell.Col, out var existingIndex))
+            {
+                var existingCell = mergedCells[existingIndex];
+                var existingHead = (existingCell.Row, existingCell.Col);
+                if (updatedHeads.Add(existingHead))
+                {
+                    mergedCells[existingIndex] = AppendStyleToCell(existingCell, seedCell.StylePlan);
+                }
+
+                continue;
+            }
+
+            mergedCells.Add(seedCell);
+        }
+
+        return result with
+        {
+            Cells = mergedCells,
+        };
+    }
+
+    private static ExpandResult ApplyUseStyleOverflow(
+        ExpandResult result,
+        IReadOnlyList<LayoutCell> seedCells,
+        UseAst use,
+        int baseRow,
+        int baseCol,
+        string scopePath,
+        IList<Issue> issues)
+    {
+        var anchorBottom = baseRow + use.Placement.RowSpan - 1;
+        var anchorRight = baseCol + use.Placement.ColSpan - 1;
+        var expandedBottom = baseRow + result.Height - 1;
+        var expandedRight = baseCol + result.Width - 1;
+        var deltaRows = Math.Max(0, expandedBottom - anchorBottom);
+        var deltaCols = Math.Max(0, expandedRight - anchorRight);
+
+        if (deltaRows == 0 && deltaCols == 0)
+        {
+            return result;
+        }
+
+        var shouldTrackOverflow =
+            use.HasStyleOverflowAttribute ||
+            use.Placement.RowSpan > 1 ||
+            use.Placement.ColSpan > 1 ||
+            seedCells.Count > 0;
+        if (!shouldTrackOverflow)
+        {
+            return result;
+        }
+
+        issues.Add(new Issue
+        {
+            Severity = IssueSeverity.Warning,
+            Kind = IssueKind.TemplateRangeOverflow,
+            Message =
+                $"component '{use.ComponentName}' expanded beyond anchor range at r={baseRow}, c={baseCol} (deltaRows={deltaRows}, deltaCols={deltaCols}).",
+            Span = use.Span,
+        });
+
+        if (!string.Equals(use.StyleOverflow, "edge", StringComparison.Ordinal) || seedCells.Count == 0)
+        {
+            return result;
+        }
+
+        var mergedCells = result.Cells.ToList();
+        var seedCellLookup = seedCells.ToDictionary(cell => (cell.Row, cell.Col));
+
+        if (deltaCols > 0)
+        {
+            for (var row = baseRow; row <= anchorBottom; row++)
+            {
+                if (!seedCellLookup.TryGetValue((row, anchorRight), out var seedCell) || !HasStyleContent(seedCell.StylePlan))
+                {
+                    continue;
+                }
+
+                for (var col = anchorRight + 1; col <= expandedRight; col++)
+                {
+                    AddOrMergeStyleCell(mergedCells, row, col, seedCell.StylePlan, scopePath);
+                }
+            }
+        }
+
+        if (deltaRows > 0)
+        {
+            for (var col = baseCol; col <= anchorRight; col++)
+            {
+                if (!seedCellLookup.TryGetValue((anchorBottom, col), out var seedCell) || !HasStyleContent(seedCell.StylePlan))
+                {
+                    continue;
+                }
+
+                for (var row = anchorBottom + 1; row <= expandedBottom; row++)
+                {
+                    AddOrMergeStyleCell(mergedCells, row, col, seedCell.StylePlan, scopePath);
+                }
+            }
+        }
+
+        if (deltaRows > 0 &&
+            deltaCols > 0 &&
+            seedCellLookup.TryGetValue((anchorBottom, anchorRight), out var cornerSeedCell) &&
+            HasStyleContent(cornerSeedCell.StylePlan))
+        {
+            for (var row = anchorBottom + 1; row <= expandedBottom; row++)
+            {
+                for (var col = anchorRight + 1; col <= expandedRight; col++)
+                {
+                    AddOrMergeStyleCell(mergedCells, row, col, cornerSeedCell.StylePlan, scopePath);
+                }
+            }
+        }
+
+        return result with
+        {
+            Cells = mergedCells,
+        };
+    }
+
+    private static void AddOrMergeStyleCell(
+        IList<LayoutCell> cells,
+        int row,
+        int col,
+        StylePlan stylePlan,
+        string scopePath)
+    {
+        if (!HasStyleContent(stylePlan))
+        {
+            return;
+        }
+
+        if (TryFindCoveringCellIndex(cells, row, col, out var existingIndex))
+        {
+            cells[existingIndex] = AppendStyleToCell(cells[existingIndex], stylePlan);
+            return;
+        }
+
+        cells.Add(
+            new LayoutCell(
+                row,
+                col,
+                rowSpan: 1,
+                colSpan: 1,
+                value: null,
+                formula: null,
+                formulaRef: null,
+                formulaRefScope: null,
+                scopePath,
+                stylePlan));
+    }
+
+    private static bool TryFindCoveringCellIndex(
+        IList<LayoutCell> cells,
+        int row,
+        int col,
+        out int index)
+    {
+        for (var i = 0; i < cells.Count; i++)
+        {
+            var cell = cells[i];
+            if (row < cell.Row || col < cell.Col)
+            {
+                continue;
+            }
+
+            if (row <= cell.Row + cell.RowSpan - 1 && col <= cell.Col + cell.ColSpan - 1)
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
+    }
+
+    private static bool HasStyleContent(StylePlan stylePlan) =>
+        stylePlan.EffectiveStyle.HasContent;
+
     /// <summary>
     /// グリッド解決後のセル集合へ、mode=outer/all の border を mode=cell として展開する。
     /// </summary>
@@ -1396,6 +1690,22 @@ public sealed class LayoutEngine : ILayoutEngine
             updatedStylePlan);
     }
 
+    private static LayoutCell AppendStyleToCell(LayoutCell cell, StylePlan overlayStylePlan)
+    {
+        var updatedStylePlan = MergeStylePlans(cell.StylePlan, overlayStylePlan);
+        return new LayoutCell(
+            cell.Row,
+            cell.Col,
+            cell.RowSpan,
+            cell.ColSpan,
+            cell.Value,
+            cell.Formula,
+            cell.FormulaRef,
+            cell.FormulaRefScope,
+            cell.ScopePath,
+            updatedStylePlan);
+    }
+
     /// <summary>
     /// 既存 StylePlan に border を追記した新しい StylePlan を生成する。
     /// </summary>
@@ -1445,6 +1755,49 @@ public sealed class LayoutEngine : ILayoutEngine
             stylePlan.FillColorTrace,
             stylePlan.NumberFormatCodeTrace,
             stylePlan.BorderTraces);
+    }
+
+    private static StylePlan MergeStylePlans(
+        StylePlan baseStylePlan,
+        StylePlan overlayStylePlan)
+    {
+        if (!HasStyleContent(overlayStylePlan))
+        {
+            return baseStylePlan;
+        }
+
+        var mergedBorders = baseStylePlan.Borders
+            .Concat(overlayStylePlan.Borders)
+            .Select(CloneBorder)
+            .ToArray();
+        var mergedEffectiveStyle = new ResolvedStyle(
+            "effective",
+            StyleSourceKind.Computed,
+            DSL.AST.StyleScope.Both,
+            overlayStylePlan.FontName ?? baseStylePlan.FontName,
+            overlayStylePlan.FontSize ?? baseStylePlan.FontSize,
+            overlayStylePlan.FontBold ?? baseStylePlan.FontBold,
+            overlayStylePlan.FontItalic ?? baseStylePlan.FontItalic,
+            overlayStylePlan.FontUnderline ?? baseStylePlan.FontUnderline,
+            overlayStylePlan.FillColor ?? baseStylePlan.FillColor,
+            overlayStylePlan.NumberFormatCode ?? baseStylePlan.NumberFormatCode,
+            mergedBorders);
+
+        return new StylePlan(
+            mergedEffectiveStyle,
+            baseStylePlan.AppliedStyles.Concat(overlayStylePlan.AppliedStyles).ToArray(),
+            baseStylePlan.WorkbookDefault,
+            baseStylePlan.SheetDefault,
+            baseStylePlan.ReferenceStyles.Concat(overlayStylePlan.ReferenceStyles).ToArray(),
+            baseStylePlan.InlineStyles.Concat(overlayStylePlan.InlineStyles).ToArray(),
+            overlayStylePlan.FontNameTrace ?? baseStylePlan.FontNameTrace,
+            overlayStylePlan.FontSizeTrace ?? baseStylePlan.FontSizeTrace,
+            overlayStylePlan.FontBoldTrace ?? baseStylePlan.FontBoldTrace,
+            overlayStylePlan.FontItalicTrace ?? baseStylePlan.FontItalicTrace,
+            overlayStylePlan.FontUnderlineTrace ?? baseStylePlan.FontUnderlineTrace,
+            overlayStylePlan.FillColorTrace ?? baseStylePlan.FillColorTrace,
+            overlayStylePlan.NumberFormatCodeTrace ?? baseStylePlan.NumberFormatCodeTrace,
+            baseStylePlan.BorderTraces.Concat(overlayStylePlan.BorderTraces).ToArray());
     }
 
     /// <summary>
