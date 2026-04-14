@@ -5,6 +5,9 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 
 ## Progress Summary
 
+- 2026-04-14 issue#58 最終review完了: `gpt-5.4` / `high` round 7 で findings なしを確認し、`reports/issue58-final-review-2026-04-14-round7.md` に記録
+- 2026-04-14 issue#58 最終検証: `ExcelTemplateOutputContractBuilderTests|ExcelTemplateEndToEndTests|ExcelTemplateConverterTests|ExcelTemplateReportGeneratorTests` 17件通過、`ExcelReportLib.Tests` 全体259件通過
+- 2026-04-14 issue#58 収束確認: shorthand/local scope 正規化、複数 `GroupBlock` happy-path E2E、tasks/phases の残件0整合を確認
 - 2026-04-14 issue#58 review対応: `EnableSchemaValidation=false` でも `DslParser` の非schema検証を継続するよう `ExcelTemplateConverter` を修正し、review round 2 記録を `reports/issue58-converter-review-2026-04-14-round2.md` に保存
 - 2026-04-14 issue#58 実装完了: `UseTriggerParser` に `styleOverflow` を追加し、Excel shorthand expression を emitted DSL の runtime 互換 `@(...)` 形へ正規化
 - 2026-04-14 issue#58 E2E追加: nested `GroupBlock` / `ItemRow` / `styleOverflow=edge` / `cell@formula` の happy-path と、`MergedCellBoundaryViolation` / `UnsupportedExcelTemplateFeature` の negative-path を facade 経由で固定

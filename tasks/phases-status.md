@@ -4,6 +4,9 @@ Last Updated: 2026-04-14
 
 ## Overall Progress
 
+- 2026-04-14: issue #58 の最終reviewとして `gpt-5.4` / `high` round 7 を実施し、findings なしを `reports/issue58-final-review-2026-04-14-round7.md` に記録
+- 2026-04-14: issue #58 の最終検証として関連17件と全体259件の通過を確認
+- 2026-04-14: issue #58 の収束確認として shorthand/local scope 正規化、複数 `GroupBlock` happy-path E2E、tasks/phases の残件0整合を確認
 - 2026-04-14: issue #58 の converter review round 2 として、`EnableSchemaValidation=false` 時も `DslParser` の非schema検証を継続する修正を反映し、`reports/issue58-converter-review-2026-04-14-round2.md` に記録
 - 2026-04-14: issue #58 の Phase 14 として `UseTriggerParser` の `styleOverflow` 対応、Excel shorthand expression の emitted DSL 正規化、nested/negative E2E を完了
 - 2026-04-14: issue #58 の Phase 14 review を `gpt-5.4` / `high` で `timeout 15s codex exec review` により再試行したが、sandbox の network 制限で timeout したため `reports/issue58-dsl-compatibility-e2e-review-2026-04-14.md` に記録
