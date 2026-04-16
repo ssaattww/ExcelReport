@@ -1,10 +1,11 @@
 # Tasks Status
 
 Last Updated: 2026-04-16
-Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応（実装完了） / issue #61 ExcelTemplateのsheet repeat定義対応（設計） / README刷新（Chart・Async）
+Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api対応 / issue #58 Excelテンプレート対応（実装完了） / issue #61 ExcelTemplateのsheet repeat定義対応（実装完了） / README刷新（Chart・Async）
 
 ## Progress Summary
 
+- 2026-04-16 issue#61 ExcelTemplateのsheet repeat定義対応（実装完了）: `__sheet_meta/__workbook_meta` shape 抽出、Workbook階層XMLパース/検証、`sheet@from/var` 契約拡張、serializer出力、converter/E2Eテストを実装。sub-agent review（`gpt-5.3-codex` / high）を2ラウンド実施し、round2で `No findings`（`reports/issue61-review-round1.md`, `reports/issue61-review-round2.md`）
 - 2026-04-16 issue#61 ExcelTemplateのsheet repeat定義対応（計画更新）: 実装に必要な作業を再分解し、`__sheet_meta/__workbook_meta` の抽出・検証・契約拡張・シリアライズ・統合検証までを `R61-01..R61-08` として再定義
 - 2026-04-16 issue#61 ExcelTemplateのsheet repeat定義対応（設計修正）: ユーザー指摘に合わせ、`__sheet_meta` で参照する shape 名を `__workbook_meta` に固定し、Workbook階層XMLをこの1 shapeへ集約する方針を設計へ反映
 - 2026-04-16 issue#61 ExcelTemplateのsheet repeat定義対応（設計修正）: ユーザー指摘に合わせ、shape 記法を Workbook階層XML（`<workbook><sheets><sheet ... /></sheets></workbook>`）へ変更し、将来の外部コンポーネントロード/workbook repeat 拡張点を設計へ明記
@@ -93,20 +94,20 @@ Scope: ExcelReport開発 - issue #16 シート間参照 / issue #43 非同期api
 ## Issue #61 ExcelTemplateのsheet repeat定義対応 Remaining Tasks
 
 - 基準日: 2026-04-16
-- 現在位置: 設計完了（実装未着手）
-- 残見積り: 7 tasks / 2-3 実装サイクル
+- 現在位置: 完了（実装・検証・review収束済み）
+- 残見積り: 0 tasks / 0 実装サイクル
 - 注記: 項目名は `#61` だけでなく内容（ExcelTemplate の sheet repeat 定義）を明記する
 
 | Task ID | Title | Status | Phase | Dependencies | Exit Criteria | Estimate |
 |---|---|---|---|---|---|---|
 | R61-01 | 方式比較と採用設計（セル/シェイプ/xmltemplate）を確定する | Done | 15 | - | 比較結果と採用理由を report + 設計書へ反映済み | 0.5 cycle |
-| R61-02 | `__sheet_meta` / `__workbook_meta` の shape 抽出モデルを追加する | Todo | 16 | R61-01 | Extractor が固定shape名のXMLテキストを取得し、変換パイプラインへ渡せる | 0.5 cycle |
-| R61-03 | Workbook階層XML（`workbook/sheets/sheet`）のパーサを実装する | Todo | 16 | R61-02 | `templateSheet/name/from/var` を解釈し、複数sheetノードを構造化できる | 0.5 cycle |
-| R61-04 | 固定shape名・XML構造・必須属性の検証を実装する | Todo | 16 | R61-03 | `__workbook_meta` 不在/不正XML/不正構造/var-from不整合を issue 化できる | 0.5 cycle |
-| R61-05 | output contract を拡張し `sheet@from/var` 情報を保持する | Todo | 17 | R61-03, R61-04 | `ExcelTemplateOutputSheet` に from/var が乗り、既存 sheet 出力と共存できる | 0.5 cycle |
-| R61-06 | serializer/emitter で `<sheet from=\"...\" var=\"...\">` を出力する | Todo | 17 | R61-05 | 変換DSLが runtime の sheet repeat 契約と一致する | 0.5 cycle |
-| R61-07 | unit/integration テスト（抽出・検証・DSL snapshot）を追加する | Todo | 18 | R61-04, R61-06 | `__workbook_meta` happy/negative と xlsx->dsl 出力が固定される | 0.5 cycle |
-| R61-08 | E2Eテスト（xlsx->dsl->final xlsx）で複数シート生成を確認する | Todo | 18 | R61-06, R61-07 | `sheet@from/var` 経由で複数シート生成と主要エラー系が検証できる | 0.5 cycle |
+| R61-02 | `__sheet_meta` / `__workbook_meta` の shape 抽出モデルを追加する | Done | 16 | R61-01 | Extractor が固定shape名のXMLテキストを取得し、変換パイプラインへ渡せる | 0.5 cycle |
+| R61-03 | Workbook階層XML（`workbook/sheets/sheet`）のパーサを実装する | Done | 16 | R61-02 | `templateSheet/name/from/var` を解釈し、複数sheetノードを構造化できる | 0.5 cycle |
+| R61-04 | 固定shape名・XML構造・必須属性の検証を実装する | Done | 16 | R61-03 | `__workbook_meta` 不在/不正XML/不正構造/var-from不整合を issue 化できる | 0.5 cycle |
+| R61-05 | output contract を拡張し `sheet@from/var` 情報を保持する | Done | 17 | R61-03, R61-04 | `ExcelTemplateOutputSheet` に from/var が乗り、既存 sheet 出力と共存できる | 0.5 cycle |
+| R61-06 | serializer/emitter で `<sheet from=\"...\" var=\"...\">` を出力する | Done | 17 | R61-05 | 変換DSLが runtime の sheet repeat 契約と一致する | 0.5 cycle |
+| R61-07 | unit/integration テスト（抽出・検証・DSL snapshot）を追加する | Done | 18 | R61-04, R61-06 | `__workbook_meta` happy/negative と xlsx->dsl 出力が固定される | 0.5 cycle |
+| R61-08 | E2Eテスト（xlsx->dsl->final xlsx）で複数シート生成を確認する | Done | 18 | R61-06, R61-07 | `sheet@from/var` 経由で複数シート生成と主要エラー系が検証できる | 0.5 cycle |
 
 ## Issue #58 Remaining Tasks
 

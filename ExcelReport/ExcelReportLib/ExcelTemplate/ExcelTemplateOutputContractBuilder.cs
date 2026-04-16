@@ -1,4 +1,6 @@
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using ExcelReportLib.DSL;
 using ExcelReportLib.ExcelTemplate.Model;
 
@@ -10,6 +12,8 @@ namespace ExcelReportLib.ExcelTemplate;
 public sealed class ExcelTemplateOutputContractBuilder
 {
     private const string ComponentSheetPrefix = "__component_";
+    private const string SheetMetaSheetName = "__sheet_meta";
+    private const string WorkbookMetaShapeName = "__workbook_meta";
     private static readonly IReadOnlySet<string> EmptyVariableNames = new HashSet<string>(StringComparer.Ordinal);
     private readonly ExcelTemplateComponentRangeResolver componentRangeResolver = new();
     private readonly ExcelTemplateValidator validator = new();
@@ -27,9 +31,11 @@ public sealed class ExcelTemplateOutputContractBuilder
         var rangeResolution = componentRangeResolver.Resolve(workbook);
         var validation = validator.Validate(workbook, rangeResolution.Ranges);
         var variableScope = ResolveComponentVariableScopes(workbook);
+        var workbookMetaResolution = ResolveWorkbookMeta(workbook);
         var aggregatedIssues = rangeResolution.Issues
             .Concat(validation.Issues)
             .Concat(variableScope.Issues)
+            .Concat(workbookMetaResolution.Issues)
             .ToArray();
         var rangesBySheet = rangeResolution.Ranges.ToDictionary(range => range.SheetName, StringComparer.Ordinal);
 
@@ -51,10 +57,7 @@ public sealed class ExcelTemplateOutputContractBuilder
             })
             .ToArray();
 
-        var sheets = workbook.Sheets
-            .Where(sheet => !IsComponentSheet(sheet))
-            .Select(sheet => new ExcelTemplateOutputSheet(sheet.Name, BuildItems(sheet, rangeReference: null, EmptyVariableNames)))
-            .ToArray();
+        var sheets = BuildSheets(workbook, workbookMetaResolution);
 
         return new ExcelTemplateOutputContract(components, sheets, aggregatedIssues);
     }
@@ -121,6 +124,52 @@ public sealed class ExcelTemplateOutputContractBuilder
             triggerResult.Trigger.StyleOverflow);
     }
 
+    private IReadOnlyList<ExcelTemplateOutputSheet> BuildSheets(
+        ExcelTemplateWorkbook workbook,
+        WorkbookMetaResolution workbookMetaResolution)
+    {
+        var definitionsByTemplateSheet = workbookMetaResolution.SheetDefinitions
+            .ToDictionary(definition => definition.TemplateSheetName, StringComparer.Ordinal);
+        var outputSheets = new List<ExcelTemplateOutputSheet>();
+
+        foreach (var sheet in workbook.Sheets)
+        {
+            if (IsComponentSheet(sheet) || IsMetaSheet(sheet))
+            {
+                continue;
+            }
+
+            if (!definitionsByTemplateSheet.TryGetValue(sheet.Name, out var definition))
+            {
+                outputSheets.Add(new ExcelTemplateOutputSheet(sheet.Name, BuildItems(sheet, rangeReference: null, EmptyVariableNames)));
+                continue;
+            }
+
+            var localVariableNames = ResolveSheetLocalVariableNames(definition);
+            outputSheets.Add(
+                new ExcelTemplateOutputSheet(
+                    definition.SheetName,
+                    BuildItems(sheet, rangeReference: null, localVariableNames),
+                    definition.FromExpression,
+                    definition.VariableName));
+        }
+
+        return outputSheets;
+    }
+
+    private static IReadOnlySet<string> ResolveSheetLocalVariableNames(WorkbookMetaSheetDefinition definition)
+    {
+        if (string.IsNullOrWhiteSpace(definition.FromExpression))
+        {
+            return EmptyVariableNames;
+        }
+
+        var effectiveVariableName = string.IsNullOrWhiteSpace(definition.VariableName)
+            ? "item"
+            : definition.VariableName;
+        return new HashSet<string>(StringComparer.Ordinal) { effectiveVariableName };
+    }
+
     private ComponentVariableScopeResolution ResolveComponentVariableScopes(ExcelTemplateWorkbook workbook)
     {
         var discoveredVariables = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
@@ -170,6 +219,168 @@ public sealed class ExcelTemplateOutputContractBuilder
         }
 
         return new ComponentVariableScopeResolution(componentVariableNames, issues);
+    }
+
+    private WorkbookMetaResolution ResolveWorkbookMeta(ExcelTemplateWorkbook workbook)
+    {
+        var issues = new List<Issue>();
+
+        if (!workbook.Sheets.Any(IsMetaSheet))
+        {
+            return new WorkbookMetaResolution([], issues);
+        }
+
+        if (string.IsNullOrWhiteSpace(workbook.WorkbookMetaXml))
+        {
+            issues.Add(
+                new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredElement,
+                    Message = $"sheet '{SheetMetaSheetName}' is missing fixed shape '{WorkbookMetaShapeName}'.",
+                });
+            return new WorkbookMetaResolution([], issues);
+        }
+
+        XDocument document;
+        try
+        {
+            document = XDocument.Parse(workbook.WorkbookMetaXml);
+        }
+        catch (Exception ex) when (ex is XmlException or ArgumentException)
+        {
+            issues.Add(
+                new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.XmlMalformed,
+                    Message = $"sheet '{SheetMetaSheetName}' fixed shape '{WorkbookMetaShapeName}' contains malformed XML: {ex.Message}",
+                });
+            return new WorkbookMetaResolution([], issues);
+        }
+
+        var root = document.Root;
+        if (root is null || !string.Equals(root.Name.LocalName, "workbook", StringComparison.Ordinal))
+        {
+            issues.Add(
+                new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.InvalidAttributeValue,
+                    Message = $"sheet '{SheetMetaSheetName}' fixed shape '{WorkbookMetaShapeName}' root must be <workbook>.",
+                });
+            return new WorkbookMetaResolution([], issues);
+        }
+
+        var sheetsElement = root.Elements().FirstOrDefault(element => element.Name.LocalName == "sheets");
+        var sheetElements = sheetsElement?.Elements().Where(element => element.Name.LocalName == "sheet").ToArray() ?? [];
+        if (sheetElements.Length == 0)
+        {
+            issues.Add(
+                new Issue
+                {
+                    Severity = IssueSeverity.Error,
+                    Kind = IssueKind.UndefinedRequiredElement,
+                    Message = $"sheet '{SheetMetaSheetName}' fixed shape '{WorkbookMetaShapeName}' must contain workbook/sheets/sheet.",
+                });
+            return new WorkbookMetaResolution([], issues);
+        }
+
+        var availableTemplateSheets = workbook.Sheets
+            .Where(sheet => !IsMetaSheet(sheet) && !IsComponentSheet(sheet))
+            .Select(sheet => sheet.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        var templateSheetNames = new HashSet<string>(StringComparer.Ordinal);
+        var definitions = new List<WorkbookMetaSheetDefinition>();
+
+        foreach (var sheetElement in sheetElements)
+        {
+            var templateSheet = sheetElement.Attribute("templateSheet")?.Value?.Trim();
+            if (string.IsNullOrWhiteSpace(templateSheet))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.UndefinedRequiredAttribute,
+                        Message = "workbook/sheets/sheet requires templateSheet attribute.",
+                    });
+                continue;
+            }
+
+            if (!templateSheetNames.Add(templateSheet))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = $"workbook/sheets/sheet templateSheet '{templateSheet}' is duplicated.",
+                    });
+                continue;
+            }
+
+            if (!availableTemplateSheets.Contains(templateSheet))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = $"workbook/sheets/sheet templateSheet '{templateSheet}' was not found in workbook sheets.",
+                    });
+                continue;
+            }
+
+            var name = sheetElement.Attribute("name")?.Value?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.UndefinedRequiredAttribute,
+                        Message = $"workbook/sheets/sheet templateSheet '{templateSheet}' requires name attribute.",
+                    });
+                continue;
+            }
+
+            var from = sheetElement.Attribute("from")?.Value?.Trim();
+            if (string.IsNullOrWhiteSpace(from))
+            {
+                from = null;
+            }
+
+            var variableName = sheetElement.Attribute("var")?.Value?.Trim();
+            if (string.IsNullOrWhiteSpace(variableName))
+            {
+                variableName = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(variableName) && string.IsNullOrWhiteSpace(from))
+            {
+                issues.Add(
+                    new Issue
+                    {
+                        Severity = IssueSeverity.Error,
+                        Kind = IssueKind.InvalidAttributeValue,
+                        Message = $"workbook/sheets/sheet templateSheet '{templateSheet}' cannot specify var without from.",
+                    });
+                continue;
+            }
+
+            var nameVariableScope = string.IsNullOrWhiteSpace(variableName)
+                ? EmptyVariableNames
+                : new HashSet<string>(StringComparer.Ordinal) { variableName };
+            definitions.Add(
+                new WorkbookMetaSheetDefinition(
+                    templateSheet,
+                    ExcelTemplateExpressionNormalizer.Normalize(name, nameVariableScope)!,
+                    ExcelTemplateExpressionNormalizer.Normalize(from),
+                    variableName));
+        }
+
+        return new WorkbookMetaResolution(definitions, issues);
     }
 
     private HashSet<string> CollectComponentsWithSimpleShorthand(ExcelTemplateWorkbook workbook)
@@ -226,9 +437,50 @@ public sealed class ExcelTemplateOutputContractBuilder
         public IReadOnlyList<Issue> Issues { get; }
     }
 
+    private sealed class WorkbookMetaResolution
+    {
+        public WorkbookMetaResolution(
+            IReadOnlyList<WorkbookMetaSheetDefinition> sheetDefinitions,
+            IReadOnlyList<Issue> issues)
+        {
+            SheetDefinitions = sheetDefinitions;
+            Issues = issues;
+        }
+
+        public IReadOnlyList<WorkbookMetaSheetDefinition> SheetDefinitions { get; }
+
+        public IReadOnlyList<Issue> Issues { get; }
+    }
+
+    private sealed class WorkbookMetaSheetDefinition
+    {
+        public WorkbookMetaSheetDefinition(
+            string templateSheetName,
+            string sheetName,
+            string? fromExpression,
+            string? variableName)
+        {
+            TemplateSheetName = templateSheetName;
+            SheetName = sheetName;
+            FromExpression = fromExpression;
+            VariableName = variableName;
+        }
+
+        public string TemplateSheetName { get; }
+
+        public string SheetName { get; }
+
+        public string? FromExpression { get; }
+
+        public string? VariableName { get; }
+    }
+
     private static bool IsComponentSheet(ExcelTemplateSheet sheet) =>
         sheet.Name.StartsWith(ComponentSheetPrefix, StringComparison.Ordinal) &&
         sheet.Name.Length > ComponentSheetPrefix.Length;
+
+    private static bool IsMetaSheet(ExcelTemplateSheet sheet) =>
+        string.Equals(sheet.Name, SheetMetaSheetName, StringComparison.Ordinal);
 
     private static bool IsWithinRange(
         ExcelTemplateCell cell,

@@ -114,4 +114,28 @@ public sealed class ExcelTemplateConverterTests
             File.Delete(xlsxPath);
         }
     }
+
+    /// <summary>
+    /// Verifies that workbook meta shape definitions are emitted as sheet repeat attributes in DSL.
+    /// </summary>
+    [Fact]
+    public void ConvertToDsl_WorkbookMetaSheetRepeat_EmitsSheetFromAndVar()
+    {
+        var xlsxPath = ExcelTemplateTestWorkbookFactory.CreateWorkbookMetaSheetRepeatWorkbookFile();
+
+        try
+        {
+            var converter = new ExcelTemplateConverter();
+
+            var result = converter.ConvertToDsl(xlsxPath);
+
+            Assert.Contains("<sheet name=\"@(grp.Name)\" from=\"@(root.Groups)\" var=\"grp\">", result.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("<sheet name=\"InvoiceTemplate\">", result.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain(result.Issues, issue => issue.Severity == IssueSeverity.Fatal);
+        }
+        finally
+        {
+            File.Delete(xlsxPath);
+        }
+    }
 }

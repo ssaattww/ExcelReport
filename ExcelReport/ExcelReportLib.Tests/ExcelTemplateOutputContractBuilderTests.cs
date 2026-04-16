@@ -274,4 +274,147 @@ public sealed class ExcelTemplateOutputContractBuilderTests
                      issue.Message.Contains("multiple repeat variables", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Verifies that workbook meta sheet-repeat mapping rewrites template sheets into sheet scopes with from/var.
+    /// </summary>
+    [Fact]
+    public void Build_WorkbookMetaSheetRepeatDefinition_RewritesTemplateSheetOutput()
+    {
+        const string workbookMetaXml =
+            """
+            <workbook>
+              <sheets>
+                <sheet templateSheet="InvoiceTemplate" name="@grp.Name" from="@groups" var="grp" />
+              </sheets>
+            </workbook>
+            """;
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet(
+                    "__sheet_meta",
+                    []),
+                new ExcelTemplateSheet(
+                    "InvoiceTemplate",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "@grp.Name", null, null),
+                    ]),
+                new ExcelTemplateSheet(
+                    "Summary",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "Ready", null, null),
+                    ]),
+            ],
+            workbookMetaXml: workbookMetaXml);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        Assert.Empty(contract.Issues);
+        Assert.Equal(2, contract.Sheets.Count);
+
+        var repeated = contract.Sheets.Single(sheet => sheet.Name == "@(grp.Name)");
+        Assert.Equal("@(root.Groups)", repeated.FromExpression);
+        Assert.Equal("grp", repeated.VariableName);
+        var repeatedCell = Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(repeated.Items));
+        Assert.Equal("@(grp.Name)", repeatedCell.Value);
+
+        var summary = contract.Sheets.Single(sheet => sheet.Name == "Summary");
+        Assert.Null(summary.FromExpression);
+        Assert.Null(summary.VariableName);
+        Assert.Equal("Ready", Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(summary.Items)).Value);
+        Assert.DoesNotContain(contract.Sheets, sheet => sheet.Name == "InvoiceTemplate");
+    }
+
+    /// <summary>
+    /// Verifies that meta sheet without fixed workbook meta shape payload reports a required-element error.
+    /// </summary>
+    [Fact]
+    public void Build_MetaSheetWithoutWorkbookMetaXml_ReportsError()
+    {
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet("__sheet_meta"),
+                new ExcelTemplateSheet("InvoiceTemplate"),
+            ]);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        Assert.Contains(
+            contract.Issues,
+            issue => issue.Kind == IssueKind.UndefinedRequiredElement &&
+                     issue.Message.Contains("__workbook_meta", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that workbook meta sheet definitions reject var without from.
+    /// </summary>
+    [Fact]
+    public void Build_WorkbookMetaVarWithoutFrom_ReportsInvalidAttribute()
+    {
+        const string workbookMetaXml =
+            """
+            <workbook>
+              <sheets>
+                <sheet templateSheet="InvoiceTemplate" name="Invoice" var="grp" />
+              </sheets>
+            </workbook>
+            """;
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet("__sheet_meta"),
+                new ExcelTemplateSheet("InvoiceTemplate"),
+            ],
+            workbookMetaXml: workbookMetaXml);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        Assert.Contains(
+            contract.Issues,
+            issue => issue.Kind == IssueKind.InvalidAttributeValue &&
+                     issue.Message.Contains("var", StringComparison.Ordinal) &&
+                     issue.Message.Contains("from", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Verifies that sheet repeat with from-only metadata uses the implicit var=item scope for shorthand normalization.
+    /// </summary>
+    [Fact]
+    public void Build_WorkbookMetaFromWithoutVar_UsesImplicitItemScope()
+    {
+        const string workbookMetaXml =
+            """
+            <workbook>
+              <sheets>
+                <sheet templateSheet="InvoiceTemplate" name="Invoice" from="@(root.Groups)" />
+              </sheets>
+            </workbook>
+            """;
+        var workbook = new ExcelTemplateWorkbook(
+            sheets:
+            [
+                new ExcelTemplateSheet("__sheet_meta"),
+                new ExcelTemplateSheet(
+                    "InvoiceTemplate",
+                    [
+                        new ExcelTemplateCell("A1", 1, 1, "@item", null, null),
+                    ]),
+            ],
+            workbookMetaXml: workbookMetaXml);
+        var builder = new ExcelTemplateOutputContractBuilder();
+
+        var contract = builder.Build(workbook);
+
+        Assert.Empty(contract.Issues);
+        var sheet = Assert.Single(contract.Sheets);
+        Assert.Equal("Invoice", sheet.Name);
+        Assert.Equal("@(root.Groups)", sheet.FromExpression);
+        Assert.Null(sheet.VariableName);
+        Assert.Equal("@(item)", Assert.IsType<ExcelTemplateOutputCell>(Assert.Single(sheet.Items)).Value);
+    }
+
 }

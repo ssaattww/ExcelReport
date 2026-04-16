@@ -4,6 +4,7 @@ Last Updated: 2026-04-16
 
 ## Overall Progress
 
+- 2026-04-16: issue #61 ExcelTemplateのsheet repeat定義対応を完了。`__sheet_meta/__workbook_meta` shape 抽出、Workbook階層XMLパース/検証、`sheet@from/var` 出力、converter/E2E検証を実装し、sub-agent review（`gpt-5.3-codex` / high）round2で `No findings` を確認（`reports/issue61-review-round1.md`, `reports/issue61-review-round2.md`）
 - 2026-04-16: issue #61 ExcelTemplateのsheet repeat定義対応の実装準備として、必要作業を 3 フェーズ（抽出/検証、契約/出力、統合検証）へ再分解し `tasks-status` と同期
 - 2026-04-16: issue #61 ExcelTemplateのsheet repeat定義対応の設計をユーザー指摘に追従し、`__sheet_meta` で参照する shape 名を `__workbook_meta` に固定。Workbook階層XMLを1 shapeへ集約する運用に修正
 - 2026-04-16: issue #61 ExcelTemplateのsheet repeat定義対応の設計をユーザー指摘に追従し、shape 記法を Workbook階層XML（`<workbook><sheets><sheet ... /></sheets></workbook>`）へ修正。将来の外部コンポーネントロード/workbook repeat 拡張点を追記
@@ -82,16 +83,16 @@ Last Updated: 2026-04-16
 ## Issue #61 ExcelTemplateのsheet repeat定義対応 Remaining Phases
 
 - 基準日: 2026-04-16
-- 現在位置: 設計フェーズ完了
-- 残見積り: 3 phases / 2-3 実装サイクル
+- 現在位置: 完了（Phase 15-18完了）
+- 残見積り: 0 phases / 0 実装サイクル
 - 注記: `#61` 単独表記を避け、項目名で「ExcelTemplateのsheet repeat定義対応」を明示する
 
 | Phase | Status | Scope | Exit Criteria | Estimate |
 |---|---|---|---|---|
 | Phase 15: Issue #61 ExcelTemplateのsheet repeat定義 設計 | Done | 方式比較（セル/シェイプ/xmltemplate）と採用案確定 | 設計書・report・tasks/phasesへ反映済み | 0.5 cycle |
-| Phase 16: Issue #61 Workbookメタ抽出と検証 | Todo | `__sheet_meta/__workbook_meta` 抽出、Workbook階層XMLパース、必須検証 | 固定shape名・構造・属性不整合を issue 化しつつ sheet 定義を構造化できる | 1 cycle |
-| Phase 17: Issue #61 変換契約と出力反映 | Todo | output contract 拡張 + serializer/emitter 更新 | DSL 出力で `sheet@from/var` を安定生成し、既存出力との互換を維持できる | 0.5-1 cycle |
-| Phase 18: Issue #61 統合検証とE2E固定 | Todo | unit/integration/e2e テスト + 最終同期 | xlsx->dsl->final xlsx で複数シート生成を確認し、異常系も固定される | 0.5-1 cycle |
+| Phase 16: Issue #61 Workbookメタ抽出と検証 | Done | `__sheet_meta/__workbook_meta` 抽出、Workbook階層XMLパース、必須検証 | 固定shape名・構造・属性不整合を issue 化しつつ sheet 定義を構造化できる | 1 cycle |
+| Phase 17: Issue #61 変換契約と出力反映 | Done | output contract 拡張 + serializer/emitter 更新 | DSL 出力で `sheet@from/var` を安定生成し、既存出力との互換を維持できる | 0.5-1 cycle |
+| Phase 18: Issue #61 統合検証とE2E固定 | Done | unit/integration/e2e テスト + 最終同期 | xlsx->dsl->final xlsx で複数シート生成を確認し、異常系も固定される | 0.5-1 cycle |
 
 ## Issue #58 Remaining Phases
 

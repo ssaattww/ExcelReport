@@ -142,6 +142,8 @@ Last Updated: 2026-04-16
 | FP148 | issue #61 の記法は JSON ではなく xmlテンプレートを踏襲する（shape テキストも XML 断片で表現する） | 対応中 | 2026-04-16 |
 | FP149 | issue #61 の記法は workbook 階層から書ける形にする。今回は非対応だが、将来の外部コンポーネントロードと workbook repeat へ接続可能な拡張点を設計に含める | 対応中 | 2026-04-16 |
 | FP150 | issue #61 は shape 名を固定し、`__sheet_meta` 上の `__workbook_meta` のみを定義入力として扱う | 対応中 | 2026-04-16 |
+| FP151 | issue #61 作業フローは `tasks/phases確認 -> TDD実装 -> sub-agent review -> 指摘対応` を反復し、`tasks/phases` は常にゴールまでの残件が載った状態を維持する | 対応中 | 2026-04-16 |
+| FP152 | issue #61 のレビューは `gpt-5.3-codex` / `high` を使い、レビュー結果を `reports/` へファイル出力し、エージェント並列は行わない | 対応中 | 2026-04-16 |
 ---
 
 ## 対応履歴
