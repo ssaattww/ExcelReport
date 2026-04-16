@@ -766,3 +766,66 @@ public sealed class ExcelTemplateReportGenerator
 - Issue / logger に座標付き原因が残る
 - 初版対象外機能は validation で検知できる
 - 設計書と実装の契約差分が解消されている
+
+## 14. Issue #61: ExcelTemplate の sheet repeat 定義方式（シェイプ方式中心）
+
+### 14.1 背景
+- 対応テーマ: 「ExcelTemplate の sheet repeat 対応」
+- 検討条件:
+  - `#61` の文脈で、シェイプ記述方式を有力候補とする
+  - ただし、セル記述方式・既存 xmltemplate 併用方式も比較して決定する
+
+### 14.2 現状ギャップ
+- DSL/runtime 側は `sheet@from` / `sheet@var` を既に処理可能
+- ExcelTemplate 変換側は、現状 `sheet` に `from/var` を渡す入力経路がない
+  - extractor は cell/definedName/merge 抽出のみで shape 抽出を持たない
+  - output contract の sheet モデルは `name + items` のみ
+
+### 14.3 比較結果
+| 方式 | 概要 | 評価 |
+|---|---|---|
+| 案1.1 セル定義 | 特殊シートのセルに `sheet repeat` 定義を記述 | 実装は軽いが、どのセルが定義か分かりにくくなる |
+| 案1.2 シェイプ定義 | 特殊シートの shape テキストに定義を記述 | 可読性が高く、`1定義=1shape` で管理しやすい |
+| 案2 xmltemplate 併用 | シート上位定義だけ xmltemplate 側で管理 | 定義が分散し、ExcelTemplate 単体完結性が下がる |
+
+採用: **案1.2（シェイプ定義）**
+
+### 14.4 採用仕様（初版）
+- メタシート名: `__sheet_meta`
+- shape 名固定: `__workbook_meta`
+- `__sheet_meta` 上の `__workbook_meta` shape に workbook 階層XMLを集約する
+
+```xml
+<workbook>
+  <sheets>
+    <sheet templateSheet="InvoiceTemplate"
+           name="@(grp.Name)"
+           from="@(root.Groups)"
+           var="grp" />
+  </sheets>
+</workbook>
+```
+
+- shape 内 `workbook/sheets/sheet` のうち `templateSheet` を持つ要素を今回の対象にする
+- `templateSheet` で指定されたシートをテンプレートとして読み、出力 DSL で `sheet@from/var` を付与する
+- 記法は xmlテンプレートを踏襲し、`from` / `name` は `@(...)` の式記法を使用する
+- 将来拡張（今回非対応）:
+  - 外部コンポーネントロード
+  - workbook repeat
+  これらも同じく `workbook` 階層の shape 記法で追加できる形にする
+
+### 14.5 バリデーション方針
+- `__sheet_meta` に `__workbook_meta` shape が存在しない: Error
+- `__workbook_meta` 以外の shape は定義入力として扱わない（無視または Warning）
+- shape XML のルートが `<workbook>` でない: Error
+- `workbook/sheets/sheet` が存在しない: Error
+- `templateSheet` 未存在: Error
+- 同一 `templateSheet` への複数 sheet repeat 定義: Error
+- shape の XML 断片パース失敗: Error
+- `var` あり `from` なし: Error（DSL 制約に合わせる）
+
+### 14.6 次フェーズ実装範囲
+1. extractor に shape 抽出を追加（`__sheet_meta` の `__workbook_meta` を対象）
+2. output contract の sheet モデルへ `from/var` を追加
+3. serializer で `<sheet from="..." var="...">` を出力
+4. unit/integration/e2e テスト追加

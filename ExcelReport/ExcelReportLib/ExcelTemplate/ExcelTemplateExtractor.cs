@@ -1,4 +1,6 @@
 using System.Text;
+using A = DocumentFormat.OpenXml.Drawing;
+using Xdr = DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelReportLib.ExcelTemplate.Model;
@@ -10,6 +12,9 @@ namespace ExcelReportLib.ExcelTemplate;
 /// </summary>
 public sealed class ExcelTemplateExtractor
 {
+    private const string SheetMetaSheetName = "__sheet_meta";
+    private const string WorkbookMetaShapeName = "__workbook_meta";
+
     /// <summary>
     /// Extracts workbook metadata, sheets, cells, defined names, and merged ranges from an xlsx file.
     /// </summary>
@@ -33,12 +38,14 @@ public sealed class ExcelTemplateExtractor
         var workbook = workbookPart.Workbook
             ?? throw new InvalidDataException("Workbook root was not found.");
 
-        var sheets = workbook.Sheets?.Elements<Sheet>()
+        var sheetDefinitions = workbook.Sheets?.Elements<Sheet>().ToArray() ?? [];
+        var sheets = sheetDefinitions
             .Select(sheet => ExtractSheet(workbookPart, sheet))
-            .ToArray() ?? [];
+            .ToArray();
         var definedNames = ExtractDefinedNames(workbook);
+        var workbookMetaXml = ExtractWorkbookMetaXml(workbookPart, sheetDefinitions);
 
-        return new ExcelTemplateWorkbook(sheets, definedNames);
+        return new ExcelTemplateWorkbook(sheets, definedNames, workbookMetaXml);
     }
 
     private static ExcelTemplateSheet ExtractSheet(WorkbookPart workbookPart, Sheet sheet)
@@ -94,6 +101,50 @@ public sealed class ExcelTemplateExtractor
         }
 
         return definedNames;
+    }
+
+    private static string? ExtractWorkbookMetaXml(
+        WorkbookPart workbookPart,
+        IReadOnlyList<Sheet> sheetDefinitions)
+    {
+        var metaSheet = sheetDefinitions.FirstOrDefault(
+            sheet => string.Equals(sheet.Name?.Value, SheetMetaSheetName, StringComparison.Ordinal));
+        if (metaSheet is null)
+        {
+            return null;
+        }
+
+        var worksheetPart = (WorksheetPart)workbookPart.GetPartById(metaSheet.Id!);
+        var worksheetDrawing = worksheetPart.DrawingsPart?.WorksheetDrawing;
+        if (worksheetDrawing is null)
+        {
+            return null;
+        }
+
+        var workbookMetaShape = worksheetDrawing.Descendants<Xdr.Shape>()
+            .FirstOrDefault(
+                shape => string.Equals(
+                    shape.NonVisualShapeProperties?.NonVisualDrawingProperties?.Name?.Value,
+                    WorkbookMetaShapeName,
+                    StringComparison.Ordinal));
+        if (workbookMetaShape is null)
+        {
+            return null;
+        }
+
+        var textBody = workbookMetaShape.TextBody;
+        if (textBody is null)
+        {
+            return string.Empty;
+        }
+
+        var paragraphs = textBody.Elements<A.Paragraph>()
+            .Select(paragraph => paragraph.InnerText)
+            .ToArray();
+        var content = paragraphs.Length > 0
+            ? string.Join(Environment.NewLine, paragraphs)
+            : textBody.InnerText;
+        return content.Trim();
     }
 
     private static string? ReadCellValue(WorkbookPart workbookPart, Cell cell)

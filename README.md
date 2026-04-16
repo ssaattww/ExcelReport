@@ -166,6 +166,12 @@ else
 }
 ```
 
+## ExcelTemplate Guide
+
+For `.xlsx`-first authoring, see:
+
+- [ExcelTemplate Format Guide (with Examples)](Design/ExcelTemplate/ExcelTemplate_FormatGuide.md)
+
 ## Chart Example (formulaRef-based)
 
 ```xml

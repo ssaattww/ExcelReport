@@ -172,4 +172,33 @@ public sealed class XmlTemplateSerializerTests
         Assert.NotNull(parseResult.Root);
         Assert.DoesNotContain(parseResult.Issues, issue => issue.Severity == IssueSeverity.Fatal);
     }
+
+    /// <summary>
+    /// Verifies that sheet repeat attributes are emitted on sheet nodes.
+    /// </summary>
+    [Fact]
+    public void Serialize_SheetRepeatAttributes_EmitsFromAndVar()
+    {
+        var contract = new ExcelTemplate.Model.ExcelTemplateOutputContract(
+            sheets:
+            [
+                new ExcelTemplate.Model.ExcelTemplateOutputSheet(
+                    "@(grp.Name)",
+                    items:
+                    [
+                        new ExcelTemplate.Model.ExcelTemplateOutputCell("A1", 1, 1, null, "@(grp.Name)", null),
+                    ],
+                    fromExpression: "@(root.Groups)",
+                    variableName: "grp"),
+            ]);
+        var serializer = new XmlTemplateSerializer();
+
+        var document = serializer.Serialize(contract);
+        var root = Assert.IsType<XElement>(document.Root);
+        var sheet = Assert.Single(root.Elements(root.Name.Namespace + "sheet"));
+
+        Assert.Equal("@(grp.Name)", (string?)sheet.Attribute("name"));
+        Assert.Equal("@(root.Groups)", (string?)sheet.Attribute("from"));
+        Assert.Equal("grp", (string?)sheet.Attribute("var"));
+    }
 }

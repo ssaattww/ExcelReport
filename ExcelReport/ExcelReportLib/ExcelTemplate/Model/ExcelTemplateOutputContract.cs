@@ -102,12 +102,18 @@ public sealed class ExcelTemplateOutputSheet
     /// </summary>
     /// <param name="name">The sheet name.</param>
     /// <param name="items">The normalized output items.</param>
+    /// <param name="fromExpression">The optional sheet-repeat source expression.</param>
+    /// <param name="variableName">The optional sheet-repeat variable name.</param>
     public ExcelTemplateOutputSheet(
         string name,
-        IReadOnlyList<ExcelTemplateOutputItem>? items = null)
+        IReadOnlyList<ExcelTemplateOutputItem>? items = null,
+        string? fromExpression = null,
+        string? variableName = null)
     {
         Name = name;
         Items = items?.ToArray() ?? [];
+        FromExpression = fromExpression;
+        VariableName = variableName;
     }
 
     /// <summary>
@@ -119,6 +125,16 @@ public sealed class ExcelTemplateOutputSheet
     /// Gets the normalized output items.
     /// </summary>
     public IReadOnlyList<ExcelTemplateOutputItem> Items { get; }
+
+    /// <summary>
+    /// Gets the optional sheet-repeat source expression.
+    /// </summary>
+    public string? FromExpression { get; }
+
+    /// <summary>
+    /// Gets the optional sheet-repeat variable name.
+    /// </summary>
+    public string? VariableName { get; }
 }
 
 /// <summary>

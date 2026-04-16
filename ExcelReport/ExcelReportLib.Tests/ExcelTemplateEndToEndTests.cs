@@ -124,6 +124,54 @@ public sealed class ExcelTemplateEndToEndTests
         }
     }
 
+    /// <summary>
+    /// Verifies that workbook meta shape based sheet-repeat generates multiple sheets end-to-end.
+    /// </summary>
+    [Fact]
+    public void GenerateFromExcelTemplate_WorkbookMetaSheetRepeat_ProducesRepeatedSheets()
+    {
+        var xlsxPath = ExcelTemplateTestWorkbookFactory.CreateWorkbookMetaSheetRepeatWorkbookFile();
+
+        try
+        {
+            var generator = new ExcelTemplateReportGenerator();
+
+            var result = generator.GenerateFromExcelTemplate(
+                xlsxPath,
+                new
+                {
+                    Groups = new[]
+                    {
+                        new { Name = "East", Total = 10 },
+                        new { Name = "West", Total = 20 },
+                    },
+                },
+                CreateOptions());
+
+            Assert.True(
+                result.Output is not null,
+                string.Join(Environment.NewLine, result.Issues.Select(issue => $"{issue.Severity}:{issue.Kind}:{issue.Message}")));
+            Assert.DoesNotContain(result.Issues, issue => issue.Severity == IssueSeverity.Fatal);
+
+            using var document = OpenWorkbook(result);
+            var sheetNames = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
+                .Select(sheet => sheet.Name!.Value)
+                .ToArray();
+
+            Assert.Contains("Cover", sheetNames);
+            Assert.Contains("East", sheetNames);
+            Assert.Contains("West", sheetNames);
+            Assert.Equal("East", ReadCellValue(document, GetCell(document, "East", "A1")));
+            Assert.Equal("10", ReadCellValue(document, GetCell(document, "East", "B1")));
+            Assert.Equal("West", ReadCellValue(document, GetCell(document, "West", "A1")));
+            Assert.Equal("20", ReadCellValue(document, GetCell(document, "West", "B1")));
+        }
+        finally
+        {
+            File.Delete(xlsxPath);
+        }
+    }
+
     private static ExcelTemplateGenerateOptions CreateOptions() =>
         new()
         {

@@ -80,6 +80,15 @@ public sealed class XmlTemplateSerializer
         var element = new XElement(
             DslNamespace + "sheet",
             new XAttribute("name", sheet.Name));
+        if (!string.IsNullOrWhiteSpace(sheet.FromExpression))
+        {
+            element.SetAttributeValue("from", sheet.FromExpression);
+        }
+
+        if (!string.IsNullOrWhiteSpace(sheet.VariableName))
+        {
+            element.SetAttributeValue("var", sheet.VariableName);
+        }
 
         foreach (var item in sheet.Items)
         {
